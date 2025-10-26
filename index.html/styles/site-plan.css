@@ -145,7 +145,7 @@ body[data-theme="dark"] nav a {
 
 body[data-theme="light"] nav a:hover,
 body[data-theme="dark"] nav a:hover {
-  color: #f6d66a; /* soft gold hover for contrast */
+  color: #b39c4f; /* soft gold hover for contrast */
   text-decoration: underline;
 }
 
