@@ -126,6 +126,7 @@ body[data-theme="dark"] header {
 }
 
 /* ---------- Navigation (all white text) ---------- */
+/* ---------- Navigation (uniform color for all links) ---------- */
 nav {
   margin-left: auto;
   display: flex;
@@ -139,14 +140,14 @@ body[data-theme="dark"] nav a {
   font-weight: 700;
   padding: 8px 10px;
   border-radius: 10px;
-  color: #ffffff; /* ← All white nav text */
+  color: #eaf6fb; /* ← same soft white-blue as “Home” */
   text-decoration: none;
-  transition: color .2s ease, background .2s ease, transform .05s ease-in-out;
+  transition: color 0.2s ease, transform 0.05s ease-in-out;
 }
 
 body[data-theme="light"] nav a:hover,
 body[data-theme="dark"] nav a:hover {
-  color: #ffeabf; /* soft gold-white hover effect */
+  color: #ffffff; /* slightly brighter on hover */
   text-decoration: underline;
 }
 
