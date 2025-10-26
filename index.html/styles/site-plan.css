@@ -124,9 +124,7 @@ body[data-theme="dark"] header {
   font-weight: 800;
   color: #ffffff; /* reads over gradient */
 }
-
-/* ---------- Navigation (all white text) ---------- */
-/* ---------- Navigation (uniform color for all links) ---------- */
+/* ---------- Navigation (all pure white) ---------- */
 nav {
   margin-left: auto;
   display: flex;
@@ -140,16 +138,17 @@ body[data-theme="dark"] nav a {
   font-weight: 700;
   padding: 8px 10px;
   border-radius: 10px;
-  color: #eaf6fb; /* ← same soft white-blue as “Home” */
+  color: #ffffff; /* ← pure white text */
   text-decoration: none;
   transition: color 0.2s ease, transform 0.05s ease-in-out;
 }
 
 body[data-theme="light"] nav a:hover,
 body[data-theme="dark"] nav a:hover {
-  color: #ffffff; /* slightly brighter on hover */
+  color: #f6d66a; /* soft gold hover for contrast */
   text-decoration: underline;
 }
+
 
 /* Dark header on deep gradient */
 body[data-theme="dark"] nav a {
