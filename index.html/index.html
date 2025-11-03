@@ -1,53 +1,277 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ISweep Wireframe</title>
-  <link rel="stylesheet" href="styles/site-plan.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ISweep — AI-Powered Remote</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="images/ISweep.png" />
 </head>
-
 <body>
-  <header>
-    <div class="header-inner">
-      <div class="logo-box">
+
+  <!-- ===== Header ===== -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#top">
         <img src="images/ISweep.png" alt="ISweep logo" />
-        <strong class="text-primary">ISweep</strong>
-      </div>
+        <span>ISweep</span>
+      </a>
 
-      <nav>
-        <a href="index.html">Home</a>
-        <a href="account.html">Account</a>
-        <a href="settings.html">Settings</a>
-        <a href="help.html">Help</a>
-    </nav>
-
-
-      <!-- Optional toggle button (requires JS below) -->
-      <button class="theme-toggle" id="themeBtn">Toggle Theme</button>
+      <nav class="main-nav">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+        <a href="#contact">Contact</a>
+        <button id="themeToggle" class="btn btn-glass" aria-label="Toggle theme">Toggle Theme</button>
+      </nav>
     </div>
   </header>
 
-  <main>
-    <h1>Welcome to ISweep</h1>
-    <p>Ai powered skips, fastforward, mute. Your preferences for your desired experience.</p>
-    <h2> “Control your media, your way — with AI precision.”
-            [Get Started] [Watch Demo]</h2>
-    <p> 1. Download ISweep or install on TV.
-        2.Connect to your streaming source.
-        3.Select Filters (profanity, violence, etc.).
-        4.Enjoy Smarter Playback.</p>
+  <main id="top">
+    <!-- ===== Hero ===== -->
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-copy">
+          <h1>Control any screen with <span class="text-gradient">AI precision</span>.</h1>
+          <p class="lead">
+            ISweep mutes profanity, skips scenes, and fast-forwards content in real time—without altering the original media.
+            Your boundaries, your rules, across streaming, DVD, and mobile.
+          </p>
+          <div class="hero-ctas">
+            <a class="btn btn-primary" href="#pricing">Get ISweep</a>
+            <a class="btn btn-outline" href="#how">See how it works</a>
+          </div>
+          <ul class="hero-bullets">
+            <li>Real-time scene detection (Observer Mode)</li>
+            <li>Family-safe, creator-friendly controls</li>
+            <li>Works offline with supported devices</li>
+          </ul>
+        </div>
+
+        <!-- Simple SVG mockup (replace with your screenshot anytime) -->
+        <div class="hero-art" aria-hidden="true">
+          <div class="device">
+            <div class="device-top">ISweep Dashboard</div>
+            <div class="device-body">
+              <div class="row">
+                <span>Profanity</span>
+                <label class="switch"><input type="checkbox" checked><span></span></label>
+              </div>
+              <div class="row">
+                <span>Sexual Content</span>
+                <label class="switch"><input type="checkbox" checked><span></span></label>
+              </div>
+              <div class="row">
+                <span>Violence</span>
+                <label class="switch"><input type="checkbox"><span></span></label>
+              </div>
+              <div class="row">
+                <span>Observer Mode</span>
+                <label class="switch"><input type="checkbox" checked><span></span></label>
+              </div>
+              <div class="device-footer">
+                <button class="btn btn-small">Start Session</button>
+                <button class="btn btn-small btn-outline">View Logs</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== Features ===== -->
+    <section id="features" class="section">
+      <div class="container">
+        <h2 class="section-title">What ISweep does for you</h2>
+        <div class="grid features">
+          <article class="card">
+            <div class="icon">🎛️</div>
+            <h3>AI Filtering</h3>
+            <p>Mute, skip, or fast-forward based on your preferences. No edits to the original media—just a smarter way to watch.</p>
+          </article>
+          <article class="card">
+            <div class="icon">👁️</div>
+            <h3>Observer Mode</h3>
+            <p>Listens and detects sensitive content in real time to trigger the right action—automatically.</p>
+          </article>
+          <article class="card">
+            <div class="icon">📡</div>
+            <h3>Cross-Platform</h3>
+            <p>Works with streaming apps, external DVD/Blu-ray players, and mobile sources. Designed for Smart TVs first.</p>
+          </article>
+          <article class="card">
+            <div class="icon">🔒</div>
+            <h3>Privacy-First</h3>
+            <p>Your rules run locally. Activity logs are stored on your device unless you choose to sync.</p>
+          </article>
+          <article class="card">
+            <div class="icon">🌓</div>
+            <h3>Personalized UX</h3>
+            <p>Dark/light theme, profiles, and parental PIN locks keep the experience comfortable and secure.</p>
+          </article>
+          <article class="card">
+            <div class="icon">📈</div>
+            <h3>Activity Summary</h3>
+            <p>Review what was muted or skipped and fine-tune your filters over time.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== How it works ===== -->
+    <section id="how" class="section alt">
+      <div class="container">
+        <h2 class="section-title">How it works</h2>
+        <ol class="steps">
+          <li>
+            <h4>Install</h4>
+            <p>Add ISweep to your Smart TV (or companion device). Pair with your streaming source or DVD player.</p>
+          </li>
+          <li>
+            <h4>Choose Filters</h4>
+            <p>Toggle categories like profanity, sexuality, and violence. Set actions: mute, skip, or fast-forward.</p>
+          </li>
+          <li>
+            <h4>Enable Observer Mode</h4>
+            <p>ISweep listens and detects events in real time—then applies your rules automatically.</p>
+          </li>
+          <li>
+            <h4>Review & Refine</h4>
+            <p>Check your session log and adjust sensitivity and actions for next time.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===== Dashboard Preview ===== -->
+    <section class="section">
+      <div class="container">
+        <h2 class="section-title">Your control hub</h2>
+        <p class="section-lead">Clean, responsive, and built for family use. Below is a placeholder—swap it with your real screenshot any time.</p>
+        <div class="preview">
+          <img src="images/dashboard-placeholder.png" alt="ISweep dashboard preview (placeholder)" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Pricing ===== -->
+    <section id="pricing" class="section alt">
+      <div class="container">
+        <h2 class="section-title">Simple pricing</h2>
+        <div class="grid pricing">
+          <article class="card">
+            <h3>Free</h3>
+            <p class="price">$0</p>
+            <ul>
+              <li>Streaming devices only</li>
+              <li>No ad blocking</li>
+              <li>Basic filtering presets</li>
+            </ul>
+            <a class="btn btn-outline" href="#contact">Try Free</a>
+          </article>
+
+          <article class="card featured">
+            <div class="badge">Most popular</div>
+            <h3>Flexible Subscription</h3>
+            <p class="price">You choose (min $6/mo)</p>
+            <ul>
+              <li>All features unlocked</li>
+              <li>Once total payments reach $350, you own it</li>
+              <li>Priority updates & support</li>
+            </ul>
+            <a class="btn btn-primary" href="#contact">Start Subscription</a>
+          </article>
+
+          <article class="card">
+            <h3>One-Time Purchase</h3>
+            <p class="price">$350</p>
+            <ul>
+              <li>Lifetime license</li>
+              <li>All platforms + offline</li>
+              <li>Parental PIN & logs</li>
+            </ul>
+            <a class="btn btn-outline" href="#contact">Buy Once</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Testimonials ===== -->
+    <section class="section">
+      <div class="container">
+        <h2 class="section-title">What early users say</h2>
+        <div class="grid quotes">
+          <blockquote class="card">“ISweep lets us watch more together without worrying about surprise language.”</blockquote>
+          <blockquote class="card">“Exactly the control I wanted—mute instead of skip for certain scenes.”</blockquote>
+          <blockquote class="card">“Observer Mode is shockingly good. It just… does the right thing.”</blockquote>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="section alt">
+      <div class="container">
+        <h2 class="section-title">Frequently asked questions</h2>
+        <div class="faq">
+          <details>
+            <summary>Does ISweep edit videos?</summary>
+            <p>No. It never changes the source media—it only controls playback (mute, skip, fast-forward) in real time.</p>
+          </details>
+          <details>
+            <summary>Which devices are supported?</summary>
+            <p>Smart TVs first (Fire TV focus), with companion support for DVD/Blu-ray players and mobile sources.</p>
+          </details>
+          <details>
+            <summary>Is my data private?</summary>
+            <p>Yes. Rules run locally. Logs stay on your device unless you opt-in to sync.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Contact / Footer ===== -->
+    <section id="contact" class="section">
+      <div class="container contact">
+        <h2 class="section-title">Get in touch</h2>
+        <p>Email: <a href="mailto:hello@isweep.app">hello@isweep.app</a></p>
+      </div>
+    </section>
   </main>
 
-  <footer>
-    <p>&copy; 2025 ISweep Inc. All rights reserved.</p>
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© 2025 ISweep Inc. All rights reserved.</p>
+      <nav class="footer-nav">
+        <a href="#privacy">Privacy</a>
+        <a href="#terms">Terms</a>
+      </nav>
+    </div>
   </footer>
 
-  <!-- Dark/Light Mode Toggle Script -->
   <script>
-    const btn = document.getElementById('themeBtn');
+    // Theme toggle: toggles data-theme on <html>
+    const root = document.documentElement;
+    const btn = document.getElementById('themeToggle');
+    const saved = localStorage.getItem('isweep-theme');
+    if (saved) root.setAttribute('data-theme', saved);
+
     btn.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      localStorage.setItem('isweep-theme', next);
+    });
+
+    // Smooth scroll for in-page nav
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const id = a.getAttribute('href');
+        const el = document.querySelector(id);
+        if (!el) return;
+        e.preventDefault();
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     });
   </script>
 </body>
