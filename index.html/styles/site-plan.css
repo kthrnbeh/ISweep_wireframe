@@ -227,3 +227,66 @@ footer {
   nav { width: 100%; justify-content: flex-start; gap: 14px; }
   .theme-toggle { margin-left: 0; }
 }
+.hero-media {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+.hero-video {
+  width: 80%;
+  max-width: 600px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.actions-illustration {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+.actions-illustration img {
+  width: 300px;
+  opacity: 0.9;
+}
+.settings-preview {
+  text-align: center;
+  padding: 2rem 0;
+}
+.settings-preview img {
+  width: 80%;
+  max-width: 500px;
+  margin-top: 1rem;
+}
+/* --- Align all Smart Filtering icons on one single line --- */
+.icon-strip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;      /* force them on one row */
+  gap: 40px;              /* even spacing between each icon */
+  overflow-x: auto;       /* allows horizontal scroll if screen too small */
+  padding: 1rem 0;
+}
+
+/* control consistent size */
+.icon-strip img {
+  width: 200px;           /* same size for all */
+  height: auto;
+  flex: 0 0 auto;         /* prevent shrinking */
+  display: block;
+  transition: transform 0.25s ease;
+}
+
+.icon-strip img:hover {
+  transform: scale(1.05);
+}
+
+/* for smaller screens (mobile), let them wrap again */
+@media (max-width: 768px) {
+  .icon-strip {
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .icon-strip img {
+    width: 180px;
+  }
+}
