@@ -259,7 +259,7 @@ footer {
 /* --- Align all Smart Filtering icons on one single line --- */
 .icon-strip {
   display: flex;
-  justify-content: center;
+  justify-content: left;
   align-items: center;
   flex-wrap: nowrap;      /* force them on one row */
   gap: 40px;              /* even spacing between each icon */
@@ -269,7 +269,7 @@ footer {
 
 /* control consistent size */
 .icon-strip img {
-  width: 200px;           /* same size for all */
+  width: 130px;           /* same size for all */
   height: auto;
   flex: 0 0 auto;         /* prevent shrinking */
   display: block;
