@@ -1,137 +1,53 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ISweep — Settings</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ISweep Wireframe</title>
+  <link rel="stylesheet" href="styles/site-plan.css" />
 </head>
+
 <body>
   <header>
-    <div class="header-inner container">
-      <div class="logo-box"><img src="images/ISweep.png" alt=""><strong>ISweep</strong></div>
-      <nav class="main">
+    <div class="header-inner">
+      <div class="logo-box">
+        <img src="images/ISweep.png" alt="ISweep logo" />
+        <strong class="text-primary">ISweep</strong>
+      </div>
+
+      <nav>
         <a href="index.html">Home</a>
         <a href="account.html">Account</a>
-        <a class="active" href="settings.html">Settings</a>
-        <a href="plans.html">Plans</a>
-        <a href="signup.html">Sign Up</a>
-        <button id="themeBtn" class="btn btn-ghost theme-toggle">Toggle Theme</button>
-      </nav>
+        <a href="settings.html">Settings</a>
+        <a href="help.html">Help</a>
+    </nav>
+
+
+      <!-- Optional toggle button (requires JS below) -->
+      <button class="theme-toggle" id="themeBtn">Toggle Theme</button>
     </div>
   </header>
 
   <main>
-    <h1>Settings</h1>
-    <p class="lead">These are the kinds of things users expect.</p>
-
-    <section class="grid grid-2 section">
-      <!-- Filters -->
-      <div class="card">
-        <h2>Content Filters</h2>
-
-        <div class="toggle">
-          <span>Profanity</span>
-          <label class="switch"><input id="s-profanity" type="checkbox" checked><span></span></label>
-        </div>
-        <div class="toggle">
-          <span>Sexual Content</span>
-          <label class="switch"><input id="s-sexual" type="checkbox" checked><span></span></label>
-        </div>
-        <div class="toggle">
-          <span>Violence</span>
-          <label class="switch"><input id="s-violence" type="checkbox"><span></span></label>
-        </div>
-        <div class="toggle">
-          <span>Observer Mode (auto-detect)</span>
-          <label class="switch"><input id="s-observer" type="checkbox" checked><span></span></label>
-        </div>
-
-        <div class="form-row">
-          <label>Action for Profanity</label>
-          <select id="a-profanity">
-            <option>Mute</option><option>Skip Scene</option><option>Fast-Forward 10s</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label>Action for Sexual Content</label>
-          <select id="a-sexual">
-            <option>Skip Scene</option><option>Mute</option><option>Fast-Forward 30s</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label>Action for Violence</label>
-          <select id="a-violence">
-            <option>Fast-Forward 10s</option><option>Mute</option><option>Skip Scene</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Preferences -->
-      <div class="card">
-        <h2>Preferences</h2>
-        <div class="form-row">
-          <label>Language</label>
-          <select id="pref-lang">
-            <option>English</option><option>Spanish</option><option>Tagalog</option>
-          </select>
-        </div>
-        <div class="toggle">
-          <span>Parental PIN Required</span>
-          <label class="switch"><input id="pref-pin" type="checkbox"><span></span></label>
-        </div>
-        <div class="toggle">
-          <span>Auto-update when available</span>
-          <label class="switch"><input id="pref-update" type="checkbox" checked><span></span></label>
-        </div>
-        <div class="toggle">
-          <span>Keep local activity logs</span>
-          <label class="switch"><input id="pref-logs" type="checkbox" checked><span></span></label>
-        </div>
-        <div class="form-row">
-          <label>Theme</label>
-          <select id="pref-theme">
-            <option value="system">System (auto)</option>
-            <option value="light">Light</option>
-            <option value="dark" selected>Dark</option>
-          </select>
-        </div>
-
-        <button class="btn btn-primary btn-small" id="saveSettings">Save Settings</button>
-        <p id="settingsSaved" style="margin-top:8px; color:var(--muted); display:none;">Saved.</p>
-      </div>
-    </section>
+    <h1>Welcome to ISweep</h1>
+    <p>Ai powered skips, fastforward, mute. Your preferences for your desired experience.</p>
+    <h2> “Control your media, your way — with AI precision.”
+            [Get Started] [Watch Demo]</h2>
+    <p> 1. Download ISweep or install on TV.
+        2.Connect to your streaming source.
+        3.Select Filters (profanity, violence, etc.).
+        4Enjoy Smarter Playback.</p>
   </main>
 
-  <footer><p>© 2025 ISweep Inc.</p></footer>
+  <footer>
+    <p>&copy; 2025 ISweep Inc. All rights reserved.</p>
+  </footer>
 
+  <!-- Dark/Light Mode Toggle Script -->
   <script>
-    // theme button
-    const root = document.documentElement;
-    const savedTheme = localStorage.getItem('isweep-theme');
-    if (savedTheme) root.setAttribute('data-theme', savedTheme);
-    document.getElementById('themeBtn').addEventListener('click', () => {
-      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next); localStorage.setItem('isweep-theme', next);
-    });
-
-    // load saved settings
-    const ids = ["s-profanity","s-sexual","s-violence","s-observer","a-profanity","a-sexual","a-violence","pref-lang","pref-pin","pref-update","pref-logs","pref-theme"];
-    ids.forEach(id=>{
-      const v = localStorage.getItem(id);
-      if (v === null) return;
-      const el = document.getElementById(id);
-      if (el.type === "checkbox") el.checked = v === "true"; else el.value = v;
-    });
-
-    // save
-    document.getElementById('saveSettings').addEventListener('click', () => {
-      ids.forEach(id=>{
-        const el = document.getElementById(id);
-        localStorage.setItem(id, el.type==="checkbox" ? String(el.checked) : el.value);
-      });
-      document.getElementById('settingsSaved').style.display='block';
-      setTimeout(()=>document.getElementById('settingsSaved').style.display='none',1200);
+    const btn = document.getElementById('themeBtn');
+    btn.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
     });
   </script>
 </body>
