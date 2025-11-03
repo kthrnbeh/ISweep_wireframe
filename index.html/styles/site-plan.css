@@ -1,292 +1,159 @@
 /* ================================
-   ISweep — Brand-matched CSS
-   Light/Dark themes + header gradient
+   ISweep — Polished marketing UI
    ================================ */
 
-/* ---------- Theme tokens (Light default) ---------- */
-:root {
-  /* Base */
-  --bg: #f5f7fb;
+/* ---- Base / tokens ---- */
+:root{
+  --bg: #f7fafc;
   --text: #0f172a;
-  --muted: #475569;
+  --muted:#475569;
 
-  /* Brand colors (from logo) */
-  --brand-blue-1: #a2cbd7; /* turquoise */
-  --brand-blue-2: #10252b; /* mid */
-  --brand-blue-3: #7fdcf0; /* pale */
-  --brand-orange: #dc9645;
-  --brand-gold: #f7d155;
+  --brand-1:#a2cbd7;     /* light turquoise */
+  --brand-2:#10252b;     /* deep teal (headings) */
+  --brand-3:#7fdcf0;     /* accent aqua */
+  --brand-orange:#dc9645;/* accent */
+  --card:#ffffff;
+  --border:#e5e7eb;
+  --shadow: 0 10px 30px rgba(2,6,23,.08);
 
-  /* UI */
-  --card: #ffffff;
-  --border: #e5e7eb;
-  --shadow: 0 6px 20px rgba(2, 6, 23, 0.08);
-
-  /* Links (for content, not header nav) */
-  --link: #2a6f97;
+  --radius:16px;
 }
 
-/* ---------- Dark (auto) ---------- */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b1220;
-    --text: #e6e9ef;
-    --muted: #9aa4b2;
-
-    --card: #0e1729;
-    --border: #1f2a44;
-    --shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-
-    --link: #8ad4ec;
-  }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color:var(--text);
+  background:var(--bg);
+  line-height:1.55;
 }
 
-/* ---------- Manual override via body[data-theme] ---------- */
-body[data-theme="light"] {
-  --bg: #f5f7fb;
-  --text: #0f172a;
-  --muted: #475569;
-  --card: #ffffff;
-  --border: #e5e7eb;
-  --shadow: 0 6px 20px rgba(2, 6, 23, 0.08);
-  --link: #2a6f97;
+/* ---- Helpers ---- */
+.container{
+  width:min(1200px, 92%);
+  margin-inline:auto;
+}
+.section{padding:64px 0}
+.section.alt{background:#f1f5f9}
+.section-title{
+  font-size: clamp(24px, 3vw, 36px);
+  color:var(--brand-2);
+  margin:0 0 24px;
+  letter-spacing:-.02em;
 }
 
-body[data-theme="dark"] {
-  --bg: #0b1220;
-  --text: #e6e9ef;
-  --muted: #9aa4b2;
-  --card: #0e1729;
-  --border: #1f2a44;
-  --shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-  --link: #8ad4ec;
+/* ---- Header ---- */
+.site-header{
+  position:sticky; top:0; z-index:100;
+  background:rgba(255,255,255,.8);
+  backdrop-filter: blur(8px);
+  border-bottom:1px solid var(--border);
+}
+.header-inner{
+  display:flex; align-items:center; gap:24px;
+  padding:14px 0;
+}
+.logo-box{display:flex; align-items:center; gap:10px; text-decoration:none}
+.logo-box img{height:36px; width:auto}
+.logo-box .brand{font-size:20px; color:var(--brand-2)}
+.main-nav{margin-left:auto; display:flex; gap:20px}
+.main-nav a{
+  text-decoration:none; color:#1f2937; font-weight:600;
+  padding:8px 10px; border-radius:10px;
+}
+.main-nav a:hover{background:#eef2f7}
+.main-nav a.active{color:var(--brand-2)}
+.theme-toggle{
+  margin-left:6px; border:1px solid var(--border); background:#fff;
+  padding:8px 12px; border-radius:10px; cursor:pointer;
 }
 
-/* ---------- Base ---------- */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-  line-height: 1.6;
+/* ---- Hero ---- */
+.hero{
+  /* subtle gradient similar to inspiration */
+  background: radial-gradient(80% 120% at 0% 0%, #dff5fb 0%, #ffffff 45%) ;
+  padding: 56px 0 24px;
+  border-bottom:1px solid var(--border);
 }
-a { color: var(--link); text-decoration: none; }
-a:hover { text-decoration: underline; }
+.hero-inner{
+  display:grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap:40px; align-items:center;
+}
+.hero-copy h1{
+  font-size: clamp(34px, 6vw, 64px);
+  line-height:1.05; letter-spacing:-.02em; margin:0 0 12px;
+  color:var(--brand-2);
+}
+.lead{font-size: clamp(16px, 2.2vw, 20px); color:var(--muted); margin:0 0 20px}
+.cta-row{display:flex; gap:12px; margin:10px 0 24px}
+.btn{
+  display:inline-block; padding:12px 18px; border-radius:999px;
+  text-decoration:none; font-weight:700; border:1px solid transparent;
+}
+.btn-primary{background:var(--brand-2); color:#fff}
+.btn-primary:hover{filter:brightness(1.05)}
+.btn-ghost{background:#fff; color:var(--brand-2); border-color:var(--border)}
+.btn-ghost:hover{background:#f3f4f6}
 
-/* Utility “word color” helpers */
-.text-primary { color: var(--brand-blue-1); }
-.text-accent  { color: var(--brand-orange); }
-.text-gold    { color: #cfa93e; } /* slightly deeper gold for readability on light bg */
-.text-muted   { color: var(--muted); }
-
-/* ---------- Header (logo-matched gradient) ---------- */
-header {
-  /* Light gradient: logo blues */
-  background: linear-gradient(90deg, var(--brand-blue-1) 0%, var(--brand-blue-2) 60%, var(--brand-blue-3) 100%);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+/* Hero visual */
+.hero-visual img{
+  width:100%; height:auto; border-radius:var(--radius);
   box-shadow: var(--shadow);
-  transition: background 0.3s ease;
+  background:#fff; object-fit:cover;
 }
 
-/* Dark gradient */
-body[data-theme="dark"] header {
-  background: linear-gradient(90deg, #0a1a2a 0%, #153245 50%, #1e4960 100%);
+/* ---- Icon Strip (uniform size, one line, no borders) ---- */
+.icon-strip{
+  display:flex; flex-wrap:wrap; gap:16px; align-items:center;
+  padding:10px 0 0;
+}
+.icon-strip img{
+  width:64px; height:64px; object-fit:contain; display:block;
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,.04));
 }
 
-.header-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  justify-content: space-between;
+/* ---- Steps (cards) ---- */
+.steps-grid{
+  list-style:none; padding:0; margin:24px 0 0;
+  display:grid; gap:18px;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+}
+.step-card{
+  background:var(--card); border:1px solid var(--border);
+  border-radius:16px; padding:18px 16px; box-shadow: var(--shadow);
+}
+.step-card h4{margin:0 0 6px; color:var(--brand-2); font-size:18px}
+.step-card p{margin:0; color:var(--muted)}
+
+/* ---- Footer ---- */
+.site-footer{
+  padding:36px 0; border-top:1px solid var(--border);
+  background:#fff; color:#334155;
 }
 
-/* Logo block */
-.logo-box {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* ---- Dark mode ---- */
+body.dark{
+  --bg:#0b1220; --text:#e5e7eb; --muted:#94a3b8;
+  --card:#0f172a; --border:#1f2937;
+  --brand-2:#c7f4ff;
+  background:var(--bg); color:var(--text);
 }
-.logo-box img {
-  height: 48px;
-  width: auto;
-  display: block;
-}
-.logo-box strong {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #ffffff; /* reads over gradient */
-}
-/* ---------- Navigation (all pure white) ---------- */
-nav {
-  margin-left: auto;
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  flex-wrap: wrap;
-}
+body.dark .site-header{background:rgba(15,23,42,.7)}
+body.dark .main-nav a{color:#cbd5e1}
+body.dark .main-nav a:hover{background:#111827}
+body.dark .btn-ghost{background:transparent; color:#c7f4ff; border-color:#334155}
+body.dark .section.alt{background:#0a1020}
+body.dark .step-card{background:#0f172a; border-color:#1f2937}
 
-body[data-theme="light"] nav a,
-body[data-theme="dark"] nav a {
-  font-weight: 700;
-  padding: 8px 10px;
-  border-radius: 10px;
-  color: #ffffff; /* ← pure white text */
-  text-decoration: none;
-  transition: color 0.2s ease, transform 0.05s ease-in-out;
+/* ---- Responsive ---- */
+@media (max-width: 980px){
+  .hero-inner{grid-template-columns: 1fr; gap:22px}
+  .hero-visual{order:-1}
+  .steps-grid{grid-template-columns: 1fr 1fr}
 }
-
-body[data-theme="light"] nav a:hover,
-body[data-theme="dark"] nav a:hover {
-  color: #b39c4f; /* soft gold hover for contrast */
-  text-decoration: underline;
-}
-
-
-/* Dark header on deep gradient */
-body[data-theme="dark"] nav a {
-  font-weight: 700;
-  padding: 8px 10px;
-  border-radius: 10px;
-  color: #eaf6fb;                    /* light blue-white */
-  text-decoration: none;
-  transition: color .2s ease, background .2s ease, transform .05s ease-in-out;
-}
-body[data-theme="dark"] nav a.text-accent { color: var(--brand-orange); }
-body[data-theme="dark"] nav a.text-gold   { color: var(--brand-gold); }
-body[data-theme="dark"] nav a:hover {
-  color: #ffffff;
-  text-decoration: underline;
-}
-
-/* ---------- Theme toggle button ---------- */
-.theme-toggle {
-  margin-left: 8px;
-  padding: 8px 12px;
-  border: 1px solid rgba(255,255,255,.35);
-  background: rgba(255,255,255,.12);
-  color: #ffffff;
-  border-radius: 12px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: var(--shadow);
-  backdrop-filter: saturate(120%) blur(6px);
-  -webkit-backdrop-filter: saturate(120%) blur(6px);
-  transition: background .2s ease, color .2s ease, border-color .2s ease, transform .05s ease-in-out;
-}
-.theme-toggle:active { transform: scale(0.98); }
-
-/* In dark mode, make toggle legible over dark gradient */
-body[data-theme="dark"] .theme-toggle {
-  border-color: rgba(255,255,255,.25);
-  background: rgba(255,255,255,.08);
-  color: #eaf6fb;
-}
-
-/* Toggle icons (if you added the sun/moon SVGs) */
-.icon { width: 18px; height: 18px; fill: currentColor; display: block; }
-.icon-sun { display: none; }
-body[data-theme="dark"] .icon-sun { display: block; }
-body[data-theme="dark"] .icon-moon { display: none; }
-
-/* ---------- Main & Footer ---------- */
-main {
-  max-width: 1100px;
-  margin: 28px auto;
-  padding: 0 24px;
-}
-main h1 {
-  font-size: clamp(1.8rem, 2.2vw + 1rem, 3rem);
-  line-height: 1.2;
-  margin: 24px 0 12px;
-}
-main p { color: var(--text); }
-
-footer {
-  max-width: 1100px;
-  margin: 36px auto 48px;
-  padding: 0 24px;
-  color: var(--muted);
-  font-size: 0.95rem;
-  border-top: 1px dashed var(--border);
-  padding-top: 16px;
-}
-
-/* ---------- Responsive tweaks ---------- */
-@media (max-width: 640px) {
-  .header-inner { flex-wrap: wrap; }
-  nav { width: 100%; justify-content: flex-start; gap: 14px; }
-  .theme-toggle { margin-left: 0; }
-}
-.hero-media {
-  display: flex;
-  justify-content: center;
-  margin: 2rem 0;
-}
-.hero-video {
-  width: 80%;
-  max-width: 600px;
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-.actions-illustration {
-  display: flex;
-  justify-content: center;
-  margin-top: 1.5rem;
-}
-.actions-illustration img {
-  width: 300px;
-  opacity: 0.9;
-}
-.settings-preview {
-  text-align: center;
-  padding: 2rem 0;
-}
-.settings-preview img {
-  width: 80%;
-  max-width: 500px;
-  margin-top: 1rem;
-}
-/* --- Align all Smart Filtering icons on one single line --- */
-.icon-strip {
-  display: flex;
-  justify-content: left;
-  align-items: center;
-  flex-wrap: nowrap;      /* force them on one row */
-  gap: 40px;              /* even spacing between each icon */
-  overflow-x: auto;       /* allows horizontal scroll if screen too small */
-  padding: 1rem 0;
-}
-
-/* control consistent size */
-.icon-strip img {
-  width: 130px;           /* same size for all */
-  height: auto;
-  flex: 0 0 auto;         /* prevent shrinking */
-  display: block;
-  transition: transform 0.25s ease;
-}
-
-.icon-strip img:hover {
-  transform: scale(1.05);
-}
-
-/* for smaller screens (mobile), let them wrap again */
-@media (max-width: 768px) {
-  .icon-strip {
-    flex-wrap: wrap;
-    gap: 24px;
-  }
-  .icon-strip img {
-    width: 180px;
-  }
+@media (max-width: 600px){
+  .steps-grid{grid-template-columns: 1fr}
+  .icon-strip img{width:56px; height:56px}
 }

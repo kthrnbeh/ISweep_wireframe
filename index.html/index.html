@@ -5,91 +5,104 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ISweep Wireframe</title>
   <link rel="stylesheet" href="styles/site-plan.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
-  <header>
-    <div class="header-inner">
-      <div class="logo-box">
+  <!-- Header / Nav -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo-box" href="index.html">
         <img src="images/ISweep.png" alt="ISweep logo" />
-        <strong class="text-primary">ISweep</strong>
-      </div>
+        <strong class="brand">ISweep</strong>
+      </a>
 
-      <nav>
-        <a href="index.html">Home</a>
+      <nav class="main-nav">
+        <a href="index.html" class="active">Home</a>
         <a href="account.html">Account</a>
         <a href="settings.html">Settings</a>
         <a href="help.html">Help</a>
-    </nav>
+      </nav>
 
-
-      <!-- Optional toggle button (requires JS below) -->
-      <button class="theme-toggle" id="themeBtn">Toggle Theme</button>
+      <button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">Toggle Theme</button>
     </div>
   </header>
 
-  <main>
-    <h1>Welcome to ISweep</h1> 
-    <h2>Smart Filtering in Action</h2>
-    <!-- Uniform small icons strip -->
-<!-- Clean icon row -->
-<section class="icon-strip">
-  <img src="images/image3.svg" alt="Filter Sliders" />
-  <img src="images/videoimage.svg" alt="Filtered Video" />
-  <img src="images/image1.svg" alt="AI Remote" />
-  
-  <img src="images/image2.svg" alt="Mute, Skip, Fast-forward" />
- 
-</section>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-copy">
+        <h1>Smart Filtering in Action</h1>
+        <p class="lead">
+          AI-powered mute, skip, and fast-forward—so you control your media, your way.
+        </p>
 
-    
-  </div>
-</section>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#how">Get Started</a>
+          <a class="btn btn-ghost" href="#demo">Watch Demo</a>
+        </div>
 
-    
-    <p>Ai powered skips, fastforward, mute. Your preferences for your desired experience.</p>
-    <h2> “Control your media, your way — with AI precision.”</h2>
-        <h2>[Get Started] [Watch Demo]</h2>
-    <section id="how" class="section alt">
-      <div class="container">
-        <h2 class="section-title">How it works</h2>
-        <ol class="steps">
-          <li>
-            <h4>Install</h4>
-            <p>Add ISweep to your Smart TV (or companion device). Pair with your streaming source or DVD player.</p>
-          </li>
-          
-          <li>
-            <h4>Choose Filters</h4>
-            <p> Remove things like profanity, sexuality, and violence. Set actions: mute, skip, or fast-forward.</p>
-          </li><!-- Visual: Mute / Skip / Fast-forward -->
-
-          <li>
-            <h4>Enable Observer Mode</h4>
-            <p>ISweep listens and detects events in real time—then applies your rules automatically.</p>
-          </li>
-          <li>
-            <h4>Review & Refine</h4>
-            <p>Check your session log and adjust sensitivity and actions for next time.</p>
-          </li>
-        </ol>
+        <!-- Clean icon row (uniform size, one line) -->
+        <div class="icon-strip">
+          <img src="images/image3.svg" alt="Filter Sliders">
+          <img src="images/videoimage.svg" alt="Filtered Video">
+          <img src="images/image1.svg" alt="AI Remote">
+          <img src="images/image2.svg" alt="Mute, Skip, Fast-forward">
+        </div>
       </div>
-    </section>
-    <section class="settings-preview">
-  
 
-  </main>
+      <div class="hero-visual">
+        <!-- optional hero image / illustration -->
+        <img src="images/hero-placeholder.png" alt="ISweep app preview" />
+      </div>
+    </div>
+  </section>
 
-  <footer>
-    <p>&copy; 2025 ISweep Inc. All rights reserved.</p>
+  <!-- HOW IT WORKS -->
+  <section id="how" class="section">
+    <div class="container">
+      <h2 class="section-title">How it works</h2>
+
+      <ol class="steps-grid">
+        <li class="step-card">
+          <h4>Install</h4>
+          <p>Add ISweep to your Smart TV (or companion device). Pair with your streaming source or DVD player.</p>
+        </li>
+        <li class="step-card">
+          <h4>Choose Filters</h4>
+          <p>Remove profanity, sexuality, and violence. Set actions: mute, skip, or fast-forward.</p>
+        </li>
+        <li class="step-card">
+          <h4>Enable Observer Mode</h4>
+          <p>ISweep listens and detects events in real time—then applies your rules automatically.</p>
+        </li>
+        <li class="step-card">
+          <h4>Review &amp; Refine</h4>
+          <p>Check your session log and adjust sensitivity and actions for next time.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- (Optional) Demo anchor -->
+  <section id="demo" class="section alt">
+    <div class="container">
+      <h2 class="section-title">See it in action</h2>
+      <p>Short demo video or animated GIF goes here.</p>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; 2025 ISweep Inc. All rights reserved.</p>
+    </div>
   </footer>
 
-  <!-- Dark/Light Mode Toggle Script -->
   <script>
     const btn = document.getElementById('themeBtn');
-    btn.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-    });
+    btn.addEventListener('click', () => document.body.classList.toggle('dark'));
   </script>
 </body>
 </html>
