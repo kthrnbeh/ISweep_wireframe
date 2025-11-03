@@ -1,0 +1,229 @@
+/* ================================
+   ISweep — Brand-matched CSS
+   Light/Dark themes + header gradient
+   ================================ */
+
+/* ---------- Theme tokens (Light default) ---------- */
+:root {
+  /* Base */
+  --bg: #f5f7fb;
+  --text: #0f172a;
+  --muted: #475569;
+
+  /* Brand colors (from logo) */
+  --brand-blue-1: #a2cbd7; /* turquoise */
+  --brand-blue-2: #10252b; /* mid */
+  --brand-blue-3: #7fdcf0; /* pale */
+  --brand-orange: #dc9645;
+  --brand-gold: #f7d155;
+
+  /* UI */
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --shadow: 0 6px 20px rgba(2, 6, 23, 0.08);
+
+  /* Links (for content, not header nav) */
+  --link: #2a6f97;
+}
+
+/* ---------- Dark (auto) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --text: #e6e9ef;
+    --muted: #9aa4b2;
+
+    --card: #0e1729;
+    --border: #1f2a44;
+    --shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+
+    --link: #8ad4ec;
+  }
+}
+
+/* ---------- Manual override via body[data-theme] ---------- */
+body[data-theme="light"] {
+  --bg: #f5f7fb;
+  --text: #0f172a;
+  --muted: #475569;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --shadow: 0 6px 20px rgba(2, 6, 23, 0.08);
+  --link: #2a6f97;
+}
+
+body[data-theme="dark"] {
+  --bg: #0b1220;
+  --text: #e6e9ef;
+  --muted: #9aa4b2;
+  --card: #0e1729;
+  --border: #1f2a44;
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  --link: #8ad4ec;
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.6;
+}
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Utility “word color” helpers */
+.text-primary { color: var(--brand-blue-1); }
+.text-accent  { color: var(--brand-orange); }
+.text-gold    { color: #cfa93e; } /* slightly deeper gold for readability on light bg */
+.text-muted   { color: var(--muted); }
+
+/* ---------- Header (logo-matched gradient) ---------- */
+header {
+  /* Light gradient: logo blues */
+  background: linear-gradient(90deg, var(--brand-blue-1) 0%, var(--brand-blue-2) 60%, var(--brand-blue-3) 100%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: var(--shadow);
+  transition: background 0.3s ease;
+}
+
+/* Dark gradient */
+body[data-theme="dark"] header {
+  background: linear-gradient(90deg, #0a1a2a 0%, #153245 50%, #1e4960 100%);
+}
+
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+/* Logo block */
+.logo-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-box img {
+  height: 48px;
+  width: auto;
+  display: block;
+}
+.logo-box strong {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff; /* reads over gradient */
+}
+/* ---------- Navigation (all pure white) ---------- */
+nav {
+  margin-left: auto;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+body[data-theme="light"] nav a,
+body[data-theme="dark"] nav a {
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: #ffffff; /* ← pure white text */
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.05s ease-in-out;
+}
+
+body[data-theme="light"] nav a:hover,
+body[data-theme="dark"] nav a:hover {
+  color: #b39c4f; /* soft gold hover for contrast */
+  text-decoration: underline;
+}
+
+
+/* Dark header on deep gradient */
+body[data-theme="dark"] nav a {
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: #eaf6fb;                    /* light blue-white */
+  text-decoration: none;
+  transition: color .2s ease, background .2s ease, transform .05s ease-in-out;
+}
+body[data-theme="dark"] nav a.text-accent { color: var(--brand-orange); }
+body[data-theme="dark"] nav a.text-gold   { color: var(--brand-gold); }
+body[data-theme="dark"] nav a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+/* ---------- Theme toggle button ---------- */
+.theme-toggle {
+  margin-left: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,.35);
+  background: rgba(255,255,255,.12);
+  color: #ffffff;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--shadow);
+  backdrop-filter: saturate(120%) blur(6px);
+  -webkit-backdrop-filter: saturate(120%) blur(6px);
+  transition: background .2s ease, color .2s ease, border-color .2s ease, transform .05s ease-in-out;
+}
+.theme-toggle:active { transform: scale(0.98); }
+
+/* In dark mode, make toggle legible over dark gradient */
+body[data-theme="dark"] .theme-toggle {
+  border-color: rgba(255,255,255,.25);
+  background: rgba(255,255,255,.08);
+  color: #eaf6fb;
+}
+
+/* Toggle icons (if you added the sun/moon SVGs) */
+.icon { width: 18px; height: 18px; fill: currentColor; display: block; }
+.icon-sun { display: none; }
+body[data-theme="dark"] .icon-sun { display: block; }
+body[data-theme="dark"] .icon-moon { display: none; }
+
+/* ---------- Main & Footer ---------- */
+main {
+  max-width: 1100px;
+  margin: 28px auto;
+  padding: 0 24px;
+}
+main h1 {
+  font-size: clamp(1.8rem, 2.2vw + 1rem, 3rem);
+  line-height: 1.2;
+  margin: 24px 0 12px;
+}
+main p { color: var(--text); }
+
+footer {
+  max-width: 1100px;
+  margin: 36px auto 48px;
+  padding: 0 24px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 16px;
+}
+
+/* ---------- Responsive tweaks ---------- */
+@media (max-width: 640px) {
+  .header-inner { flex-wrap: wrap; }
+  nav { width: 100%; justify-content: flex-start; gap: 14px; }
+  .theme-toggle { margin-left: 0; }
+}
