@@ -1,105 +1,14 @@
-/* ================================
-   ISweep — Pricing section polish
-   (Works alongside Tailwind classes)
-   ================================ */
-
-/* Optional: scope to the section if you add id="pricing" */
-
-
-/* Map Tailwind primary shades to CSS vars for convenience */
-:root{
-  --primary-50:#eff6ff;
-  --primary-100:#dbeafe;
-  --primary-200:#bfdbfe;
-  --primary-300:#93c5fd;
-  --primary-400:#60a5fa;
-  --primary-500:#3b82f6;
-  --primary-600:#2563eb;
-  --primary-700:#1d4ed8;
-  --primary-800:#1e40af;
-  --primary-900:#1e3a8a;
-  --ring: 0 0 0 4px rgba(37,99,235,.25); /* primary-600 ring */
-}
-
-/* Dark mode tuning (Tailwind uses class strategy) */
-.dark :root{
-  --ring: 0 0 0 4px rgba(96,165,250,.25); /* primary-400 ring in dark */
-}
-
-/* Card polish (targets the three pricing cards) */
-.pricing-card{
-  border-radius: 1rem;              /* match rounded-2xl */
-  border: 1px solid rgba(0,0,0,.06);
-  box-shadow: 0 10px 30px rgba(2,6,23,.08);
-  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-}
-
-.dark .pricing-card{
-  border-color: rgba(255,255,255,.12);
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
-}
-
-.pricing-card:hover{
-  transform: translateY(-4px);
-  box-shadow: 0 16px 40px rgba(2,6,23,.12);
-}
-
-/* Title + subcopy rhythm */
-.pricing-card h3{
-  letter-spacing: -.01em;
-}
-
-.pricing-card p{
-  line-height: 1.6;
-}
-
-/* Feature list spacing & check icon alignment */
-.pricing-features{
-  margin-bottom: 2rem;
-}
-
-.pricing-feature{
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-}
-
-.pricing-feature svg{
-  flex-shrink: 0;
-}
-
-/* CTA buttons (in case you prefer class hooks over pure utilities) */
-.btn-primary{
-  display:inline-flex; align-items:center; justify-content:center;
-  padding: .625rem 1rem;              /* ~px-4 py-2.5 */
-  border-radius: .5rem;               /* rounded-lg */
-  font-weight: 600;
-  color: #fff;
-  background: var(--primary-600);
-  transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease;
-}
-
-.btn-primary:hover{ background: var(--primary-700); transform: translateY(-1px); }
-.btn-primary:focus-visible{ outline: none; box-shadow: var(--ring); }
-
-.dark .btn-primary{ background: var(--primary-500); }
-.dark .btn-primary:hover{ background: var(--primary-600); }
-
-/* “Most Popular” badge if you add it later */
-.popular-badge{
-  display:inline-flex; align-items:center; gap:.5rem;
-  padding:.25rem .6rem; border-radius:9999px;
-  font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
-  color:#0f172a; background: var(--primary-200);
-}
-.dark .popular-badge{ color:#0b1220; background: var(--primary-300); }
-
-/* Section heading rhythm */
-.pricing-headline{
-  letter-spacing:-.02em;
-}
-
-/* Compact helpers if you want tighter stacks on small screens */
-@media (max-width: 640px){
-  .pricing-card{ padding: 1.25rem; }
+Plans.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+      }
+    },
+    fontFamily: {
+      body: ['Inter','ui-sans-serif','system-ui','-apple-system','system-ui','Segoe UI','Roboto','Helvetica Neue','Arial','Noto Sans','sans-serif','Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji'],
+      sans: ['Inter','ui-sans-serif','system-ui','-apple-system','system-ui','Segoe UI','Roboto','Helvetica Neue','Arial','Noto Sans','sans-serif','Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji']
+    }
+  }
 }
