@@ -157,3 +157,38 @@ body.dark .step-card{background:#0f172a; border-color:#1f2937}
   .steps-grid{grid-template-columns: 1fr}
   .icon-strip img{width:56px; height:56px}
 }
+/* underline effect */
+.main-nav a {
+  position: relative; /* allows absolute positioning of the line */
+  text-decoration: none;
+  color: #1f2937;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 10px;
+  transition: color 0.3s ease;
+}
+
+/* invisible line by default */
+.main-nav a::after {
+  content: "";
+  position: absolute;
+  bottom: 4px; /* how far from text bottom */
+  left: 10px;  /* matches your side padding */
+  width: calc(100% - 20px);
+  height: 2px; /* line thickness */
+  background-color: var(--brand-2);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+
+/* reveal on hover */
+.main-nav a:hover::after,
+.main-nav a:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* keep background hover if you want both */
+.main-nav a:hover {
+  background: #eef2f7;
+}
