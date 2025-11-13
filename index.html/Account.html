@@ -30,68 +30,155 @@
     <h1>My Account</h1>
     <p class="subtitle">Manage your personal info, subscription, devices, and security.</p>
 
-    <!-- Profile Section -->
+        <!-- Profile Section -->
     <section class="card">
       <h2>Profile</h2>
-      <div class="item-row">
-        <div>
-          <strong>Name</strong>
-          <p>Add</p>
-        </div>
-        <button>Edit</button>
-      </div>
 
-      <div class="item-row">
-        <div>
-         <label> 
-        <strong>Email</strong>
-    <input type="email" name="email" required />
-        </label>
-          <p>Add</p>
-        </div>
-        <button>Edit</button>
-      </div>
+      <!-- Wrap profile rows in a form -->
+      <form class="profile-form">
 
-      <div class="item-row">
-        <div>
-          <strong>Mobile Number</strong>
-          <p>Add</p>
+        <!-- NAME -->
+        <div class="item-row">
+          <div>
+            <label>
+              <strong>Name</strong>
+              <!-- required text input, styled to look like plain text -->
+              <input
+                class="profile-input"
+                type="text"
+                name="fullName"
+                placeholder="Add"
+                required
+              />
+            </label>
+          </div>
+          <!-- For now, this just *pretends* to save -->
+          <button type="submit">Edit</button>
         </div>
-        <button>Edit</button>
-      </div>
+
+        <!-- EMAIL -->
+        <div class="item-row">
+          <div>
+            <label>
+              <strong>Email</strong>
+              <!-- required email input -->
+              <input
+                class="profile-input"
+                type="email"
+                name="email"
+                placeholder="Add"
+                required
+              />
+            </label>
+          </div>
+          <button type="submit">Edit</button>
+        </div>
+
+        <!-- MOBILE NUMBER -->
+        <div class="item-row">
+          <div>
+            <label>
+              <strong>Mobile Number</strong>
+              <!-- required phone input (very simple 10-digit pattern) -->
+              <input
+                class="profile-input"
+                type="tel"
+                name="phone"
+                placeholder="Add"
+                required
+                pattern="[0-9]{10}"
+              />
+            </label>
+          </div>
+          <button type="submit">Edit</button>
+        </div>
+
+      </form>
     </section>
 
-    <!-- Address Section -->
-    <section class="card">
-      <h2>Address</h2>
-      <div class="item-row">
-        <div>
+
+   <!-- Address Section -->
+<section class="card">
+  <h2>Address</h2>
+
+  <form class="profile-form">
+
+    <div class="item-row">
+      <div>
+        <label>
           <strong>Home Address</strong>
-          <p></p>
-        </div>
-        <button>Edit</button>
+          <input
+            class="profile-input"
+            type="text"
+            name="address"
+            placeholder="Add"
+            required
+          />
+        </label>
       </div>
-    </section>
 
-    <!-- Payment Section -->
-    <section class="card">
-      <h2>Payment</h2>
-      <div class="item-row">
-        <div>
+      <button type="submit">Edit</button>
+    </div>
+
+  </form>
+</section>
+
+
+   <!-- Payment Section -->
+<section class="card">
+  <h2>Payment</h2>
+
+  <form class="profile-form">
+
+    <div class="item-row">
+      <div>
+        <label>
           <strong>Payment Method</strong>
-          <p>Add</p>
-        </div>
-        <button>Update</button>
+          <input
+            class="profile-input"
+            type="text"
+            name="payment"
+            placeholder="Add"
+            required
+          />
+        </label>
       </div>
-    </section>
+
+      <button type="submit">Update</button>
+    </div>
+
+  </form>
+</section>
+
 
     <!-- Subscription Section -->
-    <section class="card">
-      <h2>Your Plan</h2>
-      <p><strong>Current Plan:</strong> Flexible Subscription</p>
-      <p>$220 / $350 paid toward ownership</p>
-      <button>Manage Plan</button>
-    </section>
+<section class="card">
+  <h2>Your Plan</h2>
+
+  <form class="profile-form">
+
+    <div class="item-row">
+      <div>
+        <label>
+          <strong>Current Plan</strong>
+          <input 
+            class="profile-input"
+            type="text"
+            name="plan"
+            value="Flexible Subscription"
+            required
+          />
+        </label>
+      </div>
+
+      <button type="submit">Manage Plan</button>
+    </div>
+
+  </form>
+
+  <p>$0/ $350 paid toward ownership</p>
+</section>
+
 
     <!-- Device Management -->
     <section class="card">

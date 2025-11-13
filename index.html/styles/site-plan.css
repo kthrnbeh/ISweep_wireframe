@@ -337,3 +337,20 @@ body.dark-mode .account-page .card button:hover {
     margin-top: 0.5rem;           /* space between text and the button */
   }
 }
+/* PROFILE FORM INPUTS – look like normal text, but still real inputs */
+.profile-form input.profile-input {
+  border: none;              /* no visible box around input */
+  background: transparent;   /* see the card background */
+  padding: 0.1rem 0;         
+  margin-top: 0.2rem;        /* small space under the label */
+  font: inherit;             /* same font as rest of text */
+  color: #6b7280;            /* same gray used for "Add" text */
+  width: 100%;               /* fill the line nicely */
+}
+
+/* Focus style so keyboard users still see where they are */
+.profile-form input.profile-input:focus {
+  outline: 2px solid #0f766e;    /* teal focus ring */
+  border-radius: 4px;
+  background-color: #f9fafb;     /* very light background when editing */
+}
