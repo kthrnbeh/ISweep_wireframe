@@ -55,15 +55,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2) PLAN SELECTION – save chosen plan to localStorage
   const planButtons = document.querySelectorAll('[data-plan-select]');
   planButtons.forEach(btn => {
-    btn.addEventListener('click', (event) => {
-      event.preventDefault(); // stop "#" jump
-      const planName = btn.getAttribute('data-plan-select');
-      localStorage.setItem('currentPlan', planName);
+  btn.addEventListener('click', (event) => {
+    event.preventDefault(); // prevent "#" scrolling
 
-      // tiny UX feedback (optional)
-      // alert(`You chose the ${planName} plan.`);
-    });
+    const planName = btn.getAttribute('data-plan-select');
+
+    // 1) Save the chosen plan
+    localStorage.setItem('currentPlan', planName);
+
+    // 2) Redirect user to Account page
+    window.location.href = "account.html";
   });
+});
+
 
   // 3) ACCOUNT PAGE – display the saved plan if available
   const planDisplay = document.getElementById('current-plan-display');
