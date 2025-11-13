@@ -87,6 +87,42 @@
       <p>Short demo video or animated GIF goes here.</p>
     </div>
   </section>
+  <!-- ISweep AI Test Area -->
+<section id="isweep-test" style="max-width: 600px; margin: 2rem auto;">
+  <h2>ISweep AI Demo</h2>
+  <p>Type a line of dialogue (like a subtitle) and see if ISweep mutes it.</p>
+
+  <label for="subtitleInput">Subtitle text:</label>
+  <input id="subtitleInput" type="text" style="width:100%; padding:0.5rem; margin:0.5rem 0;" />
+
+  <button id="checkSubtitleBtn">Check with ISweep</button>
+
+  <p id="decisionOutput" style="margin-top: 1rem; font-family: monospace;"></p>
+</section>
+
+<!-- Optional: demo video to mute/skip -->
+<video id="demoVideo" width="600" controls style="display:block; margin: 2rem auto;">
+  <source src="your-video-file.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+
+<!-- Tiny broom icon overlay (hidden by default) -->
+<div id="broomIcon"
+     style="
+       position: fixed;
+       top: 8px;
+       right: 8px;
+       padding: 6px 10px;
+       background: rgba(0,0,0,0.7);
+       color: white;
+       font-size: 0.8rem;
+       border-radius: 999px;
+       display: none;
+       z-index: 9999;
+     ">
+  🧹 ISweep
+</div>
+
 
   <footer class="site-footer">
     <div class="social">
