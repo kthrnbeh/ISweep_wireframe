@@ -176,6 +176,63 @@
       </form>
     </section>
 
+      <!-- ISWEEP FILTER TEST DEMO -->
+    <section class="card" id="isweep-test">
+      <h2>Try ISweep Filter (Demo)</h2>
+      <p>
+        This demo shows how ISweep reacts when subtitles contain blocked words.
+        Choose a plan on the Plans page first, then try a few lines here.
+      </p>
+
+      <label for="subtitleInput">
+        <strong>Subtitle text</strong>
+      </label>
+      <input
+        id="subtitleInput"
+        type="text"
+        class="profile-input"
+        placeholder="Type a subtitle line, e.g. 'He said badword again'"
+      />
+
+      <button type="button" id="checkSubtitleBtn" style="margin-top: 0.75rem;">
+        Test ISweep
+      </button>
+
+      <pre id="decisionOutput"
+           style="margin-top: 1rem; padding:0.5rem; background:#111827; color:#e5e7eb; font-size:0.8rem; overflow:auto; border-radius: 6px;">
+      </pre>
+    </section>
+
+    <!-- Demo video ISweep can control -->
+    <section class="card">
+      <h2>Demo Video</h2>
+      <p>
+        When ISweep decides to mute or skip, it will act on this demo video.
+      </p>
+      <video id="demoVideo" width="600" controls style="max-width:100%;">
+        <!-- Replace with any MP4 you have; this is just a placeholder -->
+        <source src="your-video-file.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </section>
+
+    <!-- Tiny broom icon overlay (hidden by default) -->
+    <div id="broomIcon"
+         style="
+           position: fixed;
+           top: 8px;
+           right: 8px;
+           padding: 6px 10px;
+           background: rgba(0,0,0,0.7);
+           color: white;
+           font-size: 0.8rem;
+           border-radius: 999px;
+           display: none;
+           z-index: 9999;
+         ">
+      🧹 ISweep active
+    </div>
+
   </main>
 
   <footer>
