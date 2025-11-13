@@ -222,25 +222,43 @@ document.addEventListener("DOMContentLoaded", () => {
 // PLAN SELECTION BUTTONS
 // ============================
 
-const planTrialBtn    = document.getElementById("planTrialBtn");
-const planFlexibleBtn = document.getElementById("planFlexibleBtn");
-const planFullBtn     = document.getElementById("planFullBtn");
+const planFreeBtn      = document.getElementById("planFreeBtn");
+const planFlexibleBtn  = document.getElementById("planFlexibleBtn");
+const planFullBtn      = document.getElementById("planFullBtn");
 
 function setPlanAndNotify(planKey, label) {
   localStorage.setItem("isweep-plan", planKey);
-  alert(`Your plan is now: ${label}. ISweep filtering is enabled on supported pages.`);
+
+  const status =
+    planKey === "free"
+      ? "ISweep filtering is disabled on this plan."
+      : "ISweep filtering is enabled on supported pages.";
+
+  alert(`Your plan is now: ${label}. ${status}`);
 }
 
 // Hook buttons if they exist on this page
-if (planTrialBtn) {
-  planTrialBtn.addEventListener("click", () => setPlanAndNotify("trial", "Free Trial"));
+if (planFreeBtn) {
+  planFreeBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    setPlanAndNotify("free", "Free Tier");
+  });
 }
+
 if (planFlexibleBtn) {
-  planFlexibleBtn.addEventListener("click", () => setPlanAndNotify("flexible", "Flexible Subscription"));
+  planFlexibleBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    setPlanAndNotify("flexible", "Flexible Subscription");
+  });
 }
+
 if (planFullBtn) {
-  planFullBtn.addEventListener("click", () => setPlanAndNotify("full", "Full Ownership"));
+  planFullBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    setPlanAndNotify("full", "Full Ownership");
+  });
 }
+
 
 
 // ============================================
