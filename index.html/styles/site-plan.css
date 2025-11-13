@@ -385,3 +385,214 @@ body.dark-mode .account-page .card button:hover {
 #pricing .shadow {
   position: relative;
 }
+/* Help page*\
+/*********************************************
+ * HELP PAGE STYLING
+ *********************************************/
+
+/* Two-column layout inside the Contact Us card */
+.help-contact-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 2rem;
+}
+
+/* Simple list style for help and troubleshooting */
+.help-list {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.help-list li {
+  margin-bottom: 0.4rem;
+}
+
+/* FAQ details styling */
+.faq-item {
+  border-top: 1px solid #e5e7eb;
+  padding: 0.6rem 0;
+}
+
+.faq-item:first-of-type {
+  border-top: none;
+}
+
+.faq-item summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.faq-item p {
+  margin-top: 0.35rem;
+  color: #6b7280;
+}
+
+/* Contact form field column inside item-row */
+.help-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Make select + textarea match your existing input look */
+.help-form-fields select,
+.help-form-fields textarea {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font: inherit;
+}
+
+/*********************************************
+ * FLOATING CHAT WIDGET
+ *********************************************/
+
+.chat-toggle {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 40;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: #0f766e;
+  color: white;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.35);
+}
+
+.chat-widget {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 4.5rem;
+  width: 300px;
+  max-height: 420px;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+  display: none; /* hidden by default */
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 50;
+}
+
+.chat-widget.open {
+  display: flex;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  background-color: #0f766e;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.chat-close {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.chat-body {
+  padding: 0.6rem 0.9rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chat-log {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+  margin-top: 0.3rem;
+}
+
+/* Chat messages */
+.chat-message {
+  padding: 0.35rem 0.55rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.chat-message.bot {
+  background-color: #e5f3ff;
+  align-self: flex-start;
+}
+
+.chat-message.user {
+  background-color: #0f766e;
+  color: white;
+  align-self: flex-end;
+}
+
+.chat-input-row {
+  display: flex;
+  border-top: 1px solid #e5e7eb;
+}
+
+.chat-input-row input {
+  flex: 1;
+  border: none;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+}
+
+.chat-input-row button {
+  border: none;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  background-color: #0f766e;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Dark mode tweaks */
+body.dark-mode .chat-widget {
+  background-color: #020617;
+  color: #e5e7eb;
+}
+
+body.dark-mode .chat-body {
+  background-color: #020617;
+}
+
+body.dark-mode .chat-message.bot {
+  background-color: #1e293b;
+}
+
+body.dark-mode .chat-input-row {
+  border-top-color: #1f2937;
+}
+
+body.dark-mode .chat-input-row input {
+  background-color: #020617;
+  color: #e5e7eb;
+}
+
+/* Mobile: make grid stack and chat slightly smaller */
+@media (max-width: 600px) {
+  .help-contact-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chat-widget {
+    right: 0.8rem;
+    bottom: 4rem;
+    width: 260px;
+  }
+
+  .chat-toggle {
+    right: 0.8rem;
+    bottom: 1rem;
+  }
+}
