@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Site-wide JS (including theme) -->
   <script src="scripts/main.js" defer></script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ISweep Wireframe</title>
+
   <link rel="stylesheet" href="styles/site-plan.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +31,10 @@
         <a href="help.html">Help</a>
       </nav>
 
-      <button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">Toggle Theme</button>
+      <!-- Dark / Light toggle button -->
+      <button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">
+        Dark Mode
+      </button>
     </div>
   </header>
 
@@ -40,17 +46,14 @@
         <p class="lead">
           AI-powered mute, skip, and fast-forward—so you control your media, your way.
         </p>
-  
+
         <div class="cta-row">
           <a class="btn btn-primary" href="#how">Get Started</a>
           <a class="btn btn-ghost" href="#demo">Watch Demo</a>
         </div>
-
-  
       </div>
 
       <div class="hero-visual">
-        <!-- optional hero image / illustration -->
         <img src="images/hero-placeholder.png" alt="ISweep app preview" />
       </div>
     </div>
@@ -82,34 +85,30 @@
     </div>
   </section>
 
-  <!-- (Optional) Demo anchor -->
+  <!-- Demo -->
   <section id="demo" class="section alt">
     <div class="container">
       <h2 class="section-title">See it in action</h2>
       <p>Short demo video or animated GIF goes here.</p>
     </div>
   </section>
-  
-  
+
   <footer class="site-footer">
-     <div class="social">
-        <a href="https://facebook.com">
-            <img src="images/facebook.png" alt="fb icon">
-        </a>
-        <a href="https://twitter.com">
-            <img src="images/twitter.png" alt="twitter icon">
-        </a>
-        <a href="https://instagram.com">
-            <img src="images/instagram.png" alt="instagram icon">
-        </a>
+    <div class="social">
+      <a href="https://facebook.com">
+        <img src="images/facebook.png" alt="fb icon">
+      </a>
+      <a href="https://twitter.com">
+        <img src="images/twitter.png" alt="twitter icon">
+      </a>
+      <a href="https://instagram.com">
+        <img src="images/instagram.png" alt="instagram icon">
+      </a>
+    </div>
+
     <div class="container">
       <p>&copy; 2025 ISweep Inc. All rights reserved.</p>
     </div>
   </footer>
-
-  <script>
-    const btn = document.getElementById('themeBtn');
-    btn.addEventListener('click', () => document.body.classList.toggle('dark'));
-  </script>
 </body>
 </html>

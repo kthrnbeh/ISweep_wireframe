@@ -40,33 +40,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
-// scripts/theme.js
-// ==========================
-// Site-wide dark / light mode
-// ==========================
+// scripts/main.js
+// ======================================
+// Global Dark / Light Mode for ISweep
+// ======================================
 
-// Key name we use in localStorage
+// Name used to remember the user's preference
 const THEME_KEY = 'isweep-theme';
 
-// Apply a given theme to the whole site
+// Apply a theme to the whole site
 function applyTheme(theme) {
-  const root = document.documentElement; // <html> tag
+  const root = document.documentElement; // <html>
+  const body = document.body;
   const btn  = document.getElementById('themeBtn');
 
   if (theme === 'dark') {
-    root.classList.add('dark');      // Tailwind dark mode ON
+    // Add "dark" to html AND body
+    root.classList.add('dark');   // for Tailwind `dark:` stuff (like on Plans)
+    body.classList.add('dark');   // for your custom CSS using body.dark
     if (btn) btn.textContent = 'Light Mode';
   } else {
-    root.classList.remove('dark');   // Tailwind dark mode OFF
+    root.classList.remove('dark');
+    body.classList.remove('dark');
     if (btn) btn.textContent = 'Dark Mode';
   }
 }
 
-// Load saved theme (or use system preference the first time)
+// Look up saved theme or fall back to system preference
 function loadTheme() {
   let saved = localStorage.getItem(THEME_KEY);
 
-  // If user has never chosen, match their OS setting
   if (!saved) {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     saved = prefersDark ? 'dark' : 'light';
@@ -75,20 +78,18 @@ function loadTheme() {
   applyTheme(saved);
 }
 
-// Toggle theme when button is clicked
+// Switch between dark & light, and remember it
 function toggleTheme() {
-  const root = document.documentElement;
-  const current = root.classList.contains('dark') ? 'dark' : 'light';
-  const next = current === 'dark' ? 'light' : 'dark';
+  const isDark = document.documentElement.classList.contains('dark');
+  const next = isDark ? 'light' : 'dark';
 
-  // Save for all pages
   localStorage.setItem(THEME_KEY, next);
   applyTheme(next);
 }
 
-// Run when the page is ready
+// Run when the page is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  // 1) Apply saved / default theme
+  // 1) Apply whatever theme we should start with
   loadTheme();
 
   // 2) Hook up the button on this page (if it exists)
