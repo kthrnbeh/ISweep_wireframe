@@ -1,12 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link rel="stylesheet" href="styles/plans.css" />
-    <title>Plans</title>
+  <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Your Tailwind theme config (JS belongs in a script tag) -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+          }
+        },
+        fontFamily: {
+          body: ['Inter','ui-sans-serif','system-ui','-apple-system','system-ui','Segoe UI','Roboto','Helvetica Neue','Arial','Noto Sans','sans-serif','Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji'],
+          sans: ['Inter','ui-sans-serif','system-ui','-apple-system','system-ui','Segoe UI','Roboto','Helvetica Neue','Arial','Noto Sans','sans-serif','Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji']
+        }
+      }
+    }
+  </script>
+
+  <!-- OPTIONAL: your own CSS file for tiny extras (must be pure CSS) -->
+  <link rel="stylesheet" href="styles/plans.css" />
+  <title>Plans</title>
+</head>
+
 </head>
 <body>
+    <button id="themeBtn" class="fixed bottom-4 right-4 px-3 py-2 rounded bg-primary-600 text-white">Toggle theme</button>
+    <script>
+            document.getElementById('themeBtn').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+    </script>
+
   <section id="pricing" class="bg-white dark:bg-gray-900">
   <div class="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
     <div class="mx-auto max-w-screen-md text-center mb-8 lg:mb-12">
@@ -49,6 +81,12 @@
       </div>
 
       <!-- Flexible Subscription -->
+       <!-- Flexible Subscription -->
+      <div class="relative flex flex-col p-6 mx-auto max-w-lg text-center text-gray-900 bg-white rounded-lg border border-gray-100 shadow dark:border-gray-600 xl:p-8 dark:bg-gray-800 dark:text-white">
+    <!-- Most Popular ribbon -->
+        <span class="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 bg-primary-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow">
+       Most Popular
+       </span>
       <div class="flex flex-col p-6 mx-auto max-w-lg text-center text-gray-900 bg-white rounded-lg border border-gray-100 shadow dark:border-gray-600 xl:p-8 dark:bg-gray-800 dark:text-white">
         <h3 class="mb-4 text-2xl font-semibold">Flexible Subscription</h3>
         <p class="font-light text-gray-500 sm:text-lg dark:text-gray-400">
