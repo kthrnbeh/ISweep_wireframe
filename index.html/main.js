@@ -217,3 +217,215 @@ document.addEventListener("DOMContentLoaded", () => {
   // 8) When page loads: set preference
   setLanguagePreference().catch(console.error);
 });
+
+// ============================
+// PLAN SELECTION BUTTONS
+// ============================
+
+const planTrialBtn    = document.getElementById("planTrialBtn");
+const planFlexibleBtn = document.getElementById("planFlexibleBtn");
+const planFullBtn     = document.getElementById("planFullBtn");
+
+function setPlanAndNotify(planKey, label) {
+  localStorage.setItem("isweep-plan", planKey);
+  alert(`Your plan is now: ${label}. ISweep filtering is enabled on supported pages.`);
+}
+
+// Hook buttons if they exist on this page
+if (planTrialBtn) {
+  planTrialBtn.addEventListener("click", () => setPlanAndNotify("trial", "Free Trial"));
+}
+if (planFlexibleBtn) {
+  planFlexibleBtn.addEventListener("click", () => setPlanAndNotify("flexible", "Flexible Subscription"));
+}
+if (planFullBtn) {
+  planFullBtn.addEventListener("click", () => setPlanAndNotify("full", "Full Ownership"));
+}
+
+
+// ============================================
+// ISWEEP BACKEND INTEGRATION
+// ============================================
+
+// 1) Where the backend lives during development
+const ISWEEP_API_BASE = "http://127.0.0.1:8000";
+const ISWEEP_USER_ID = "demo-user"; // later this will be a real user id
+
+// Keeps track whether ISweep should be used for this user
+let isweepEnabled = false;
+
+// Grab elements if they exist on the current page
+const broomIcon      = document.getElementById("broomIcon");
+const subtitleInput  = document.getElementById("subtitleInput");
+const checkBtn       = document.getElementById("checkSubtitleBtn");
+const decisionOutput = document.getElementById("decisionOutput");
+const demoVideo      = document.getElementById("demoVideo");
+
+// ------------------------------
+// PLAN / SUBSCRIPTION GATING
+// ------------------------------
+
+function getCurrentPlan() {
+  // Later this will come from your account system.
+  // For now, we use localStorage.
+  return localStorage.getItem("isweep-plan") || "free";
+}
+
+function planHasIsweepAccess(plan) {
+  // Free = no filter; trial, flexible, full = filtering ON
+  if (plan === "trial") return true;
+  if (plan === "flexible") return true;
+  if (plan === "full") return true;
+  return false;
+}
+
+async function initIsweepIfSubscribed() {
+  const plan = getCurrentPlan();
+  console.log("Current plan:", plan);
+
+  if (!planHasIsweepAccess(plan)) {
+    console.log("ISweep disabled for this plan.");
+    isweepEnabled = false;
+    return;
+  }
+
+  isweepEnabled = true;
+  console.log("ISweep enabled. Setting preferences...");
+
+  try {
+    await setLanguagePreference();
+    console.log("ISweep preferences set.");
+  } catch (err) {
+    console.error("Failed to set ISweep preferences:", err);
+  }
+}
+
+// --------------------------------------------------------
+// SEND USER PREFERENCES TO BACKEND (/preferences)
+// --------------------------------------------------------
+
+async function setLanguagePreference() {
+  const body = {
+    user_id: ISWEEP_USER_ID,
+    content_type: "language",
+    action: "mute",           // mute for bad words
+    duration_seconds: 4,      // seconds
+    enabled: true,
+    blocked_words: [
+      "badword",
+      "dummy",
+      "oh my god"             // example of taking the Lord's name, etc.
+    ]
+  };
+
+  const res = await fetch(`${ISWEEP_API_BASE}/preferences`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to save preference: " + (await res.text()));
+  }
+}
+
+// ---------------------------------------------------
+// SEND EVENTS TO BACKEND (/event)
+// ---------------------------------------------------
+
+async function sendSubtitleToIsweep(text) {
+  const now = demoVideo ? (demoVideo.currentTime || 0) : 0;
+
+  const body = {
+    user_id: ISWEEP_USER_ID,
+    timestamp: now,
+    source: "website",
+    text: text,
+    content_type: null,   // let backend use blocked_words logic
+    confidence: null,
+    manual_override: false
+  };
+
+  const res = await fetch(`${ISWEEP_API_BASE}/event`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    throw new Error("ISweep /event error: " + (await res.text()));
+  }
+
+  return await res.json(); // { action, duration_seconds, show_icon, reason }
+}
+
+// ---------------------------------------
+// APPLY DECISION: mute / skip / broom
+// ---------------------------------------
+
+function applyDecision(decision) {
+  if (decisionOutput) {
+    decisionOutput.textContent = JSON.stringify(decision, null, 2);
+  }
+
+  if (!demoVideo) return;
+
+  const duration = decision.duration_seconds || 3;
+
+  if (decision.show_icon && broomIcon) {
+    broomIcon.style.display = "inline-block";
+    setTimeout(() => {
+      broomIcon.style.display = "none";
+    }, duration * 1000);
+  }
+
+  if (decision.action === "mute") {
+    demoVideo.muted = true;
+    setTimeout(() => {
+      demoVideo.muted = false;
+    }, duration * 1000);
+  } else if (decision.action === "skip") {
+    demoVideo.currentTime = demoVideo.currentTime + duration;
+  } else if (decision.action === "fast_forward") {
+    const oldRate = demoVideo.playbackRate;
+    demoVideo.playbackRate = 2.0;
+    setTimeout(() => {
+      demoVideo.playbackRate = oldRate;
+    }, duration * 1000);
+  }
+}
+
+// ----------------------------------------------
+// "Test ISweep" button
+// ----------------------------------------------
+if (checkBtn && subtitleInput) {
+  checkBtn.addEventListener("click", async () => {
+    if (!isweepEnabled) {
+      alert("ISweep is not enabled for your current plan.");
+      return;
+    }
+
+    const text = subtitleInput.value.trim();
+    if (!text) {
+      alert("Type a subtitle line first.");
+      return;
+    }
+
+    try {
+      const decision = await sendSubtitleToIsweep(text);
+      applyDecision(decision);
+    } catch (err) {
+      console.error(err);
+      if (decisionOutput) {
+        decisionOutput.textContent = "Error: " + err.message;
+      }
+    }
+  });
+}
+
+// ----------------------------------------------
+// Initialize ISweep when page loads
+// ----------------------------------------------
+window.addEventListener("load", () => {
+  initIsweepIfSubscribed();
+});
