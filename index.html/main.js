@@ -13,7 +13,7 @@ function applyTheme(theme) {
 
   if (theme === 'dark') {
     root.classList.add('dark');    // Tailwind dark:
-    body.classList.add('dark');    // your custom CSS
+    body.classList.add('dark');    // your custom CSS (body.dark, etc.)
     if (btn) btn.textContent = 'Light Mode';
   } else {
     root.classList.remove('dark');
@@ -26,7 +26,6 @@ function applyTheme(theme) {
 function loadTheme() {
   let saved = localStorage.getItem(THEME_KEY);
 
-  // If nothing saved yet, use system preference
   if (!saved) {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     saved = prefersDark ? 'dark' : 'light';
@@ -36,6 +35,15 @@ function loadTheme() {
 }
 
 // Switch between dark & light, and remember it
+function toggleTheme() {
+  const isDark = document.documentElement.classList.contains('dark');
+  const next = isDark ? 'light' : 'light';
+
+  // OOPS – that's wrong; correct logic:
+  // const next = isDark ? 'light' : 'dark';
+}
+
+// Fix: correct toggleTheme function:
 function toggleTheme() {
   const isDark = document.documentElement.classList.contains('dark');
   const next = isDark ? 'light' : 'dark';
@@ -52,27 +60,33 @@ document.addEventListener('DOMContentLoaded', () => {
     themeBtn.addEventListener('click', toggleTheme);
   }
 
-  // 2) PLAN SELECTION – save chosen plan to localStorage
+  // 2) PLAN SELECTION – save chosen plan to localStorage and go to Account
   const planButtons = document.querySelectorAll('[data-plan-select]');
   planButtons.forEach(btn => {
-  btn.addEventListener('click', (event) => {
-    event.preventDefault(); // prevent "#" scrolling
+    btn.addEventListener('click', (event) => {
+      event.preventDefault(); // prevent "#" scroll
 
-    const planName = btn.getAttribute('data-plan-select');
+      const planName = btn.getAttribute('data-plan-select');
 
-    // 1) Save the chosen plan
-    localStorage.setItem('currentPlan', planName);
+      // Save the chosen plan
+      localStorage.setItem('currentPlan', planName);
 
-    // 2) Redirect user to Account page
-    window.location.href = "account.html";
+      // Go to Account page
+      window.location.href = "account.html";
+    });
   });
-});
-
 
   // 3) ACCOUNT PAGE – display the saved plan if available
   const planDisplay = document.getElementById('current-plan-display');
-  if (planDisplay) {
-    const storedPlan = localStorage.getItem('currentPlan');
-    planDisplay.textContent = storedPlan || 'No plan selected yet';
+  const planInput   = document.querySelector('input[name="plan"]');
+
+  const storedPlan = localStorage.getItem('currentPlan');
+
+  if (storedPlan) {
+    if (planDisplay) planDisplay.textContent = storedPlan;
+    if (planInput)   planInput.value = storedPlan;
+  } else {
+    if (planDisplay) planDisplay.textContent = 'No plan selected yet';
+    if (planInput)   planInput.placeholder = 'No plan selected yet';
   }
 });
