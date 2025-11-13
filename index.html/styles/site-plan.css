@@ -192,3 +192,148 @@ body.dark .step-card{background:#0f172a; border-color:#1f2937}
 .main-nav a:hover {
   background: #eef2f7;
 }
+/*<----Account page>*\
+/*********************************************
+ * ACCOUNT PAGE LAYOUT + STYLING
+ * These styles only affect the Account page
+ *********************************************/
+ 
+
+/* Main wrapper for the Account page content */
+.account-page {
+  max-width: 1100px;        /* keeps content from stretching too wide */
+  margin: 2rem auto 3rem;   /* centers the content and adds space on top/bottom */
+  padding: 0 1.5rem;        /* small left/right padding so text doesn’t hug the edge */
+}
+
+/* Big page title: "My Account" */
+.account-page h1 {
+  font-size: 2.2rem;        /* larger font for the main title */
+  margin-bottom: 0.25rem;   /* tiny gap under the title */
+}
+
+/* Small description under the title */
+.account-page .subtitle {
+  color: #6b7280;           /* soft gray text color */
+  margin-bottom: 1.5rem;    /* space between subtitle and first card */
+}
+
+/* Reusable card container for each section (Profile, Address, etc.) */
+.card {
+  background-color: #ffffff;      /* white card background */
+  border-radius: 16px;            /* rounded corners */
+  border: 1px solid #e5e7eb;      /* light gray border */
+  padding: 1.25rem 1.5rem;        /* inner spacing so content isn’t cramped */
+  margin-bottom: 1.5rem;          /* space between cards */
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+  /* soft shadow to lift the card off the background */
+}
+
+/* Card headings, e.g., "Profile", "Address" */
+.card h2 {
+  font-size: 1.25rem;       /* slightly larger than normal text */
+  margin-bottom: 0.75rem;   /* space between heading and first row */
+}
+
+/* A single row inside a card: label/info on the left, button on the right */
+.item-row {
+  display: flex;                    /* place text and button side by side */
+  justify-content: space-between;   /* push them to opposite ends */
+  align-items: flex-start;          /* top-align the text and button */
+  gap: 1rem;                        /* small gap between text and button */
+  padding: 0.75rem 0;               /* vertical padding inside the row */
+  border-top: 1px solid #e5e7eb;    /* separators between rows */
+}
+
+/* Remove the top border for the first row in a card */
+.item-row:first-of-type {
+  border-top: none;
+}
+
+/* Bold labels like "Name", "Email", etc. */
+.item-row strong {
+  display: block;
+  font-weight: 600;
+}
+
+/* The detail text under each label (actual email, phone number, etc.) */
+.item-row p {
+  margin-top: 0.2rem;       /* tiny space between label and value */
+  color: #6b7280;           /* softer gray for less emphasis */
+}
+
+/* PRIMARY BUTTONS INSIDE ACCOUNT CARDS (Edit, Update, Manage Plan, etc.) */
+.account-page .card button {
+  border: none;                   /* remove default button border */
+  border-radius: 999px;           /* pill-shaped button */
+  padding: 0.5rem 1.1rem;         /* height and width of the button */
+  font-size: 0.9rem;              /* slightly smaller than normal text */
+  font-weight: 600;               /* bold text for buttons */
+  cursor: pointer;                /* pointer cursor on hover */
+  background-color: #0f766e;      /* teal green background */
+  color: #ffffff;                 /* white text */
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  /* smooth hover animation */
+}
+
+/* Hover effect for the primary buttons */
+.account-page .card button:hover {
+  background-color: #115e59;      /* slightly darker teal on hover */
+  transform: translateY(-1px);    /* tiny “lift” on hover */
+}
+
+/* SECONDARY BUTTON STYLE (like "Add Device") */
+.secondary-btn {
+  margin-top: 0.75rem;            /* space above this button */
+  background-color: #e5f0ff;      /* pale blue background */
+  color: #1d4ed8;                 /* blue text */
+}
+
+/* Hover style for secondary button */
+.secondary-btn:hover {
+  background-color: #d0e2ff;
+}
+
+/* ---------- DARK MODE TWEAKS FOR ACCOUNT PAGE ---------- */
+
+/* Dark mode for cards */
+body.dark-mode .card {
+  background-color: #020617;      /* very dark background for cards */
+  border-color: #1f2937;          /* darker border */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* Dark mode text colors inside cards */
+body.dark-mode .card h2,
+body.dark-mode .card strong {
+  color: #e5e7eb;                 /* light gray/white text */
+}
+
+body.dark-mode .card p,
+body.dark-mode .subtitle {
+  color: #9ca3af;                 /* softer gray text in dark mode */
+}
+
+/* Dark mode button colors (keep them readable on dark bg) */
+body.dark-mode .account-page .card button {
+  background-color: #22c55e;      /* bright green button in dark mode */
+  color: #022c22;
+}
+
+body.dark-mode .account-page .card button:hover {
+  background-color: #16a34a;
+}
+
+/* ---------- MOBILE RESPONSIVE ADJUSTMENTS ---------- */
+
+/* On narrow screens, stack the row vertically so the button goes under the text */
+@media (max-width: 600px) {
+  .item-row {
+    flex-direction: column;       /* stack text and button */
+    align-items: flex-start;      /* align everything to the left */
+  }
+
+  .account-page .card button {
+    margin-top: 0.5rem;           /* space between text and the button */
+  }
+}
