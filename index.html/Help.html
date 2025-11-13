@@ -1,21 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-<html>
-  <head>
-    <script src="scripts/main.js" defer></script>
-
+<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Tailwind via CDN -->
-  <script src="https://cdn.tailwindcss.com"></script><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ISweep Wireframe</title>
+  <title>Help | ISweep</title>
   <link rel="stylesheet" href="styles/site-plan.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  </head>
-  <body>
-  <!-- Header / Navigation (same as other pages) -->
+</head>
+
+<body>
+  <!-- Shared Header -->
   <header class="site-header">
     <div class="header-inner">
       <div class="logo-box">
@@ -26,11 +19,245 @@
       <nav class="main-nav">
         <a href="index.html">Home</a>
         <a href="account.html">Account</a>
-        <a href="settings.html" class="active">Settings</a>
-        <a href="help.html">Help</a>
+        <a href="settings.html">Settings</a>
+        <a href="help.html" class="active">Help</a>
       </nav>
 
       <button class="theme-toggle" id="themeBtn">Toggle Theme</button>
     </div>
   </header>
+
+  <main class="account-page container">
+    <h1>Help &amp; Support</h1>
+    <p class="subtitle">
+      Need a hand? Find quick answers, contact support, or chat with us about ISweep.
+    </p>
+
+    <!-- CONTACT OPTIONS -->
+    <section class="card">
+      <h2>Contact Us</h2>
+
+      <div class="help-contact-grid">
+        <!-- Call & Email -->
+        <div>
+          <strong>Reach us directly</strong>
+          <p>If you need help with setup, billing, or filters, we’re happy to help.</p>
+
+          <p><strong>Phone:</strong> (800) 555-ISWP</p>
+          <p><strong>Email:</strong> support@isweep.app</p>
+          <p><strong>Hours:</strong> Monday–Saturday, 9:00 AM – 7:00 PM (MT)</p>
+        </div>
+
+        <!-- Quick links -->
+        <div>
+          <strong>Quick links</strong>
+          <ul class="help-list">
+            <li><a href="#faq">View common questions</a></li>
+            <li><a href="#contact-form">Send us a support message</a></li>
+            <li><a href="#troubleshooting">Troubleshooting tips</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ SECTION -->
+    <section class="card" id="faq">
+      <h2>Frequently Asked Questions</h2>
+
+      <!-- details/summary = built-in collapsible boxes -->
+      <details class="faq-item" open>
+        <summary>What does ISweep actually do?</summary>
+        <p>
+          ISweep listens to your audio and observes your video in real time.
+          When it detects content you’ve chosen to filter, it can mute,
+          skip, or fast-forward automatically—without changing the original media.
+        </p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Which devices does ISweep work with?</summary>
+        <p>
+          You can link ISweep to supported Smart TVs, streaming sticks,
+          and companion devices. Check the Devices section in your Account
+          page to see which devices you’ve connected.
+        </p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Will ISweep work with all streaming services?</summary>
+        <p>
+          ISweep is designed to work at the system level, so it can observe
+          and filter content from most streaming apps, DVDs, and connected
+          devices, as long as your device is supported.
+        </p>
+      </details>
+
+      <details class="faq-item">
+        <summary>Can I customize what is filtered for each child?</summary>
+        <p>
+          Yes. You can create different profiles with their own filter
+          settings under <strong>Settings &gt; Parental Controls</strong>, so each
+          child gets an experience that matches your family rules.
+        </p>
+      </details>
+    </section>
+
+    <!-- TROUBLESHOOTING TIPS -->
+    <section class="card" id="troubleshooting">
+      <h2>Troubleshooting</h2>
+      <ul class="help-list">
+        <li><strong>No sound?</strong> Check that your TV and streaming device audio
+          are not both muted and that ISweep is not set to “Mute Only” for all events.</li>
+        <li><strong>Filters feel too strict?</strong> Lower the sensitivity slider or
+          switch some categories to “Log only” in Settings.</li>
+        <li><strong>ISweep not responding?</strong> Make sure your device is online and
+          that ISweep is still linked under Devices.</li>
+      </ul>
+    </section>
+
+    <!-- CONTACT FORM -->
+    <section class="card" id="contact-form">
+      <h2>Send us a message</h2>
+
+      <form class="profile-form">
+        <div class="item-row">
+          <div class="help-form-fields">
+            <!-- Name -->
+            <label>
+              <strong>Your Name</strong>
+              <input
+                class="profile-input"
+                type="text"
+                name="name"
+                placeholder="Enter your name"
+                required
+              />
+            </label>
+
+            <!-- Email -->
+            <label>
+              <strong>Email</strong>
+              <input
+                class="profile-input"
+                type="email"
+                name="email"
+                placeholder="you@example.com"
+                required
+              />
+            </label>
+
+            <!-- Topic -->
+            <label>
+              <strong>What do you need help with?</strong>
+              <select name="topic" required>
+                <option value="">Choose a topic</option>
+                <option value="setup">Setup / installation</option>
+                <option value="billing">Billing / plans</option>
+                <option value="filters">Filters / settings</option>
+                <option value="technical">Technical issue / bug</option>
+                <option value="other">Something else</option>
+              </select>
+            </label>
+
+            <!-- Message -->
+            <label>
+              <strong>Message</strong>
+              <textarea
+                name="message"
+                rows="4"
+                placeholder="Tell us what’s going on…"
+                required
+              ></textarea>
+            </label>
+          </div>
+
+          <button type="submit">Send</button>
+        </div>
+      </form>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>&copy; 2025 ISweep Inc. All rights reserved.</p>
+  </footer>
+
+  <!-- Floating Chatbox -->
+  <button class="chat-toggle" id="chatToggle">
+    Chat
+  </button>
+
+  <div class="chat-widget" id="chatWidget">
+    <div class="chat-header">
+      <span>ISweep Support</span>
+      <button class="chat-close" id="chatClose">&times;</button>
+    </div>
+    <div class="chat-body">
+      <p class="chat-message bot">
+        Hi! This is a demo chat. Type your question and imagine this going to support.
+      </p>
+      <div class="chat-log" id="chatLog"></div>
+    </div>
+    <form class="chat-input-row" id="chatForm">
+      <input
+        type="text"
+        id="chatInput"
+        placeholder="Type a message..."
+        required
+      />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // Theme toggle (same as other pages)
+    const btn = document.getElementById('themeBtn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+      });
+    }
+
+    // Simple chatbox open/close + fake messages
+    const chatToggle = document.getElementById('chatToggle');
+    const chatWidget = document.getElementById('chatWidget');
+    const chatClose = document.getElementById('chatClose');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const chatLog = document.getElementById('chatLog');
+
+    chatToggle.addEventListener('click', () => {
+      chatWidget.classList.toggle('open');
+    });
+
+    chatClose.addEventListener('click', () => {
+      chatWidget.classList.remove('open');
+    });
+
+    // Fake chat: just echoes the user message into the window
+    chatForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      const msg = document.createElement('p');
+      msg.className = 'chat-message user';
+      msg.textContent = text;
+      chatLog.appendChild(msg);
+
+      // Clear input
+      chatInput.value = '';
+
+      // Fake bot reply
+      const reply = document.createElement('p');
+      reply.className = 'chat-message bot';
+      reply.textContent = "Thanks for your message! In a real app, this would send to support.";
+      chatLog.appendChild(reply);
+
+      // Scroll to bottom
+      chatLog.scrollTop = chatLog.scrollHeight;
+    });
+  </script>
+</body>
 </html>
