@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="scripts/main.js" defer></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings | ISweep</title>
+  <link rel="stylesheet" href="styles/site-plan.css" />
+</head>
+
+<body>
+  <!-- Header / Navigation (same as other pages) -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo-box">
+        <img src="images/ISweep.png" alt="ISweep logo" />
+        <strong class="brand">ISweep</strong>
+      </div>
+
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="account.html">Account</a>
+        <a href="settings.html" class="active">Settings</a>
+        <a href="help.html">Help</a>
+      </nav>
+
+      <button class="theme-toggle" id="themeBtn">Toggle Theme</button>
+    </div>
+  </header>
+
+  <!-- Main Settings Content -->
+  <main class="account-page container">
+    <h1>Settings</h1>
+    <p class="subtitle">
+      Choose how ISweep filters content, responds to media, and keeps your experience safe.
+    </p>
+
+    <!-- CONTENT FILTERS -->
+    <section class="card">
+      <h2>Content Filters</h2>
+
+      <form class="profile-form">
+        <div class="item-row">
+          <div>
+            <strong>Filter Categories</strong>
+            <p>Select what you want ISweep to catch and manage.</p>
+
+            <label>
+              <input type="checkbox" name="filter-profanity" checked />
+              Profanity / swearing
+            </label><br />
+
+            <label>
+              <input type="checkbox" name="filter-sexual" checked />
+              Sexual content / nudity
+            </label><br />
+
+            <label>
+              <input type="checkbox" name="filter-violence" />
+              Graphic violence
+            </label><br />
+
+            <label>
+              <input type="checkbox" name="filter-horror" />
+              Horror / jump scares
+            </label><br />
+
+            <label>
+              <input type="checkbox" name="filter-crude" />
+              Crude or inappropriate humor
+            </label>
+          </div>
+
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ACTIONS (MUTE / SKIP / FAST-FORWARD) -->
+    <section class="card">
+      <h2>Filter Actions</h2>
+
+      <form class="profile-form">
+        <!-- Profanity action -->
+        <div class="item-row">
+          <div>
+            <strong>Profanity</strong>
+            <p>What should ISweep do when it hears profanity?</p>
+            <select name="action-profanity" required>
+              <option value="mute" selected>Mute audio only</option>
+              <option value="skip">Skip the scene</option>
+              <option value="fast-forward">Fast-forward 10 seconds</option>
+              <option value="log-only">Just log it (no action)</option>
+            </select>
+          </div>
+          <button type="submit">Save</button>
+        </div>
+
+        <!-- Sexual content action -->
+        <div class="item-row">
+          <div>
+            <strong>Sexual Content</strong>
+            <p>Choose how ISweep responds to sexual content.</p>
+            <select name="action-sexual" required>
+              <option value="skip" selected>Skip the scene</option>
+              <option value="fast-forward">Fast-forward 30 seconds</option>
+              <option value="mute">Mute audio only</option>
+              <option value="log-only">Just log it (no action)</option>
+            </select>
+          </div>
+          <button type="submit">Save</button>
+        </div>
+
+        <!-- Violence action -->
+        <div class="item-row">
+          <div>
+            <strong>Violence</strong>
+            <p>How strict do you want ISweep to be with violence?</p>
+            <select name="action-violence" required>
+              <option value="mute">Mute audio only</option>
+              <option value="skip" selected>Skip intense scenes</option>
+              <option value="fast-forward">Fast-forward 15 seconds</option>
+              <option value="log-only">Just log it (no action)</option>
+            </select>
+          </div>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- SENSITIVITY -->
+    <section class="card">
+      <h2>Sensitivity</h2>
+
+      <form class="profile-form">
+        <div class="item-row">
+          <div>
+            <strong>Filter Sensitivity</strong>
+            <p>Adjust how strict ISweep should be overall.</p>
+            <label>
+              Low
+              <input type="range" name="sensitivity" min="1" max="3" value="2" />
+              High
+            </label>
+          </div>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- NOTIFICATIONS -->
+    <section class="card">
+      <h2>Notifications</h2>
+
+      <form class="profile-form">
+        <div class="item-row">
+          <div>
+            <strong>Session Reports</strong>
+            <p>How would you like to receive viewing summaries?</p>
+
+            <label>
+              <input type="checkbox" name="notify-email" checked />
+              Email me a weekly summary
+            </label><br />
+
+            <label>
+              <input type="checkbox" name="notify-inapp" checked />
+              Show in-app notifications after each session
+            </label><br />
+
+            <label>
+              <input type="checkbox" name="notify-none" />
+              Don’t send any notifications
+            </label>
+          </div>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- PARENTAL CONTROLS -->
+    <section class="card">
+      <h2>Parental Controls</h2>
+
+      <form class="profile-form">
+        <div class="item-row">
+          <div>
+            <strong>Parental PIN</strong>
+            <p>Lock settings so kids can’t change filters without a PIN.</p>
+
+            <label>
+              Create / Update PIN<br />
+              <input
+                class="profile-input"
+                type="password"
+                name="parent-pin"
+                minlength="4"
+                maxlength="6"
+                placeholder="Enter 4–6 digit PIN"
+                required
+              />
+            </label>
+
+            <br /><br />
+
+            <label>
+              <input type="checkbox" name="require-pin" checked />
+              Require PIN to change filters or plans
+            </label>
+          </div>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>&copy; 2025 ISweep Inc. All rights reserved.</p>
+  </footer>
+
+  <!-- Dark/Light Mode Toggle Script -->
+  <script>
+    const btn = document.getElementById('themeBtn');
+    btn.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+    });
+  </script>
+</body>
+</html>

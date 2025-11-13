@@ -2,11 +2,56 @@
 <html lang="en">
 <head>
   <head>
+    <script src="scripts/main.js" defer></script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Tailwind via CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ISweep Wireframe</title>
+  <link rel="stylesheet" href="styles/site-plan.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  </head>
 
+<body>
+  <!-- Header / Nav -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo-box" href="index.html">
+        <img src="images/ISweep.png" alt="ISweep logo" />
+        <strong class="brand">ISweep</strong>
+      </a>
+
+      <nav class="main-nav">
+        <a href="index.html" class="active">Home</a>
+        <a href="account.html">Account</a>
+        <a href="plans.html">Plans</a>
+        <a href="settings.html">Settings</a>
+        <a href="help.html">Help</a>
+      </nav>
+
+      <button id="themeBtn" class="fixed bottom-4 right-4 px-3 py-2 rounded bg-primary-600 text-white">
+  Dark Mode
+</button>
+
+<script>
+  const btn = document.getElementById('themeBtn');
+
+  btn.addEventListener('click', () => {
+    document.documentElement.classList.toggle('dark');
+
+    // Change button text when toggled
+    if (document.documentElement.classList.contains('dark')) {
+      btn.textContent = "Light Mode";
+    } else {
+      btn.textContent = "Dark Mode";
+    }
+  });
+</script>
+
+  </header>
   <!-- Your Tailwind theme config (JS belongs in a script tag) -->
   <script>
     tailwind.config = {

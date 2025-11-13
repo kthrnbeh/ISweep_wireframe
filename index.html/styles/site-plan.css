@@ -2,7 +2,7 @@
    ISweep — Polished marketing UI
    ================================ */
 
-/* ---- Base / tokens ---- */
+/* ---- Home page/ Nav ---- */
 :root{
   --bg: #f7fafc;
   --text: #0f172a;
@@ -353,4 +353,35 @@ body.dark-mode .account-page .card button:hover {
   outline: 2px solid #0f766e;    /* teal focus ring */
   border-radius: 4px;
   background-color: #f9fafb;     /* very light background when editing */
+}
+/*plans*/
+/* styles/plans.css — optional polish, pure CSS only */
+:root{
+  --ring: 0 0 0 4px rgba(37,99,235,.25);
+}
+.dark :root{
+  --ring: 0 0 0 4px rgba(96,165,250,.25);
+}
+
+/* optional card hover lift */
+#pricing .shadow{
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+#pricing .shadow:hover{
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(2,6,23,.12);
+}
+
+/* focus ring helper for links/buttons if you ever need it */
+#pricing a:focus-visible{
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: .5rem;
+}
+/* "Most Popular" badge styling */
+#pricing .rounded-full {
+  letter-spacing: 0.03em;
+}
+#pricing .shadow {
+  position: relative;
 }
