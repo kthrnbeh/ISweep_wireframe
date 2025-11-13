@@ -28,12 +28,10 @@
     }
   </script>
 
-  <!-- Shared styles -->
+  <!-- Your shared styles -->
   <link rel="stylesheet" href="styles/site-plan.css" />
+  <!-- Extra polish for pricing cards -->
   <link rel="stylesheet" href="styles/plans.css" />
-
-  <!-- 🔗 Global JS (theme + plan selection) -->
-  <script src="scripts/main.js" defer></script>
 </head>
 
 <body>
@@ -53,6 +51,7 @@
         <a href="help.html">Help</a>
       </nav>
 
+      <!-- Single Dark Mode button -->
       <button id="themeBtn" class="theme-toggle">
         Dark Mode
       </button>
@@ -60,6 +59,7 @@
   </header>
 
   <main>
+    <!-- PRICING SECTION -->
     <section id="pricing" class="bg-white dark:bg-gray-900">
       <div class="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
         <div class="mx-auto max-w-screen-md text-center mb-8 lg:mb-12">
@@ -98,7 +98,6 @@
                 <span>No parental lock or logs</span>
               </li>
             </ul>
-            <!-- 🔹 Plan selector -->
             <a href="#"
                class="text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:ring-primary-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:text-white dark:focus:ring-primary-900"
                data-plan-select="Free Tier">
@@ -108,6 +107,13 @@
 
           <!-- Flexible Subscription -->
           <div class="flex flex-col p-6 mx-auto max-w-lg text-center text-gray-900 bg-white rounded-lg border border-gray-100 shadow dark:border-gray-600 xl:p-8 dark:bg-gray-800 dark:text-white">
+            <!-- Most Popular pill -->
+            <div class="mb-3 flex justify-center">
+              <span class="inline-flex items-center px-3 py-1 text-xs font-semibold text-primary-700 bg-primary-100 rounded-full">
+                Most Popular
+              </span>
+            </div>
+
             <h3 class="mb-4 text-2xl font-semibold">Flexible Subscription</h3>
             <p class="font-light text-gray-500 sm:text-lg dark:text-gray-400">
               Pay monthly until you own ISweep. Once you reach $350 total, it’s yours for life.
@@ -134,7 +140,6 @@
                 <span>Monthly session logs & activity reports</span>
               </li>
             </ul>
-            <!-- 🔹 Plan selector -->
             <a href="#"
                class="text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:ring-primary-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:text-white dark:focus:ring-primary-900"
                data-plan-select="Flexible Subscription">
@@ -154,4 +159,47 @@
             </div>
             <ul role="list" class="mb-8 space-y-4 text-left">
               <li class="flex items-center space-x-3">
-                <svg class="flex-shrink-0 w-5
+                <svg class="flex-shrink-0 w-5 h-5 text-green-500 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                <span>Unlimited devices & offline support</span>
+              </li>
+              <li class="flex items-center space-x-3">
+                <svg class="flex-shrink-0 w-5 h-5 text-green-500 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                <span>Lifetime updates & early features</span>
+              </li>
+              <li class="flex items-center space-x-3">
+                <svg class="flex-shrink-0 w-5 h-5 text-green-500 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                <span>Priority support & parental profiles</span>
+              </li>
+              <li class="flex items-center space-x-3">
+                <svg class="flex-shrink-0 w-5 h-5 text-green-500 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                <span>Best for families & content creators</span>
+              </li>
+            </ul>
+            <a href="#"
+               class="text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:ring-primary-200 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:text-white dark:focus:ring-primary-900"
+               data-plan-select="Full Ownership">
+              Own it
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Dark mode script -->
+  <script>
+    const btn = document.getElementById('themeBtn');
+
+    btn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+
+      if (document.documentElement.classList.contains('dark')) {
+        btn.textContent = "Light Mode";
+      } else {
+        btn.textContent = "Dark Mode";
+      }
+    });
+  </script>
+</body>
+</html>
