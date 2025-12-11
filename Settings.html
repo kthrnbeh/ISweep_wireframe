@@ -1,197 +1,395 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <script src="main.js" defer></script>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Settings | ISweep</title>
-  <link rel="stylesheet" href="styles/site-plan.css" />
-  <script src="scripts/main.js" defer></script>
+<!-- Declares this document uses HTML5. Helps browsers render with modern standards. -->
 
+<html lang="en">
+<!-- Root HTML element. lang="en" tells tools and screen readers the content is in English. -->
+
+<head>
+  <!-- HEAD: metadata, scripts, styles, and document title. Not directly visible content. -->
+
+  <script src="main.js" defer></script>
+  <!-- Loads your global JavaScript file from root (same folder as this HTML).
+       "defer" means: download script now but only run it after HTML has been parsed.
+       NOTE: You ALSO load scripts/main.js below. That may be accidental duplication. -->
+
+  <meta charset="UTF-8" />
+  <!-- Uses UTF-8 character encoding so special characters display correctly. -->
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Makes the layout responsive:
+       - width=device-width: viewport width matches device width.
+       - initial-scale=1.0: default zoom is 1 (no zoom) on mobile. -->
+
+  <title>Settings | ISweep</title>
+  <!-- Text displayed in the browser tab for this page. -->
+
+  <link rel="stylesheet" href="styles/site-plan.css" />
+  <!-- Shared stylesheet for site-wide layout, header, cards, fonts, etc. -->
+
+  <script src="scripts/main.js" defer></script>
+  <!-- Loads ANOTHER JS file from scripts/main.js, also deferred.
+       If you meant only one main.js, this might be a duplicate.
+       As written, both files will run after HTML parsing. -->
 </head>
 
 <body>
+  <!-- BODY: everything the user sees or interacts with. -->
+
   <!-- Header / Navigation (same as other pages) -->
   <header class="site-header">
+    <!-- Top strip of the page with logo + navigation.
+         class="site-header" gives shared styling (background, padding). -->
+
     <div class="header-inner">
+      <!-- Inner container to arrange logo and nav in a line. -->
+
       <div class="logo-box">
+        <!-- Groups the logo image and brand text together. -->
+
         <img src="images/ISweep.png" alt="ISweep logo" />
+        <!-- Image for your ISweep logo. "alt" is read by screen readers and shown if image fails. -->
+
         <strong class="brand">ISweep</strong>
+        <!-- Brand name text. class="brand" lets CSS style it (size, weight, spacing). -->
       </div>
 
       <nav class="main-nav">
+        <!-- Main navigation bar with links to other pages. -->
+
         <a href="index.html">Home</a>
+        <!-- Link to the landing/home page. -->
+
         <a href="Account.html">Account</a>
+        <!-- Link to account details page. -->
+
         <a href="Plans.html">Plans</a>
+        <!-- Link to pricing/plans page. -->
+
         <a href="Settings.html">Settings</a>
+        <!-- Link to THIS settings page.
+             NOTE: This is the page the user is on, so usually you'd add class="active" here. -->
+
         <a href="Help.html" class="active">Help</a>
+        <!-- Link to the Help page.
+             Currently has class="active", which visually marks it as the current page.
+             For a real app, you’d want "active" on Settings instead for this file. -->
       </nav>
 
-
+      <!-- NOTE: There is no closing </div> here for .header-inner and no closing </header>,
+           but the browser will auto-close them. It’s better style to close them explicitly. -->
   </header>
 
   <!-- Main Settings Content -->
   <main class="account-page container">
+    <!-- Main content area. 
+         class="account-page" for page-specific styling,
+         class="container" keeps content centered and sets max width. -->
+
     <h1>Settings</h1>
+    <!-- Main heading that tells the user they’re on the Settings page. -->
+
     <p class="subtitle">
+      <!-- Subtitle explaining what the settings affect. -->
+
       Choose how ISweep filters content, responds to media, and keeps your experience safe.
     </p>
 
     <!-- CONTENT FILTERS -->
     <section class="card">
+      <!-- Card-shaped block for Content Filters section (box with padding and shadow). -->
+
       <h2>Content Filters</h2>
+      <!-- Section heading for what types of content get filtered. -->
 
       <form class="profile-form">
+        <!-- Form grouping the filter checkboxes. 
+             In a full app, you'd handle submission with JS or server. -->
+
         <div class="item-row">
+          <!-- Row layout: text + checkboxes on left, Save button on right. -->
+
           <div>
+            <!-- Container for the filter labels and checkboxes. -->
+
             <strong>Filter Categories</strong>
+            <!-- Bold label for the group of filters. -->
+
             <p>Select what you want ISweep to catch and manage.</p>
+            <!-- Short explanation text. -->
 
             <label>
+              <!-- Label wraps the checkbox and text so clicking text toggles checkbox. -->
+
               <input type="checkbox" name="filter-profanity" checked />
+              <!-- Checkbox to enable/disable filtering profanity.
+                   name="filter-profanity": value used when form submits.
+                   checked: default state is ON. -->
+
               Profanity / swearing
+              <!-- Visible text describing this filter category. -->
             </label><br />
+            <!-- <br> adds a line break after this label. -->
 
             <label>
               <input type="checkbox" name="filter-sexual" checked />
+              <!-- Checkbox for filtering sexual content. On by default. -->
+
               Sexual content / nudity
             </label><br />
 
             <label>
               <input type="checkbox" name="filter-violence" />
+              <!-- Checkbox for graphic violence filter. Not checked by default
+                   so user has to opt-in to this level. -->
+
               Graphic violence
             </label><br />
 
             <label>
               <input type="checkbox" name="filter-horror" />
+              <!-- Checkbox for horror/jump scare filtering. -->
+
               Horror / jump scares
             </label><br />
 
             <label>
               <input type="checkbox" name="filter-crude" />
+              <!-- Checkbox for crude/inappropriate humor. -->
+
               Crude or inappropriate humor
             </label>
           </div>
 
           <button type="submit">Save</button>
+          <!-- Button that submits this form.
+               A full implementation would:
+                 - prevent default submission in JS,
+                 - collect checkbox values,
+                 - save them to backend or localStorage as user’s filter prefs. -->
         </div>
       </form>
     </section>
 
     <!-- ACTIONS (MUTE / SKIP / FAST-FORWARD) -->
     <section class="card">
+      <!-- Card controlling *what* ISweep should do when it detects each category. -->
+
       <h2>Filter Actions</h2>
+      <!-- Section heading for filter behavior (mute/skip/FF/log). -->
 
       <form class="profile-form">
+        <!-- Form for all action settings. Could be per-category Save or one big save. -->
+
         <!-- Profanity action -->
         <div class="item-row">
+          <!-- Row for profanity behavior + Save button. -->
+
           <div>
             <strong>Profanity</strong>
+            <!-- Label naming the category. -->
+
             <p>What should ISweep do when it hears profanity?</p>
+            <!-- Description of the setting. -->
+
             <select name="action-profanity" required>
+              <!-- Drop-down to choose how to respond to profanity.
+                   name="action-profanity": key when we submit or process the form. -->
+
               <option value="mute" selected>Mute audio only</option>
+              <!-- Default action: audio only is muted. (No skipping.) -->
+
               <option value="skip">Skip the scene</option>
+              <!-- Alternative: jump ahead past the scene. -->
+
               <option value="fast-forward">Fast-forward 10 seconds</option>
+              <!-- Alternative: auto fast-forward a fixed duration. -->
+
               <option value="log-only">Just log it (no action)</option>
+              <!-- Alternative: do nothing to the video, just record that it happened. -->
             </select>
           </div>
+
           <button type="submit">Save</button>
+          <!-- Saves profanity action setting (in a real app).
+               For now, just a visual "Save" button; behavior handled by JS later. -->
         </div>
 
         <!-- Sexual content action -->
         <div class="item-row">
+          <!-- Row for sexual content behavior. -->
+
           <div>
             <strong>Sexual Content</strong>
+            <!-- Label for this category. -->
+
             <p>Choose how ISweep responds to sexual content.</p>
+            <!-- Explanation text. -->
+
             <select name="action-sexual" required>
+              <!-- Drop-down of possible actions for sexual content. -->
+
               <option value="skip" selected>Skip the scene</option>
+              <!-- Default: skip entire scene when sexual content is detected. -->
+
               <option value="fast-forward">Fast-forward 30 seconds</option>
+              <!-- Alternative: jump forward a bit. -->
+
               <option value="mute">Mute audio only</option>
+              <!-- Alternative: only mute audio, leave video shown. -->
+
               <option value="log-only">Just log it (no action)</option>
+              <!-- Alternative: quietly log the event but don’t interfere. -->
             </select>
           </div>
+
           <button type="submit">Save</button>
+          <!-- Button to save sexual content action preference. -->
         </div>
 
         <!-- Violence action -->
         <div class="item-row">
+          <!-- Row for violence behavior. -->
+
           <div>
             <strong>Violence</strong>
+            <!-- Label for violence category. -->
+
             <p>How strict do you want ISweep to be with violence?</p>
+            <!-- Explanation text. -->
+
             <select name="action-violence" required>
+              <!-- Drop-down for violence settings. -->
+
               <option value="mute">Mute audio only</option>
+              <!-- Option: only mute sound. -->
+
               <option value="skip" selected>Skip intense scenes</option>
+              <!-- Default: skip scenes flagged as intense/gory/etc. -->
+
               <option value="fast-forward">Fast-forward 15 seconds</option>
+              <!-- Option: jump ahead by a fixed time. -->
+
               <option value="log-only">Just log it (no action)</option>
+              <!-- Option: do nothing but record it in logs. -->
             </select>
           </div>
+
           <button type="submit">Save</button>
+          <!-- Saves chosen violence behavior (once wired to JS/backend). -->
         </div>
       </form>
     </section>
 
     <!-- SENSITIVITY -->
     <section class="card">
+      <!-- Card for overall strictness of filtering. -->
+
       <h2>Sensitivity</h2>
+      <!-- Heading for sensitivity / strictness control. -->
 
       <form class="profile-form">
         <div class="item-row">
+          <!-- Row for slider + label + Save button. -->
+
           <div>
             <strong>Filter Sensitivity</strong>
+            <!-- Title describing what the slider controls. -->
+
             <p>Adjust how strict ISweep should be overall.</p>
+            <!-- Explanation. -->
+
             <label>
+              <!-- Label wraps Low text, slider, and High text so they’re grouped. -->
+
               Low
+              <!-- Text shown left of slider. -->
+
               <input type="range" name="sensitivity" min="1" max="3" value="2" />
+              <!-- Range slider input.
+                   name="sensitivity": form field name.
+                   min="1", max="3": possible values are 1, 2, or 3 (3 levels).
+                   value="2": default is middle level.
+                   In an implementation, JS would read this and tune thresholds. -->
+
               High
+              <!-- Text shown right of slider. -->
             </label>
           </div>
+
           <button type="submit">Save</button>
+          <!-- Saves chosen sensitivity level. JS/backend would persist this. -->
         </div>
       </form>
     </section>
 
     <!-- NOTIFICATIONS -->
     <section class="card">
+      <!-- Card for notification preferences. -->
+
       <h2>Notifications</h2>
+      <!-- Heading for notifications section. -->
 
       <form class="profile-form">
         <div class="item-row">
           <div>
             <strong>Session Reports</strong>
+            <!-- Title for this group of notification settings. -->
+
             <p>How would you like to receive viewing summaries?</p>
+            <!-- Explanation text. -->
 
             <label>
               <input type="checkbox" name="notify-email" checked />
+              <!-- Checkbox to get a weekly email summary.
+                   checked by default means they start on. -->
+
               Email me a weekly summary
             </label><br />
 
             <label>
               <input type="checkbox" name="notify-inapp" checked />
+              <!-- Checkbox to show in-app notification after each session. -->
+
               Show in-app notifications after each session
             </label><br />
 
             <label>
               <input type="checkbox" name="notify-none" />
+              <!-- Checkbox to opt-out of all notifications. -->
+
               Don’t send any notifications
             </label>
           </div>
+
           <button type="submit">Save</button>
+          <!-- Saves notification choices.
+               Real behavior: JS might enforce that "notify-none" unchecks others, etc. -->
         </div>
       </form>
     </section>
 
     <!-- PARENTAL CONTROLS -->
     <section class="card">
+      <!-- Card offering parental PIN and lock settings. -->
+
       <h2>Parental Controls</h2>
+      <!-- Heading for parental control section. -->
 
       <form class="profile-form">
         <div class="item-row">
           <div>
             <strong>Parental PIN</strong>
+            <!-- Title describing PIN settings. -->
+
             <p>Lock settings so kids can’t change filters without a PIN.</p>
+            <!-- Explanation of what the PIN protects. -->
 
             <label>
+              <!-- Label wrapping PIN input. -->
+
               Create / Update PIN<br />
+              <!-- Text above the PIN input, plus a line break. -->
+
               <input
                 class="profile-input"
                 type="password"
@@ -201,16 +399,30 @@
                 placeholder="Enter 4–6 digit PIN"
                 required
               />
+              <!-- Password-type input so digits are hidden.
+                   class="profile-input": shared styling.
+                   name="parent-pin": field name.
+                   minlength/maxlength: restricts length to 4–6 characters.
+                   placeholder: hints user to enter 4–6 digits.
+                   required: cannot submit without a PIN value. -->
             </label>
 
             <br /><br />
+            <!-- Two line breaks for visual spacing. -->
 
             <label>
               <input type="checkbox" name="require-pin" checked />
+              <!-- Checkbox controlling whether a PIN is required to change filters/plans.
+                   checked by default = PIN-based locking is on. -->
+
               Require PIN to change filters or plans
             </label>
           </div>
+
           <button type="submit">Save</button>
+          <!-- In full implementation: saves PIN and lock preference.
+               Backend must handle secure storage and verification; JS can
+               handle gating the UI as well. -->
         </div>
       </form>
     </section>
@@ -218,15 +430,30 @@
   </main>
 
   <footer>
+    <!-- Site footer at bottom of the page. -->
+
     <p>&copy; 2025 ISweep Inc. All rights reserved.</p>
+    <!-- Copyright text. &copy; = © symbol. -->
   </footer>
 
   <!-- Dark/Light Mode Toggle Script -->
   <script>
+    // Small inline script that handles dark/light mode just for this page.
+    // NOTE: This expects an element with id="themeBtn" (usually in header),
+    // but this Settings HTML currently does NOT have that button.
+
     const btn = document.getElementById('themeBtn');
+    // Finds the element with id="themeBtn". If it doesn't exist, btn will be null.
+
     btn.addEventListener('click', () => {
+      // Adds a click event listener to the theme button.
+      // When clicked…
+
       document.body.classList.toggle('dark-mode');
+      // Toggle the 'dark-mode' class on the <body> element.
+      // CSS can use .dark-mode to switch colors (background, text, cards, etc.).
     });
   </script>
+  <!-- In a robust version, you’d first check if (btn) exists before adding the listener. -->
 </body>
 </html>
