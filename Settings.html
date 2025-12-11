@@ -26,10 +26,6 @@
   <link rel="stylesheet" href="styles/site-plan.css" />
   <!-- Shared stylesheet for site-wide layout, header, cards, fonts, etc. -->
 
-  <script src="scripts/main.js" defer></script>
-  <!-- Loads ANOTHER JS file from scripts/main.js, also deferred.
-       If you meant only one main.js, this might be a duplicate.
-       As written, both files will run after HTML parsing. -->
 </head>
 
 <body>
@@ -65,11 +61,11 @@
         <a href="Plans.html">Plans</a>
         <!-- Link to pricing/plans page. -->
 
-        <a href="Settings.html">Settings</a>
+        <a href="Settings.html"class="active">Settings</a>
         <!-- Link to THIS settings page.
              NOTE: This is the page the user is on, so usually you'd add class="active" here. -->
 
-        <a href="Help.html" class="active">Help</a>
+        <a href="Help.html">Help</a>
         <!-- Link to the Help page.
              Currently has class="active", which visually marks it as the current page.
              For a real app, you’d want "active" on Settings instead for this file. -->
@@ -101,7 +97,7 @@
       <h2>Content Filters</h2>
       <!-- Section heading for what types of content get filtered. -->
 
-      <form class="profile-form">
+        <form class="profile-form" id="contentFiltersForm">
         <!-- Form grouping the filter checkboxes. 
              In a full app, you'd handle submission with JS or server. -->
 
@@ -177,7 +173,7 @@
       <h2>Filter Actions</h2>
       <!-- Section heading for filter behavior (mute/skip/FF/log). -->
 
-      <form class="profile-form">
+       <form class="profile-form" id="filterActionsForm">
         <!-- Form for all action settings. Could be per-category Save or one big save. -->
 
         <!-- Profanity action -->
@@ -287,7 +283,7 @@
       <h2>Sensitivity</h2>
       <!-- Heading for sensitivity / strictness control. -->
 
-      <form class="profile-form">
+      <form class="profile-form" id="sensitivityForm">
         <div class="item-row">
           <!-- Row for slider + label + Save button. -->
 
@@ -329,7 +325,7 @@
       <h2>Notifications</h2>
       <!-- Heading for notifications section. -->
 
-      <form class="profile-form">
+      <form class="profile-form" id="notificationsForm">
         <div class="item-row">
           <div>
             <strong>Session Reports</strong>
@@ -375,7 +371,7 @@
       <h2>Parental Controls</h2>
       <!-- Heading for parental control section. -->
 
-      <form class="profile-form">
+      <form class="profile-form" id="parentalForm">
         <div class="item-row">
           <div>
             <strong>Parental PIN</strong>
