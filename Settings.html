@@ -8,6 +8,7 @@
   <!-- HEAD: metadata, scripts, styles, and document title. Not directly visible content. -->
 
   <script src="main.js" defer></script>
+
   <!-- Loads your global JavaScript file from root (same folder as this HTML).
        "defer" means: download script now but only run it after HTML has been parsed.
        NOTE: You ALSO load scripts/main.js below. That may be accidental duplication. -->
@@ -431,25 +432,6 @@
     <p>&copy; 2025 ISweep Inc. All rights reserved.</p>
     <!-- Copyright text. &copy; = © symbol. -->
   </footer>
-
-  <!-- Dark/Light Mode Toggle Script -->
-  <script>
-    // Small inline script that handles dark/light mode just for this page.
-    // NOTE: This expects an element with id="themeBtn" (usually in header),
-    // but this Settings HTML currently does NOT have that button.
-
-    const btn = document.getElementById('themeBtn');
-    // Finds the element with id="themeBtn". If it doesn't exist, btn will be null.
-
-    btn.addEventListener('click', () => {
-      // Adds a click event listener to the theme button.
-      // When clicked…
-
-      document.body.classList.toggle('dark-mode');
-      // Toggle the 'dark-mode' class on the <body> element.
-      // CSS can use .dark-mode to switch colors (background, text, cards, etc.).
-    });
-  </script>
   <!-- In a robust version, you’d first check if (btn) exists before adding the listener. -->
 </body>
 </html>
