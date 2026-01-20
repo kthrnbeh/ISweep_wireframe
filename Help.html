@@ -12,20 +12,20 @@
 <body>
   <!-- Shared Header -->
   <header class="site-header">
-    <div class="header-inner">
-      <div class="logo-box">
+    <div class="container header-inner">
+      <a class="logo-box" href="index.html">
         <img src="images/ISweep.png" alt="ISweep logo" />
         <strong class="brand">ISweep</strong>
-      </div>
+      </a>
 
-     <nav class="main-nav">
+      <nav class="main-nav">
         <a href="index.html">Home</a>
         <a href="Account.html">Account</a>
         <a href="Plans.html">Plans</a>
         <a href="Settings.html">Settings</a>
         <a href="Help.html" class="active">Help</a>
       </nav>
-
+    </div>
   </header>
 
   <main class="account-page container">
@@ -274,6 +274,78 @@
     if (btn) {
       btn.addEventListener('click', () => {
         document.body.classList.toggle('dark-mode');
+      });
+    }
+
+    // ===== CONTACT FORM HANDLER =====
+    const contactForm = document.querySelector('#contact-form .profile-form');
+    if (contactForm) {
+      contactForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const name = contactForm.elements['name'].value;
+        const email = contactForm.elements['email'].value;
+        const topic = contactForm.elements['topic'].value;
+        const message = contactForm.elements['message'].value;
+        
+        // Show confirmation
+        alert(`Thank you, ${name}! Your message about "${topic}" has been received. We'll respond to ${email} within 24 hours.`);
+        
+        // Reset form
+        contactForm.reset();
+      });
+    }
+
+    // ===== ISWEEP TEST DEMO =====
+    const checkSubtitleBtn = document.getElementById('checkSubtitleBtn');
+    const subtitleInput = document.getElementById('subtitleInput');
+    const decisionOutput = document.getElementById('decisionOutput');
+
+    // Profanity words to check (demo list)
+    const blockedWords = ['badword', 'profanity', 'swear', 'curse', 'hell', 'damn', 'crap'];
+
+    if (checkSubtitleBtn && subtitleInput && decisionOutput) {
+      checkSubtitleBtn.addEventListener('click', () => {
+        const text = subtitleInput.value.trim().toLowerCase();
+        
+        if (!text) {
+          decisionOutput.textContent = '(Enter a subtitle line to test ISweep)';
+          return;
+        }
+
+        // Check if filtering is enabled
+        const planKey = localStorage.getItem('isweep-plan') || 'free';
+        const filteringEnabled = planKey === 'flexible' || planKey === 'full';
+
+        if (!filteringEnabled) {
+          decisionOutput.textContent = 'ISweep Filtering is DISABLED on your current plan.\nUpgrade to Flexible or Full plan to enable filtering.';
+          return;
+        }
+
+        // Check for blocked words
+        let foundWords = [];
+        blockedWords.forEach(word => {
+          if (text.includes(word)) {
+            foundWords.push(word);
+          }
+        });
+
+        if (foundWords.length > 0) {
+          decisionOutput.textContent = `🧹 ISweep DETECTED: ${foundWords.join(', ')}\nAction: MUTE\nDuration: 5 seconds`;
+          document.getElementById('broomIcon').style.display = 'block';
+          setTimeout(() => {
+            document.getElementById('broomIcon').style.display = 'none';
+          }, 3000);
+        } else {
+          decisionOutput.textContent = '✓ ISweep PASSED: No blocked content detected.\nAction: PLAY';
+        }
+      });
+
+      // Allow Enter key to trigger test
+      subtitleInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          checkSubtitleBtn.click();
+        }
       });
     }
 
