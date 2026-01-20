@@ -8,7 +8,10 @@ const PLAN_LABEL_KEY = "isweep-plan-label"; // display value
 
 // Which plans allow filtering?
 function planHasFiltering(planKey) {
-  return planKey === "flexible" || planKey === "full";
+  // Developer mode: allow all plans to use filtering
+  return true;
+  // Production: 
+  // return planKey === "flexible" || planKey === "full";
   // free = no filtering
   // flexible = filtering ON
   // full = filtering ON

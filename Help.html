@@ -318,9 +318,10 @@
           return;
         }
 
-        // Check if filtering is enabled
+        // Check if filtering is enabled (developer mode: always enabled)
         const planKey = localStorage.getItem('isweep-plan') || 'free';
-        const filteringEnabled = planKey === 'flexible' || planKey === 'full';
+        const filteringEnabled = true; // Developer: always allow filtering
+        // Production check: planKey === 'flexible' || planKey === 'full'
 
         if (!filteringEnabled) {
           decisionOutput.textContent = 'ISweep Filtering is DISABLED on your current plan.\nUpgrade to Flexible or Full plan to enable filtering.';
