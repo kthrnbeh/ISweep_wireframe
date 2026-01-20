@@ -239,26 +239,40 @@ function extractYouTubeCaptions() {
  * Handle when YouTube captions change
  */
 async function handleYouTubeCaptionChange(captionText) {
-    if (!isEnabled || !captionText) return;
-
-    console.log(`[ISweep-YT] Caption: "${captionText}"`);
+    // Check if enabled (try both local and global)
+    const enabled = typeof isEnabled !== 'undefined' ? isEnabled : localStorage.getItem('isweepEnabled') === 'true';
+    
+    console.log(`[ISweep-YT] Caption change detected: "${captionText}", isEnabled: ${enabled}`);
+    
+    if (!enabled || !captionText) {
+        if (!enabled) console.log('[ISweep-YT] ISweep not enabled, skipping');
+        if (!captionText) console.log('[ISweep-YT] No caption text, skipping');
+        return;
+    }
 
     // Throttle requests
     const now = Date.now();
     if (window._isweepLastYTCheck && (now - window._isweepLastYTCheck) < 500) {
+        console.log('[ISweep-YT] Throttled (500ms limit)');
         return;
     }
     window._isweepLastYTCheck = now;
 
     try {
+        // Get backend URL and user ID (try both local and localStorage)
+        const backend = typeof backendURL !== 'undefined' ? backendURL : localStorage.getItem('backendURL') || 'http://127.0.0.1:8001';
+        const user = typeof userId !== 'undefined' ? userId : localStorage.getItem('userId') || 'user123';
+        
+        console.log(`[ISweep-YT] Sending to backend: ${backend}/event with user: ${user}`);
+        
         // Send to backend
-        const response = await fetch(`${backendURL}/event`, {
+        const response = await fetch(`${backend}/event`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                user_id: userId,
+                user_id: user,
                 text: captionText,
                 content_type: null,
                 confidence: 0.9,
@@ -266,15 +280,19 @@ async function handleYouTubeCaptionChange(captionText) {
             })
         });
 
-        if (!response.ok) throw new Error('API error');
+        console.log(`[ISweep-YT] API response status: ${response.status}`);
+
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
 
         const decision = await response.json();
+        
+        console.log(`[ISweep-YT] Decision received: ${decision.action} - ${decision.reason}`);
         
         if (decision.action !== 'none') {
             applyYouTubeAction(decision, captionText);
         }
     } catch (error) {
-        console.warn('[ISweep-YT] API error:', error);
+        console.warn('[ISweep-YT] API error:', error.message, error);
     }
 }
 
