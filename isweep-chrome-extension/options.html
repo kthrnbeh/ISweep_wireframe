@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISweep Preferences</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ISweep Settings</h1>
+            <p>Configure your content filtering preferences</p>
+        </header>
+
+        <main>
+            <!-- Category Settings -->
+            <section class="settings-group">
+                <h2>Filter Categories</h2>
+                
+                <!-- Language Category -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <h3>🚫 Language</h3>
+                        <label class="toggle">
+                            <input type="checkbox" id="languageEnabled" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="category-content">
+                        <div class="action-group">
+                            <label>Action:</label>
+                            <select id="languageAction">
+                                <option value="mute">Mute</option>
+                                <option value="skip">Skip</option>
+                                <option value="fast_forward">Fast Forward</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+
+                        <div class="duration-group">
+                            <label for="languageDuration">Duration (seconds):</label>
+                            <input type="number" id="languageDuration" min="1" max="300" value="4">
+                        </div>
+
+                        <div class="words-group">
+                            <label for="languageWords">Blocked Words (comma-separated):</label>
+                            <textarea id="languageWords" placeholder="Enter words to block, separated by commas&#10;Example: profanity, curse, swear" rows="4"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sexual Content Category -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <h3>⚠️ Sexual Content</h3>
+                        <label class="toggle">
+                            <input type="checkbox" id="sexualEnabled" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="category-content">
+                        <div class="action-group">
+                            <label>Action:</label>
+                            <select id="sexualAction">
+                                <option value="mute">Mute</option>
+                                <option value="skip" selected>Skip</option>
+                                <option value="fast_forward">Fast Forward</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+
+                        <div class="duration-group">
+                            <label for="sexualDuration">Duration (seconds):</label>
+                            <input type="number" id="sexualDuration" min="1" max="300" value="30">
+                        </div>
+
+                        <div class="words-group">
+                            <label for="sexualWords">Blocked Words (comma-separated):</label>
+                            <textarea id="sexualWords" placeholder="Enter words to block, separated by commas" rows="4"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Violence Category -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <h3>💥 Violence</h3>
+                        <label class="toggle">
+                            <input type="checkbox" id="violenceEnabled" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="category-content">
+                        <div class="action-group">
+                            <label>Action:</label>
+                            <select id="violenceAction">
+                                <option value="mute">Mute</option>
+                                <option value="skip">Skip</option>
+                                <option value="fast_forward" selected>Fast Forward</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+
+                        <div class="duration-group">
+                            <label for="violenceDuration">Duration (seconds):</label>
+                            <input type="number" id="violenceDuration" min="1" max="300" value="10">
+                        </div>
+
+                        <div class="words-group">
+                            <label for="violenceWords">Blocked Words (comma-separated):</label>
+                            <textarea id="violenceWords" placeholder="Enter words to block, separated by commas" rows="4"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Buttons -->
+            <section class="button-group">
+                <button id="saveButton" class="btn btn-primary">Save Settings</button>
+                <button id="resetButton" class="btn btn-secondary">Reset to Defaults</button>
+            </section>
+
+            <!-- Status Message -->
+            <div id="statusMessage" class="status-message" style="display: none;"></div>
+        </main>
+
+        <footer>
+            <p>Settings are saved automatically and synced across all tabs</p>
+        </footer>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+</html>

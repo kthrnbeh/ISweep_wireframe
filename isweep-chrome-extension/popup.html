@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISweep</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ISweep</h1>
+            <p class="subtitle">Content Filter</p>
+        </header>
+
+        <main>
+            <!-- Status Section -->
+            <section class="status-section">
+                <div class="status-indicator" id="statusIndicator">
+                    <span class="status-dot inactive"></span>
+                    <span class="status-text" id="statusText">Inactive</span>
+                </div>
+            </section>
+
+            <!-- User Section -->
+            <section class="user-section">
+                <label for="userIdInput">User ID:</label>
+                <input 
+                    type="text" 
+                    id="userIdInput" 
+                    placeholder="user123"
+                    maxlength="50"
+                >
+            </section>
+
+            <!-- Backend URL Section -->
+            <section class="backend-section">
+                <label for="backendUrl">Backend URL:</label>
+                <input 
+                    type="text" 
+                    id="backendUrl" 
+                    placeholder="http://127.0.0.1:8001"
+                    value="http://127.0.0.1:8001"
+                >
+            </section>
+
+            <!-- Toggle Button -->
+            <section class="toggle-section">
+                <button id="toggleButton" class="btn btn-primary">Enable ISweep</button>
+            </section>
+
+            <!-- Stats -->
+            <section class="stats-section">
+                <div class="stat">
+                    <span class="stat-label">Videos Detected:</span>
+                    <span class="stat-value" id="videosDetected">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Actions Applied:</span>
+                    <span class="stat-value" id="actionsApplied">0</span>
+                </div>
+            </section>
+
+            <!-- Settings Link -->
+            <section class="settings-section">
+                <a href="options.html" class="settings-link">⚙️ Preferences</a>
+                <a href="#" class="settings-link" id="clearStats">Clear Stats</a>
+            </section>
+        </main>
+
+        <footer>
+            <p class="version">v0.1.0</p>
+        </footer>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
