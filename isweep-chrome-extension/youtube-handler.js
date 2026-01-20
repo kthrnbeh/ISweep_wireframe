@@ -97,18 +97,25 @@ function monitorYouTubeCaptions() {
     // Reset retry count on success
     window._ytCaptionRetryCount = 0;
 
+    // Verify we have a valid node before observing
+    if (!captionContainer || !(captionContainer instanceof Node) || captionContainer.nodeType !== 1) {
+        console.warn('[ISweep-YT] Invalid caption container node (not a valid DOM element), retrying...');
+        setTimeout(monitorYouTubeCaptions, 1000);
+        return;
+    }
+
+    // Verify the node is still in the document
+    if (!document.contains(captionContainer)) {
+        console.warn('[ISweep-YT] Caption container not in document, retrying...');
+        setTimeout(monitorYouTubeCaptions, 1000);
+        return;
+    }
+
     console.log('[ISweep-YT] Found caption container, type:', captionContainer.nodeName);
 
     // Stop previous observer
     if (ytCaptionObserver) {
         ytCaptionObserver.disconnect();
-    }
-
-    // Verify we have a valid node before observing
-    if (!captionContainer || captionContainer.nodeType !== 1) {
-        console.warn('[ISweep-YT] Invalid caption container node, retrying...');
-        setTimeout(monitorYouTubeCaptions, 1000);
-        return;
     }
 
     // Create observer for caption changes
@@ -125,8 +132,7 @@ function monitorYouTubeCaptions() {
         ytCaptionObserver.observe(captionContainer, {
             childList: true,
             subtree: true,
-            characterData: true,
-            textContent: true
+            characterData: true
         });
         console.log('[ISweep-YT] Caption monitoring started successfully');
     } catch (error) {
@@ -155,7 +161,7 @@ function getCaptionContainer() {
     for (const selector of selectors) {
         try {
             const container = document.querySelector(selector);
-            if (container && container.nodeType === 1) {
+            if (container && container instanceof Node && container.nodeType === 1 && document.contains(container)) {
                 console.log('[ISweep-YT] Found caption container with selector:', selector);
                 return container;
             }
@@ -169,7 +175,7 @@ function getCaptionContainer() {
     try {
         const allDivs = document.querySelectorAll('div[role="status"], div[aria-live="polite"]');
         for (const div of allDivs) {
-            if (div && div.nodeType === 1 && div.textContent.length > 0) {
+            if (div && div instanceof Node && div.nodeType === 1 && document.contains(div) && div.textContent.length > 0) {
                 console.log('[ISweep-YT] Found caption container via aria-live');
                 return div;
             }
