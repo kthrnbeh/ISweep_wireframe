@@ -443,10 +443,31 @@ function initYouTubeOnVideoChange() {
         }
     });
 
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
+    // Only observe if document.body is available
+    if (!document.body) {
+        console.log('[ISweep-YT] document.body not available yet, waiting for DOMContentLoaded');
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.body) {
+                try {
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                } catch (error) {
+                    console.error('[ISweep-YT] Failed to observe document.body:', error);
+                }
+            }
+        });
+    } else {
+        try {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        } catch (error) {
+            console.error('[ISweep-YT] Failed to observe document.body:', error);
+        }
+    }
 }
 
 // Export for use in content-script.js
