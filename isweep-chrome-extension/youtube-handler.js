@@ -145,12 +145,11 @@ function getCaptionContainer() {
     // Try common selectors in order
     const selectors = [
         '.captions-text',
-        'div[aria-live="off"] span',
-        'div[role="region"][aria-label*="captions"] span',
+        'div[aria-live="off"]',
+        'div[role="region"][aria-label*="captions"]',
         'div.ytp-caption-segment',
         'div.ytp-captions-text',
-        '[class*="captions"] span',
-        'span[role="presentation"]'
+        '[class*="captions"]',
     ];
 
     for (const selector of selectors) {
@@ -158,7 +157,7 @@ function getCaptionContainer() {
             const container = document.querySelector(selector);
             if (container && container.nodeType === 1) {
                 console.log('[ISweep-YT] Found caption container with selector:', selector);
-                return container.parentElement || container;
+                return container;
             }
         } catch (e) {
             console.warn('[ISweep-YT] Error with selector', selector, e);
@@ -166,15 +165,17 @@ function getCaptionContainer() {
         }
     }
 
-    // Return main video container if nothing else works
+    // Last resort: find any element with caption-related text
     try {
-        const videoParent = document.querySelector('video')?.parentElement;
-        if (videoParent && videoParent.nodeType === 1) {
-            console.log('[ISweep-YT] Using video parent as caption container');
-            return videoParent;
+        const allDivs = document.querySelectorAll('div[role="status"], div[aria-live="polite"]');
+        for (const div of allDivs) {
+            if (div && div.nodeType === 1 && div.textContent.length > 0) {
+                console.log('[ISweep-YT] Found caption container via aria-live');
+                return div;
+            }
         }
     } catch (e) {
-        console.warn('[ISweep-YT] Error getting video parent:', e);
+        console.warn('[ISweep-YT] Error in last resort search:', e);
     }
     
     return null;
