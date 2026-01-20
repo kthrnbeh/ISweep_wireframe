@@ -78,15 +78,24 @@ function getYouTubeVideoElement() {
  * Monitor YouTube's caption display
  */
 function monitorYouTubeCaptions() {
-    // Find caption container
+    // Find caption container (try multiple times as YouTube takes time to render captions)
     let captionContainer = getCaptionContainer();
+    let retryCount = window._ytCaptionRetryCount || 0;
     
     if (!captionContainer) {
-        console.log('[ISweep-YT] Caption container not found, retrying in 1s...');
-        // Retry finding container every second
-        setTimeout(monitorYouTubeCaptions, 1000);
-        return;
+        if (retryCount < 10) {
+            window._ytCaptionRetryCount = retryCount + 1;
+            console.log(`[ISweep-YT] Caption container not found, retrying (attempt ${retryCount + 1}/10) in 500ms...`);
+            setTimeout(monitorYouTubeCaptions, 500);
+            return;
+        } else {
+            console.warn('[ISweep-YT] Could not find caption container after 10 attempts');
+            return;
+        }
     }
+    
+    // Reset retry count on success
+    window._ytCaptionRetryCount = 0;
 
     console.log('[ISweep-YT] Found caption container, type:', captionContainer.nodeName);
 

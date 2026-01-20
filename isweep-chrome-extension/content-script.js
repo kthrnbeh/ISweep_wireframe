@@ -301,7 +301,7 @@ function showFeedback(videoElement, text, bgColor) {
 }
 
 // Add CSS animation for feedback
-if (!document.getElementById('isweep-styles')) {
+if (document.head && !document.getElementById('isweep-styles')) {
     const style = document.createElement('style');
     style.id = 'isweep-styles';
     style.textContent = `
