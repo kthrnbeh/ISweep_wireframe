@@ -19,14 +19,23 @@ function initYouTubeHandler() {
     // Try to get player reference
     youtubePlayer = getYouTubePlayer();
     if (!youtubePlayer) {
-        console.warn('[ISweep-YT] Could not get YouTube player reference');
+        console.warn('[ISweep-YT] Could not get YouTube player reference, will retry');
         // Retry after delay
         setTimeout(() => {
             youtubePlayer = getYouTubePlayer();
+            if (youtubePlayer) {
+                console.log('[ISweep-YT] Player reference obtained on retry');
+            }
         }, 2000);
+    } else {
+        console.log('[ISweep-YT] Player reference obtained');
     }
 
-    // Monitor for caption changes
+    // Add badge to show ISweep is active
+    addYouTubeBadge();
+
+    // Monitor for caption changes (with retries)
+    console.log('[ISweep-YT] Starting caption monitoring');
     monitorYouTubeCaptions();
     
     return true;
@@ -70,13 +79,15 @@ function getYouTubeVideoElement() {
  */
 function monitorYouTubeCaptions() {
     // Find caption container
-    const captionContainer = getCaptionContainer();
+    let captionContainer = getCaptionContainer();
     
     if (!captionContainer) {
-        console.log('[ISweep-YT] Caption container not found, retrying...');
-        setTimeout(monitorYouTubeCaptions, 2000);
+        console.log('[ISweep-YT] Caption container not found, retrying in 1s...');
+        setTimeout(monitorYouTubeCaptions, 1000);
         return;
     }
+
+    console.log('[ISweep-YT] Found caption container');
 
     // Stop previous observer
     if (ytCaptionObserver) {
@@ -92,10 +103,12 @@ function monitorYouTubeCaptions() {
         }
     });
 
+    // Observe with aggressive settings
     ytCaptionObserver.observe(captionContainer, {
         childList: true,
         subtree: true,
-        characterData: true
+        characterData: true,
+        textContent: true
     });
 
     console.log('[ISweep-YT] Caption monitoring started');
@@ -106,33 +119,79 @@ function monitorYouTubeCaptions() {
  */
 function getCaptionContainer() {
     // YouTube places captions in several possible locations
-    // Try common selectors
+    // Modern YouTube uses .captions-text for rendered captions
+    // Try common selectors in order
     const selectors = [
         '.captions-text',
-        '[class*="caption"]',
-        'video ~ div',
-        'div[role="region"]'
+        'div[aria-live="off"] span',
+        'div[role="region"][aria-label*="captions"] span',
+        'div.ytp-caption-segment',
+        'div.ytp-captions-text',
+        '[class*="captions"] span',
+        'span[role="presentation"]'
     ];
 
     for (const selector of selectors) {
         const container = document.querySelector(selector);
-        if (container && container.textContent.trim()) {
-            return container;
+        if (container) {
+            console.log('[ISweep-YT] Found caption container with selector:', selector);
+            return container.parentElement;
         }
     }
 
     // Return main video container if nothing else works
-    return document.querySelector('video')?.parentElement;
+    const videoParent = document.querySelector('video')?.parentElement;
+    if (videoParent) {
+        console.log('[ISweep-YT] Using video parent as container');
+        return videoParent;
+    }
+    
+    return null;
 }
 
 /**
  * Extract visible captions from YouTube page
  */
 function extractYouTubeCaptions() {
-    // YouTube renders captions in span elements with class "captions-text"
-    const captionElements = document.querySelectorAll('[class*="caption"] span, .captions-text span');
-    
-    if (captionElements.length === 0) {
+    // Try multiple selector strategies to find captions
+    const strategies = [
+        // Strategy 1: Modern YouTube .captions-text
+        () => {
+            const els = document.querySelectorAll('.captions-text span');
+            return els.length > 0 ? els : null;
+        },
+        // Strategy 2: YouTube caption segments
+        () => {
+            const els = document.querySelectorAll('div.ytp-caption-segment');
+            return els.length > 0 ? els : null;
+        },
+        // Strategy 3: Aria-live regions for captions
+        () => {
+            const els = document.querySelectorAll('div[aria-live="off"] span');
+            return els.length > 0 ? els : null;
+        },
+        // Strategy 4: Generic caption class contains
+        () => {
+            const els = document.querySelectorAll('[class*="caption"] span, [class*="subtitle"] span');
+            return els.length > 0 ? els : null;
+        },
+        // Strategy 5: YTP captions text
+        () => {
+            const els = document.querySelectorAll('div.ytp-captions-text span');
+            return els.length > 0 ? els : null;
+        }
+    ];
+
+    let captionElements = null;
+    for (let i = 0; i < strategies.length; i++) {
+        const result = strategies[i]();
+        if (result && result.length > 0) {
+            captionElements = result;
+            break;
+        }
+    }
+
+    if (!captionElements || captionElements.length === 0) {
         return null;
     }
 
@@ -140,12 +199,18 @@ function extractYouTubeCaptions() {
     let fullText = '';
     captionElements.forEach(el => {
         const text = el.textContent.trim();
-        if (text) {
+        if (text && text.length > 0) {
             fullText += (fullText ? ' ' : '') + text;
         }
     });
 
-    return fullText.trim() || null;
+    const result = fullText.trim();
+    if (result.length > 0) {
+        console.log('[ISweep-YT] Extracted caption:', result);
+        return result;
+    }
+    
+    return null;
 }
 
 /**
