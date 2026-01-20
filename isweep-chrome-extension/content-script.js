@@ -339,11 +339,25 @@ const observer = new MutationObserver(() => {
     detectVideos();
 });
 
-observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: false
-});
+// Only observe if document.body exists
+if (document.body) {
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: false
+    });
+} else {
+    // Wait for body to be ready
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.body) {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: false
+            });
+        }
+    });
+}
 
 // Initial detection
 detectVideos();
