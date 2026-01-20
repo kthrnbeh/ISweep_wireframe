@@ -10,7 +10,6 @@ let userId = 'user123';
 let backendURL = 'http://127.0.0.1:8001';
 let detectedVideos = 0;
 let appliedActions = 0;
-let isYouTubePage = false;
 
 // Initialize on page load
 chrome.storage.local.get(['isEnabled', 'userId', 'backendURL'], (result) => {
@@ -18,9 +17,8 @@ chrome.storage.local.get(['isEnabled', 'userId', 'backendURL'], (result) => {
     userId = result.userId || 'user123';
     backendURL = result.backendURL || 'http://127.0.0.1:8001';
     
-    // Initialize YouTube handler if on YouTube
-    if (location.hostname.includes('youtube.com') || location.hostname.includes('youtu.be')) {
-        isYouTubePage = true;
+    // Initialize YouTube handler if on YouTube (uses isYouTubePage() function from youtube-handler.js)
+    if (isYouTubePage && isYouTubePage()) {
         console.log('[ISweep] YouTube page detected');
         initYouTubeHandler();
     }
@@ -349,9 +347,9 @@ detectVideos();
 setInterval(detectVideos, 2000);
 
 // Initialize YouTube handler if on YouTube
-if (isYouTubePage) {
+if (isYouTubePage && isYouTubePage()) {
     initYouTubeOnVideoChange();
     setTimeout(initYouTubeHandler, 1000);
 }
 
-console.log('[ISweep] Content script loaded - Caption extraction enabled' + (isYouTubePage ? ' + YouTube support' : ''));
+console.log('[ISweep] Content script loaded - Caption extraction enabled' + (isYouTubePage && isYouTubePage() ? ' + YouTube support' : ''));
