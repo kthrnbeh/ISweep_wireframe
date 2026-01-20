@@ -60,6 +60,24 @@ if (btnFull) {
 }
 
 //-----------------------------------------------------
+//  THEME TOGGLE (All pages)
+//-----------------------------------------------------
+const themeBtn = document.getElementById("themeBtn");
+
+if (themeBtn) {
+  // Load saved theme
+  const savedTheme = localStorage.getItem("isweep-theme") || "light";
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark");
+  }
+
+  themeBtn.addEventListener("click", () => {
+    const isDark = document.body.classList.toggle("dark");
+    localStorage.setItem("isweep-theme", isDark ? "dark" : "light");
+  });
+}
+
+//-----------------------------------------------------
 //  ACCOUNT PAGE DISPLAY
 //-----------------------------------------------------
 function updateAccountPagePlanDisplay() {
@@ -387,6 +405,50 @@ document.addEventListener("DOMContentLoaded", () => {
       alert(
         "Parental PIN saved locally. (In a real app, this would be stored securely on the server.)"
       );
+    });
+  }
+});
+
+//-----------------------------------------------------
+//  INDEX PAGE DEMO
+//-----------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const checkBtn = document.getElementById("checkSubtitleBtn");
+  const subtitleInput = document.getElementById("subtitleInput");
+  const decisionOutput = document.getElementById("decisionOutput");
+  const broomIcon = document.getElementById("broomIcon");
+  const demoVideo = document.getElementById("demoVideo");
+
+  if (checkBtn && subtitleInput && decisionOutput) {
+    checkBtn.addEventListener("click", () => {
+      const text = subtitleInput.value.trim();
+      if (!text) {
+        decisionOutput.textContent = "Please enter some subtitle text.";
+        return;
+      }
+
+      // Simple demo logic: check for bad words
+      const badWords = ["damn", "hell", "shit", "fuck"];
+      const hasBadWord = badWords.some(word => text.toLowerCase().includes(word));
+
+      if (hasBadWord) {
+        decisionOutput.textContent = `ISweep detected profanity: "${text}" → MUTED for 4 seconds.`;
+        // Show broom icon briefly
+        if (broomIcon) {
+          broomIcon.style.display = "block";
+          setTimeout(() => broomIcon.style.display = "none", 3000);
+        }
+      } else {
+        decisionOutput.textContent = `ISweep: "${text}" → No action needed.`;
+      }
+    });
+  }
+
+  // Optional: video demo with broom on play
+  if (demoVideo && broomIcon) {
+    demoVideo.addEventListener("play", () => {
+      broomIcon.style.display = "block";
+      setTimeout(() => broomIcon.style.display = "none", 5000);
     });
   }
 });
