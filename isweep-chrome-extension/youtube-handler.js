@@ -186,7 +186,7 @@ function getCaptionContainer() {
 function extractYouTubeCaptions() {
     // Try multiple selector strategies to find captions
     const strategies = [
-        // Strategy 1: Modern YouTube .captions-text
+        // Strategy 1: Modern YouTube .captions-text (most reliable)
         () => {
             const els = document.querySelectorAll('.captions-text span');
             return els.length > 0 ? els : null;
@@ -237,7 +237,8 @@ function extractYouTubeCaptions() {
 
     const result = fullText.trim();
     if (result.length > 0) {
-        console.log('[ISweep-YT] Extracted caption:', result);
+        // Log the extracted caption for debugging
+        console.log(`[ISweep-YT] Extracted caption: "${result}"`);
         return result;
     }
     
