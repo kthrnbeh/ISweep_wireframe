@@ -83,15 +83,23 @@ function monitorYouTubeCaptions() {
     
     if (!captionContainer) {
         console.log('[ISweep-YT] Caption container not found, retrying in 1s...');
+        // Retry finding container every second
         setTimeout(monitorYouTubeCaptions, 1000);
         return;
     }
 
-    console.log('[ISweep-YT] Found caption container');
+    console.log('[ISweep-YT] Found caption container, type:', captionContainer.nodeName);
 
     // Stop previous observer
     if (ytCaptionObserver) {
         ytCaptionObserver.disconnect();
+    }
+
+    // Verify we have a valid node before observing
+    if (!captionContainer || captionContainer.nodeType !== 1) {
+        console.warn('[ISweep-YT] Invalid caption container node, retrying...');
+        setTimeout(monitorYouTubeCaptions, 1000);
+        return;
     }
 
     // Create observer for caption changes
@@ -104,14 +112,19 @@ function monitorYouTubeCaptions() {
     });
 
     // Observe with aggressive settings
-    ytCaptionObserver.observe(captionContainer, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-        textContent: true
-    });
-
-    console.log('[ISweep-YT] Caption monitoring started');
+    try {
+        ytCaptionObserver.observe(captionContainer, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            textContent: true
+        });
+        console.log('[ISweep-YT] Caption monitoring started successfully');
+    } catch (error) {
+        console.error('[ISweep-YT] Failed to start monitoring:', error);
+        // Retry if observer fails
+        setTimeout(monitorYouTubeCaptions, 1000);
+    }
 }
 
 /**
@@ -132,18 +145,27 @@ function getCaptionContainer() {
     ];
 
     for (const selector of selectors) {
-        const container = document.querySelector(selector);
-        if (container) {
-            console.log('[ISweep-YT] Found caption container with selector:', selector);
-            return container.parentElement;
+        try {
+            const container = document.querySelector(selector);
+            if (container && container.nodeType === 1) {
+                console.log('[ISweep-YT] Found caption container with selector:', selector);
+                return container.parentElement || container;
+            }
+        } catch (e) {
+            console.warn('[ISweep-YT] Error with selector', selector, e);
+            continue;
         }
     }
 
     // Return main video container if nothing else works
-    const videoParent = document.querySelector('video')?.parentElement;
-    if (videoParent) {
-        console.log('[ISweep-YT] Using video parent as container');
-        return videoParent;
+    try {
+        const videoParent = document.querySelector('video')?.parentElement;
+        if (videoParent && videoParent.nodeType === 1) {
+            console.log('[ISweep-YT] Using video parent as caption container');
+            return videoParent;
+        }
+    } catch (e) {
+        console.warn('[ISweep-YT] Error getting video parent:', e);
     }
     
     return null;
