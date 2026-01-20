@@ -158,7 +158,12 @@ function createControlOverlay(videoElement, index) {
     `;
     badge.textContent = '✓ ISweep Active';
 
-    // Wrap video in container for positioning
+    // Safely wrap video in container for positioning
+    if (!videoElement.parentElement) {
+        console.warn('[ISweep] Video has no parent element, skipping badge');
+        return;
+    }
+
     if (videoElement.parentElement.style.position !== 'relative' && 
         videoElement.parentElement.style.position !== 'absolute') {
         videoElement.parentElement.style.position = 'relative';
