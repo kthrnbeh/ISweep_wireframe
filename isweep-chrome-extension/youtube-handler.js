@@ -155,13 +155,18 @@ function getCaptionContainer() {
         'div[role="region"][aria-label*="captions"]',
         'div.ytp-caption-segment',
         'div.ytp-captions-text',
-        '[class*="captions"]',
     ];
 
     for (const selector of selectors) {
         try {
             const container = document.querySelector(selector);
-            if (container && container instanceof Node && container.nodeType === 1 && document.contains(container)) {
+            // Validate: must be an HTMLElement (not script/style), nodeType 1, and in document
+            if (container && 
+                container instanceof HTMLElement && 
+                container.nodeType === 1 && 
+                !(container instanceof HTMLScriptElement) &&
+                !(container instanceof HTMLStyleElement) &&
+                document.contains(container)) {
                 console.log('[ISweep-YT] Found caption container with selector:', selector);
                 return container;
             }
