@@ -19,6 +19,14 @@
   --radius:16px;
 }
 
+.dark {
+  --bg: #0f172a;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --card: #1e293b;
+  --border: #334155;
+}
+
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -36,6 +44,10 @@ body{
 }
 .section{padding:64px 0}
 .section.alt{background:#f1f5f9}
+
+.dark .section.alt {
+  background: var(--card);
+}
 .section-title{
   font-size: clamp(24px, 3vw, 36px);
   color:var(--brand-2);
@@ -49,6 +61,10 @@ body{
   background:rgba(255,255,255,.8);
   backdrop-filter: blur(8px);
   border-bottom:1px solid var(--border);
+}
+
+.dark .site-header {
+  background: rgba(15, 23, 42, 0.8);
 }
 .header-inner{
   display:flex; align-items:center; gap:24px;
@@ -64,9 +80,22 @@ body{
 }
 .main-nav a:hover{background:#eef2f7}
 .main-nav a.active{color:var(--brand-2)}
+
+.dark .main-nav a {
+  color: var(--text);
+}
+
+.dark .main-nav a:hover {
+  background: var(--card);
+}
 .theme-toggle{
   margin-left:6px; border:1px solid var(--border); background:#fff;
   padding:8px 12px; border-radius:10px; cursor:pointer;
+}
+
+.dark .theme-toggle {
+  background: var(--card);
+  color: var(--text);
 }
 
 /* ---- Hero ---- */
@@ -74,6 +103,11 @@ body{
   /* subtle gradient similar to inspiration */
   background: radial-gradient(80% 120% at 0% 0%, #dff5fb 0%, #ffffff 45%) ;
   padding: 56px 0 24px;
+  border-bottom:1px solid var(--border);
+}
+
+.dark .hero {
+  background: radial-gradient(80% 120% at 0% 0%, #1e293b 0%, #0f172a 45%);
   border-bottom:1px solid var(--border);
 }
 .hero-inner{
@@ -297,30 +331,30 @@ body.dark .step-card{background:#0f172a; border-color:#1f2937}
 /* ---------- DARK MODE TWEAKS FOR ACCOUNT PAGE ---------- */
 
 /* Dark mode for cards */
-body.dark-mode .card {
+.dark .card {
   background-color: #020617;      /* very dark background for cards */
   border-color: #1f2937;          /* darker border */
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
 }
 
 /* Dark mode text colors inside cards */
-body.dark-mode .card h2,
-body.dark-mode .card strong {
+.dark .card h2,
+.dark .card strong {
   color: #e5e7eb;                 /* light gray/white text */
 }
 
-body.dark-mode .card p,
-body.dark-mode .subtitle {
+.dark .card p,
+.dark .subtitle {
   color: #9ca3af;                 /* softer gray text in dark mode */
 }
 
 /* Dark mode button colors (keep them readable on dark bg) */
-body.dark-mode .account-page .card button {
+.dark .account-page .card button {
   background-color: #22c55e;      /* bright green button in dark mode */
   color: #022c22;
 }
 
-body.dark-mode .account-page .card button:hover {
+.dark .account-page .card button:hover {
   background-color: #16a34a;
 }
 
@@ -353,6 +387,10 @@ body.dark-mode .account-page .card button:hover {
   outline: 2px solid #0f766e;    /* teal focus ring */
   border-radius: 4px;
   background-color: #f9fafb;     /* very light background when editing */
+}
+
+.dark .profile-form input.profile-input:focus {
+  background-color: #1f2937;     /* dark background when editing */
 }
 /*plans*/
 /* styles/plans.css — optional polish, pure CSS only */
