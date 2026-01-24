@@ -38,9 +38,10 @@
             if (typeof result.isEnabled !== 'undefined') isEnabled = result.isEnabled;
             if (typeof result.backendURL === 'string') backendURL = result.backendURL;
             if (typeof result.userId === 'string') userId = result.userId;
-            ytLog('[ISweep-YT] Settings loaded', { isEnabled, backendURL, userId });
         } catch (e) {
             ytLog('[ISweep-YT] Failed to load settings, using defaults');
+        } finally {
+            ytLog('[ISweep-YT] Settings after load', { isEnabled, backendURL, userId });
         }
     }
 
@@ -149,7 +150,7 @@
 
     async function handleYouTubeCaptionChange(captionText) {
         if (!isEnabled || !captionText) {
-            if (!isEnabled) ytLog('[ISweep-YT] ISweep not enabled, skipping');
+            if (!isEnabled) ytLog('[ISweep-YT] Skipping because isEnabled=false');
             if (!captionText) ytLog('[ISweep-YT] No caption text, skipping');
             return;
         }
