@@ -36,6 +36,47 @@ let speechActive = false;
 let speechVideoRef = null;
 let speechUnsupportedLogged = false;
 
+// Initialize from storage on load
+async function initializeFromStorage() {
+    const result = await chrome.storage.local.get(['isEnabled', 'userId', 'backendURL']);
+    isEnabled = result.isEnabled !== false; // default to true if not set
+    userId = result.userId || 'user123';
+    backendURL = result.backendURL || 'http://127.0.0.1:8001';
+    csLog('[ISweep] Initialized from storage', { isEnabled, userId, backendURL });
+}
+
+// Listen for toggle messages from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message && message.action === 'toggleISweep' && typeof message.enabled !== 'undefined') {
+        isEnabled = message.enabled;
+        csLog('[ISweep] Toggled via popup:', isEnabled ? 'Enabled' : 'Disabled');
+        
+        // If disabled, stop speech recognition and unmute any videos
+        if (!isEnabled) {
+            stopSpeechFallback();
+            document.querySelectorAll('video').forEach(v => {
+                if (v.muted) v.muted = false;
+            });
+        }
+    }
+});
+
+// Listen for storage changes from other tabs/windows
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local') {
+        if (changes.isEnabled && typeof changes.isEnabled.newValue !== 'undefined') {
+            isEnabled = changes.isEnabled.newValue;
+            csLog('[ISweep] isEnabled changed via storage:', isEnabled);
+        }
+        if (changes.userId && typeof changes.userId.newValue === 'string') {
+            userId = changes.userId.newValue;
+        }
+        if (changes.backendURL && typeof changes.backendURL.newValue === 'string') {
+            backendURL = changes.backendURL.newValue;
+        }
+    }
+});
+
 function getActiveVideo() {
     const videos = Array.from(document.querySelectorAll('video'));
     return videos.find(v => !v.paused && !v.ended && v.readyState >= 2) || videos[0] || null;
