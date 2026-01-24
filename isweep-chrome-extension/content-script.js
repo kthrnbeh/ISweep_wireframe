@@ -1,4 +1,7 @@
 // content-script.js
+(function() {
+'use strict';
+
 /**
  * Content script injected into every page
  * Detects videos, extracts captions, and controls playback
@@ -17,9 +20,10 @@ function csLog(...args) {
 
 // Prevent double-injection
 if (window.__isweepContentLoaded) {
-    csLog("[ISweep] content-script already loaded; skipping duplicate injection");
-} else {
-    window.__isweepContentLoaded = true;
+    csLog('[ISweep] content-script already loaded; skipping duplicate injection');
+    return;
+}
+window.__isweepContentLoaded = true;
 
 let isEnabled = false;
 let userId = 'user123';
@@ -133,58 +137,6 @@ function setupVideoMonitoring(videoElement, index) {
     videoElement._isweepSetup = true;
 
 
-
-// --- Status Pill Implementation ---
-function createStatusPill() {
-    let pill = document.getElementById('isweep-status-pill');
-    if (pill) return pill;
-    pill = document.createElement('div');
-    pill.id = 'isweep-status-pill';
-    pill.style.position = 'fixed';
-    pill.style.top = '16px';
-    pill.style.right = '16px';
-    pill.style.zIndex = '99999';
-    pill.style.display = 'flex';
-    pill.style.alignItems = 'center';
-    pill.style.background = 'rgba(34, 34, 34, 0.95)';
-    pill.style.color = '#fff';
-    pill.style.borderRadius = '999px';
-    pill.style.padding = '6px 16px 6px 10px';
-    pill.style.fontSize = '15px';
-    pill.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-    pill.style.userSelect = 'none';
-    pill.style.gap = '8px';
-    pill.innerHTML = `
-        <span style="display: flex; align-items: center;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px;"><path d="M19.5 17.5L6.5 4.5M3 21h18M8.5 10.5l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span id="isweep-status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#aaa;margin-left:2px;"></span>
-        </span>
-        <span style="font-weight:500;">ISweep</span>
-    `;
-    document.body.appendChild(pill);
-    return pill;
-}
-
-function updateStatusIcon(enabled) {
-    createStatusPill();
-    const dot = document.getElementById('isweep-status-dot');
-    if (dot) {
-        dot.style.background = enabled ? '#4caf50' : '#aaa';
-    }
-}
-
-// --- Call updateStatusIcon after storage loads ---
-chrome.storage.sync.get(['isEnabled'], (result) => {
-    const isEnabled = result.isEnabled !== false;
-    updateStatusIcon(isEnabled);
-});
-
-// --- Listen for toggle messages and update pill ---
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message && message.type === 'TOGGLE_ISWEEP') {
-        updateStatusIcon(message.enabled);
-    }
-});
 
     // Extract captions from tracks
     extractCaptions(videoElement, index);
@@ -334,10 +286,6 @@ function applyDecision(videoElement, decision, captionText) {
         case 'mute':
             videoElement.muted = true;
             appliedActions++;
-            
-            // Show visual feedback
-            showFeedback(videoElement, 'MUTED', 'rgba(255, 107, 107, 0.9)');
-            
             setTimeout(() => {
                 videoElement.muted = false;
             }, duration * 1000);
@@ -346,8 +294,6 @@ function applyDecision(videoElement, decision, captionText) {
         case 'skip':
             videoElement.currentTime += duration;
             appliedActions++;
-            
-            showFeedback(videoElement, 'SKIPPED', 'rgba(66, 133, 244, 0.9)');
             break;
 
         case 'fast_forward':
@@ -355,9 +301,6 @@ function applyDecision(videoElement, decision, captionText) {
             const originalSpeed = videoElement.playbackRate;
             videoElement.playbackRate = 2.0;
             appliedActions++;
-            
-            showFeedback(videoElement, 'FAST-FORWARD 2x', 'rgba(251, 188, 5, 0.9)');
-            
             setTimeout(() => {
                 videoElement.playbackRate = originalSpeed;
             }, duration * 1000);
@@ -370,47 +313,6 @@ function applyDecision(videoElement, decision, captionText) {
     }
 
     updateStats();
-}
-
-// Show visual feedback when action applied
-function showFeedback(videoElement, text, bgColor) {
-    const feedback = document.createElement('div');
-    feedback.style.cssText = `
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: ${bgColor};
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 700;
-        z-index: 10001;
-        pointer-events: none;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        animation: fadeInOut 1.5s ease-in-out;
-    `;
-    feedback.textContent = text;
-
-    if (videoElement.parentElement) {
-        videoElement.parentElement.appendChild(feedback);
-        setTimeout(() => feedback.remove(), 1500);
-    }
-}
-
-// Add CSS animation for feedback
-if (document.head && !document.getElementById('isweep-styles')) {
-    const style = document.createElement('style');
-    style.id = 'isweep-styles';
-    style.textContent = `
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-            50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-        }
-    `;
-    document.head.appendChild(style);
 }
 
 // Handle video start
@@ -477,4 +379,4 @@ if (isYT) {
 
 csLog('[ISweep] Content script loaded - Caption extraction enabled' + (isYT ? ' + YouTube support' : ''));
 
-} // ← Close the guard block
+})();
