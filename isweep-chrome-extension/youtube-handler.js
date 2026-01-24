@@ -92,16 +92,37 @@ function initYouTubeHandler() {
     }
 
 /**
- * Check if YouTube captions are enabled
+ * Check if YouTube captions are visibly rendering on screen
  */
-function areCaptionsEnabled() {
+function areCaptionsVisiblyRendering() {
+    // Check for caption segments with text
+    const segments = document.querySelectorAll('.ytp-caption-segment');
+    if (segments.length > 0) {
+        for (const seg of segments) {
+            if (seg.textContent && seg.textContent.trim().length > 0) {
+                return true;
+            }
+        }
+    }
+    
+    // Check for caption window container with text
+    const captionWindow = document.querySelector('.ytp-caption-window-container');
+    if (captionWindow && captionWindow.textContent && captionWindow.textContent.trim().length > 0) {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Check if YouTube CC button indicates captions are enabled
+ */
+function areCaptionsButtonEnabled() {
     const ccButton = document.querySelector('.ytp-subtitles-button');
     if (ccButton) {
         const isPressed = ccButton.getAttribute('aria-pressed') === 'true';
-        ytDebug(`[ISweep-YT] CC button aria-pressed: ${isPressed}`);
         return isPressed;
     }
-    ytDebug('[ISweep-YT] CC button not found');
     return null;
 }
 
@@ -109,21 +130,34 @@ function areCaptionsEnabled() {
  * Monitor YouTube's caption display
  */
 function monitorYouTubeCaptions() {
-    // Check if captions are enabled before retrying
-    const captionsEnabled = areCaptionsEnabled();
-    if (captionsEnabled === false) {
-        const retryCount = window._ytCaptionRetryCount || 0;
-        // Only log once at the beginning
-        if (retryCount === 0) {
-            ytDebug('[ISweep-YT] Captions are OFF - stopping retry attempts');
-            window._ytCaptionRetryCount = -1; // Mark as checked
+    let retryCount = window._ytCaptionRetryCount || 0;
+    
+    // Check both aria-pressed and visible captions
+    const ariaPressed = areCaptionsButtonEnabled();
+    const visibleCaptions = areCaptionsVisiblyRendering();
+    
+    ytDebug(`[ISweep-YT] Caption status check: ariaPressed=${ariaPressed}, visibleCaptions=${visibleCaptions}`);
+    
+    // Only give up if BOTH checks fail (not just aria-pressed)
+    if (!ariaPressed && !visibleCaptions) {
+        // Allow up to 120 attempts (60 seconds at 500ms intervals) before giving up
+        if (retryCount < 120) {
+            window._ytCaptionRetryCount = retryCount + 1;
+            const percent = Math.round((retryCount / 120) * 100);
+            ytDebug(`[ISweep-YT] No captions detected (both checks failed), retrying (${retryCount + 1}/120, ${percent}%) in 500ms...`);
+            setTimeout(monitorYouTubeCaptions, 500);
+            return;
+        } else {
+            console.warn('[ISweep-YT] Could not detect captions after 120 attempts (60 seconds) - both aria-pressed and visible checks failed');
+            return;
         }
-        return;
     }
+    
+    // Captions are detected (at least one check passed)
+    ytDebug('[ISweep-YT] Captions detected - proceeding with monitoring');
 
     // Find caption container (try multiple times as YouTube takes time to render captions)
     let captionContainer = getCaptionContainer();
-    let retryCount = window._ytCaptionRetryCount || 0;
     
     if (!captionContainer) {
         // Allow up to 120 attempts (60 seconds at 500ms intervals)
