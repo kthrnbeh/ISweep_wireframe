@@ -28,11 +28,6 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "exclude_matches": [
-        "*://*.youtube.com/*",
-        "*://youtube.com/*",
-        "*://youtu.be/*"
-      ],
       "js": ["content-script.js"],
       "all_frames": false,
       "run_at": "document_idle"
@@ -43,7 +38,7 @@
         "*://youtube.com/*",
         "*://youtu.be/*"
       ],
-      "js": ["youtube-handler.js", "content-script.js"],
+      "js": ["youtube-handler.js"],
       "all_frames": false,
       "run_at": "document_idle"
     }
