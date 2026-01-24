@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const actionsAppliedSpan = document.getElementById('actionsApplied');
 
     // Load state from Chrome storage
-    const { isEnabled, userId, backendURL, videosDetected, actionsApplied } = await chrome.storage.local.get([
+    let { isEnabled, userId, backendURL, videosDetected, actionsApplied } = await chrome.storage.local.get([
         'isEnabled',
         'userId',
         'backendURL',
@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             userId: userIdInput.value.trim(),
             backendURL: backendUrl.value.trim()
         });
+        isEnabled = newState;
         updateUI(newState);
 
         // Notify content scripts

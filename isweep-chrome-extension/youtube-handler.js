@@ -127,6 +127,77 @@ function areCaptionsButtonEnabled() {
 }
 
 /**
+ * Log a snapshot of caption DOM elements for debugging
+ */
+function logCaptionDebugSnapshot() {
+    try {
+        const playerExists = !!document.querySelector('.html5-video-player');
+        const captionWindowExists = !!document.querySelector('.ytp-caption-window-container');
+        const segmentCount = document.querySelectorAll('.ytp-caption-segment').length;
+        const captionWindow = document.querySelector('.ytp-caption-window-container');
+        const captionText = captionWindow && captionWindow.textContent ? captionWindow.textContent.substring(0, 50) : 'N/A';
+        
+        ytDebug(`[ISweep-YT] DEBUG SNAPSHOT: playerExists=${playerExists}, captionWindowExists=${captionWindowExists}, segmentCount=${segmentCount}, captionSample="${captionText}"`);
+    } catch (e) {
+        console.warn('[ISweep-YT] Error logging debug snapshot:', e);
+    }
+}
+
+/**
+ * Caption Hunter Fallback: Find caption node when selectors fail
+ * Searches for any element containing caption-like text
+ */
+function findBestCaptionNode() {
+    try {
+        // Get player root for scoped search
+        const playerRoot = document.querySelector('.html5-video-player') || document;
+        
+        // Candidates to search (from most specific to most general)
+        const selectors = [
+            '.ytp-caption-window-container',
+            '.ytp-captions-text',
+            '.captions-text',
+            '[class*="caption"]',
+            '[class*="subtitle"]',
+            'span, div'
+        ];
+        
+        let bestNode = null;
+        let maxLength = 0;
+        
+        for (const selector of selectors) {
+            try {
+                const candidates = playerRoot.querySelectorAll(selector);
+                
+                for (const el of candidates) {
+                    // Only process HTMLElements
+                    if (!(el instanceof HTMLElement)) continue;
+                    
+                    const text = el.textContent ? el.textContent.trim() : '';
+                    
+                    // Filter: text >= 2 chars AND contains at least one letter
+                    if (text.length >= 2 && /[A-Za-z]/.test(text)) {
+                        // Prefer longer text (more likely to be actual captions)
+                        if (text.length > maxLength) {
+                            maxLength = text.length;
+                            bestNode = el;
+                        }
+                    }
+                }
+            } catch (e) {
+                // Continue to next selector on error
+                continue;
+            }
+        }
+        
+        return bestNode;
+    } catch (e) {
+        console.warn('[ISweep-YT] Error in findBestCaptionNode:', e);
+        return null;
+    }
+}
+
+/**
  * Monitor YouTube's caption display
  */
 function monitorYouTubeCaptions() {
@@ -144,6 +215,7 @@ function monitorYouTubeCaptions() {
         if (retryCount < 120) {
             window._ytCaptionRetryCount = retryCount + 1;
             const percent = Math.round((retryCount / 120) * 100);
+            logCaptionDebugSnapshot();
             ytDebug(`[ISweep-YT] No captions detected (both checks failed), retrying (${retryCount + 1}/120, ${percent}%) in 500ms...`);
             setTimeout(monitorYouTubeCaptions, 500);
             return;
@@ -160,16 +232,26 @@ function monitorYouTubeCaptions() {
     let captionContainer = getCaptionContainer();
     
     if (!captionContainer) {
-        // Allow up to 120 attempts (60 seconds at 500ms intervals)
-        if (retryCount < 120) {
-            window._ytCaptionRetryCount = retryCount + 1;
-            const percent = Math.round((retryCount / 120) * 100);
-            ytDebug(`[ISweep-YT] Caption container not found, retrying (${retryCount + 1}/120, ${percent}%) in 500ms...`);
-            setTimeout(monitorYouTubeCaptions, 500);
-            return;
+        // Try caption hunter as fallback before giving up
+        const hunterNode = findBestCaptionNode();
+        if (hunterNode) {
+            ytDebug(`[ISweep-YT] Hunter found caption node: ${hunterNode.className || hunterNode.tagName} sample="${hunterNode.textContent.substring(0, 30)}..."`);
+            // Store hunter node for extraction to use
+            window.__isweepCaptionNode = hunterNode;
+            captionContainer = hunterNode;
         } else {
-            console.warn('[ISweep-YT] Could not find caption container after 120 attempts (60 seconds)');
-            return;
+            // Allow up to 120 attempts (60 seconds at 500ms intervals)
+            if (retryCount < 120) {
+                window._ytCaptionRetryCount = retryCount + 1;
+                const percent = Math.round((retryCount / 120) * 100);
+                logCaptionDebugSnapshot();
+                ytDebug(`[ISweep-YT] Caption container not found, retrying (${retryCount + 1}/120, ${percent}%) in 500ms...`);
+                setTimeout(monitorYouTubeCaptions, 500);
+                return;
+            } else {
+                console.warn('[ISweep-YT] Could not find caption container after 120 attempts (60 seconds)');
+                return;
+            }
         }
     }
     
@@ -206,9 +288,29 @@ function monitorYouTubeCaptions() {
         }
     });
 
+    // Determine the best node to observe: caption window container first, then player root, then caption container
+    let observeTarget = captionContainer;
+    try {
+        const captionWindow = document.querySelector('.ytp-caption-window-container');
+        if (captionWindow && document.contains(captionWindow)) {
+            observeTarget = captionWindow;
+            ytDebug('[ISweep-YT] Will observe .ytp-caption-window-container');
+        } else {
+            const playerRoot = getPlayerRoot();
+            if (playerRoot !== document) {
+                observeTarget = playerRoot;
+                ytDebug('[ISweep-YT] Will observe player root element');
+            } else {
+                ytDebug('[ISweep-YT] Will observe caption container');
+            }
+        }
+    } catch (e) {
+        ytDebug('[ISweep-YT] Error determining observe target, using caption container');
+    }
+
     // Observe with aggressive settings
     try {
-        ytCaptionObserver.observe(captionContainer, {
+        ytCaptionObserver.observe(observeTarget, {
             childList: true,
             subtree: true,
             characterData: true
@@ -222,25 +324,42 @@ function monitorYouTubeCaptions() {
 }
 
 /**
+ * Get the YouTube player root element
+ */
+function getPlayerRoot() {
+    const player = document.querySelector('.html5-video-player');
+    if (player) {
+        ytDebug('[ISweep-YT] Found player root: .html5-video-player');
+        return player;
+    }
+    ytDebug('[ISweep-YT] Player root not found, using document as fallback');
+    return document;
+}
+
+/**
  * Get YouTube caption container
  */
 function getCaptionContainer() {
+    // Search within player element first, then fallback to document
+    const playerRoot = getPlayerRoot();
+    
     // YouTube places captions in several possible locations
-    // Try YouTube-specific selectors first, then fallback to common HTML patterns
+    // Try YouTube-specific selectors first, prioritizing caption window container
     const selectors = [
         // YouTube caption containers (high priority)
         '.ytp-caption-window-container',
+        '.ytp-caption-window-container .captions-text',
         '.ytp-caption-segment',
-        // Modern YouTube uses .captions-text for rendered captions
+        'div.ytp-captions-text',
+        // Fallback to common HTML patterns
         '.captions-text',
         'div[aria-live="off"]',
         'div[role="region"][aria-label*="captions"]',
-        'div.ytp-captions-text',
     ];
 
     for (const selector of selectors) {
         try {
-            const container = document.querySelector(selector);
+            const container = playerRoot.querySelector(selector);
             // Validate: must be an HTMLElement (not script/style), nodeType 1, and in document
             if (container && 
                 container instanceof HTMLElement && 
@@ -259,7 +378,7 @@ function getCaptionContainer() {
 
     // Last resort: find any element with caption-related text
     try {
-        const allDivs = document.querySelectorAll('div[role="status"], div[aria-live="polite"]');
+        const allDivs = playerRoot.querySelectorAll('div[role="status"], div[aria-live="polite"]');
         for (const div of allDivs) {
             if (div && div instanceof Node && div.nodeType === 1 && document.contains(div) && div.textContent.length > 0) {
                 ytDebug('[ISweep-YT] Found caption container via aria-live');
@@ -316,6 +435,14 @@ function extractYouTubeCaptions() {
     }
 
     if (!captionElements || captionElements.length === 0) {
+        // Fallback: if hunter node exists, use it directly
+        if (window.__isweepCaptionNode && window.__isweepCaptionNode.textContent) {
+            const text = window.__isweepCaptionNode.textContent.trim();
+            if (text.length > 0) {
+                ytDebug(`[ISweep-YT] Using hunter node fallback: "${text}"`);
+                return text;
+            }
+        }
         return null;
     }
 
