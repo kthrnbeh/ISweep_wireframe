@@ -14,7 +14,7 @@ if (window.__isweepYouTubeLoaded) {
     window.__ISWEEP_DEBUG = window.__ISWEEP_DEBUG ?? true;
 
     // Helper function for conditional logging
-    function debug(message) {
+    function ytDebug(message) {
         if (window.__ISWEEP_DEBUG) {
             console.log(message);
         }
@@ -30,7 +30,7 @@ let ytCaptionObserver = null;
 function initYouTubeHandler() {
     if (!isYouTubePage()) return false;
     
-    debug('[ISweep-YT] Initializing YouTube handler');
+    ytDebug('[ISweep-YT] Initializing YouTube handler');
     
     // Try to get player reference
     youtubePlayer = getYouTubePlayer();
@@ -40,18 +40,18 @@ function initYouTubeHandler() {
         setTimeout(() => {
             youtubePlayer = getYouTubePlayer();
             if (youtubePlayer) {
-                debug('[ISweep-YT] Player reference obtained on retry');
+                ytDebug('[ISweep-YT] Player reference obtained on retry');
             }
         }, 2000);
     } else {
-        debug('[ISweep-YT] Player reference obtained');
+        ytDebug('[ISweep-YT] Player reference obtained');
     }
 
     // Add badge to show ISweep is active
     addYouTubeBadge();
 
     // Monitor for caption changes (with retries)
-    debug('[ISweep-YT] Starting caption monitoring');
+    ytDebug('[ISweep-YT] Starting caption monitoring');
     monitorYouTubeCaptions();
     
     return true;
@@ -101,7 +101,7 @@ function monitorYouTubeCaptions() {
     if (!captionContainer) {
         if (retryCount < 10) {
             window._ytCaptionRetryCount = retryCount + 1;
-            debug(`[ISweep-YT] Caption container not found, retrying (attempt ${retryCount + 1}/10) in 500ms...`);
+            ytDebug(`[ISweep-YT] Caption container not found, retrying (attempt ${retryCount + 1}/10) in 500ms...`);
             setTimeout(monitorYouTubeCaptions, 500);
             return;
         } else {
@@ -127,7 +127,7 @@ function monitorYouTubeCaptions() {
         return;
     }
 
-    debug('[ISweep-YT] Found caption container, type:', captionContainer.nodeName);
+    ytDebug('[ISweep-YT] Found caption container, type:', captionContainer.nodeName);
 
     // Stop previous observer
     if (ytCaptionObserver) {
@@ -150,7 +150,7 @@ function monitorYouTubeCaptions() {
             subtree: true,
             characterData: true
         });
-        debug('[ISweep-YT] Caption monitoring started successfully');
+        ytDebug('[ISweep-YT] Caption monitoring started successfully');
     } catch (error) {
         console.error('[ISweep-YT] Failed to start monitoring:', error);
         // Retry if observer fails
@@ -183,7 +183,7 @@ function getCaptionContainer() {
                 !(container instanceof HTMLScriptElement) &&
                 !(container instanceof HTMLStyleElement) &&
                 document.contains(container)) {
-                debug('[ISweep-YT] Found caption container with selector:', selector);
+                ytDebug('[ISweep-YT] Found caption container with selector:', selector);
                 return container;
             }
         } catch (e) {
@@ -197,7 +197,7 @@ function getCaptionContainer() {
         const allDivs = document.querySelectorAll('div[role="status"], div[aria-live="polite"]');
         for (const div of allDivs) {
             if (div && div instanceof Node && div.nodeType === 1 && document.contains(div) && div.textContent.length > 0) {
-                debug('[ISweep-YT] Found caption container via aria-live');
+                ytDebug('[ISweep-YT] Found caption container via aria-live');
                 return div;
             }
         }
@@ -266,7 +266,7 @@ function extractYouTubeCaptions() {
     const result = fullText.trim();
     if (result.length > 0) {
         // Log the extracted caption for debugging
-        debug(`[ISweep-YT] Extracted caption: "${result}"`);
+        ytDebug(`[ISweep-YT] Extracted caption: "${result}"`);
         return result;
     }
     
@@ -280,18 +280,18 @@ async function handleYouTubeCaptionChange(captionText) {
     // Check if enabled (try both local and global)
     const enabled = typeof isEnabled !== 'undefined' ? isEnabled : localStorage.getItem('isweepEnabled') === 'true';
     
-    debug(`[ISweep-YT] Caption change detected: "${captionText}", isEnabled: ${enabled}`);
+    ytDebug(`[ISweep-YT] Caption change detected: "${captionText}", isEnabled: ${enabled}`);
     
     if (!enabled || !captionText) {
-        if (!enabled) debug('[ISweep-YT] ISweep not enabled, skipping');
-        if (!captionText) debug('[ISweep-YT] No caption text, skipping');
+        if (!enabled) ytDebug('[ISweep-YT] ISweep not enabled, skipping');
+        if (!captionText) ytDebug('[ISweep-YT] No caption text, skipping');
         return;
     }
 
     // Throttle requests
     const now = Date.now();
     if (window._isweepLastYTCheck && (now - window._isweepLastYTCheck) < 500) {
-        debug('[ISweep-YT] Throttled (500ms limit)');
+        ytDebug('[ISweep-YT] Throttled (500ms limit)');
         return;
     }
     window._isweepLastYTCheck = now;
@@ -312,11 +312,11 @@ async function handleYouTubeCaptionChange(captionText) {
             .replace(/\s+/g, " ")
             .trim();
         
-        debug(`[ISweep-YT] Sending to backend: ${backend}/event with user: ${user}`);
+        ytDebug(`[ISweep-YT] Sending to backend: ${backend}/event with user: ${user}`);
         
         // Send to backend
         const requestUrl = `${backend}/event`;
-        debug(`[ISweep-YT] ===== REQUEST START ===== URL: ${requestUrl}`);
+        ytDebug(`[ISweep-YT] ===== REQUEST START ===== URL: ${requestUrl}`);
         
         const response = await fetch(requestUrl, {
             method: 'POST',
@@ -332,17 +332,17 @@ async function handleYouTubeCaptionChange(captionText) {
             })
         });
 
-        debug(`[ISweep-YT] ===== RESPONSE RECEIVED ===== URL: ${requestUrl} | Status: ${response.status} (${response.ok ? 'OK' : 'ERROR'})`);
+        ytDebug(`[ISweep-YT] ===== RESPONSE RECEIVED ===== URL: ${requestUrl} | Status: ${response.status} (${response.ok ? 'OK' : 'ERROR'})`);
 
         if (!response.ok) {
             const errorText = await response.text();
-            debug(`[ISweep-YT] ===== ERROR BODY ===== ${errorText}`);
+            ytDebug(`[ISweep-YT] ===== ERROR BODY ===== ${errorText}`);
             throw new Error(`API error: ${response.status}`);
         }
 
         const decision = await response.json();
         
-        debug(`[ISweep-YT] Decision received: ${decision.action} - ${decision.reason}`);
+        ytDebug(`[ISweep-YT] Decision received: ${decision.action} - ${decision.reason}`);
         
         if (decision.action !== 'none') {
             applyYouTubeAction(decision, captionText);
@@ -370,7 +370,7 @@ function applyYouTubeAction(decision, captionText) {
         return;
     }
 
-    debug(`[ISweep-YT] Action: ${action} - ${reason}`);
+    ytDebug(`[ISweep-YT] Action: ${action} - ${reason}`);
 
     switch (action) {
         case 'mute':
@@ -477,7 +477,7 @@ function addYouTubeBadge() {
         }
     }
 
-    debug('[ISweep-YT] Badge added');
+    ytDebug('[ISweep-YT] Badge added');
 }
 
 /**
@@ -497,7 +497,7 @@ function removeYouTubeBadge() {
 function initYouTubeOnVideoChange() {
     // When user clicks on a new video, reinitialize
     document.addEventListener('yt-navigate-finish', () => {
-        debug('[ISweep-YT] Video changed, reinitializing');
+        ytDebug('[ISweep-YT] Video changed, reinitializing');
         lastCaptionText = '';
         initYouTubeHandler();
     });
@@ -511,7 +511,7 @@ function initYouTubeOnVideoChange() {
 
     // Only observe if document.body is available
     if (!document.body) {
-        debug('[ISweep-YT] document.body not available yet, waiting for DOMContentLoaded');
+        ytDebug('[ISweep-YT] document.body not available yet, waiting for DOMContentLoaded');
         document.addEventListener('DOMContentLoaded', () => {
             if (document.body) {
                 try {
