@@ -163,8 +163,6 @@
         window._isweepLastYTCheck = now;
 
         try {
-            const backend = backendURL;
-            const user = userId;
             const videoElement = getYouTubeVideoElement();
             const timestamp_seconds = videoElement ? videoElement.currentTime : 0;
 
@@ -174,68 +172,17 @@
                 .replace(/\s+/g, ' ')
                 .trim();
 
-            const payload = {
-                user_id: user,
-                text: cleanCaption,
-                content_type: null,
-                confidence: 0.9,
-                timestamp_seconds
-            };
-
-            ytLog('===== ISWEEP API REQUEST =====', { url: `${backend}/event`, payload });
-
-            const requestUrl = `${backend}/event`;
-            const response = await fetch(requestUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                ytLog('===== ISWEEP API RESPONSE =====', response.status, { ok: response.ok, body: errorText });
-                throw new Error(`API error: ${response.status}`);
-            }
-
-            const decision = await response.json();
-            ytLog('===== ISWEEP API RESPONSE =====', response.status, decision);
-
-            ytLog(`[ISweep-YT] Decision received: ${decision.action} - ${decision.reason}`);
-
-            if (decision.action !== 'none') {
-                applyYouTubeAction(decision, captionText);
+            if (typeof window.__isweepEmitText === 'function') {
+                await window.__isweepEmitText({
+                    text: cleanCaption,
+                    timestamp_seconds,
+                    source: 'youtube_dom'
+                });
+            } else {
+                ytLog('[ISweep-YT] __isweepEmitText not available, skipping');
             }
         } catch (error) {
             console.warn('[ISweep-YT] API error:', error.message || error);
-        }
-    }
-
-    function applyYouTubeAction(decision, captionText) {
-        const videoElement = getYouTubeVideoElement();
-        if (!videoElement) {
-            console.warn('[ISweep-YT] Could not find video element');
-            return;
-        }
-
-        const { action, duration_seconds, reason } = decision;
-        const duration = Math.max(0, Number(duration_seconds) || 3);
-
-        ytLog(`[ISweep-YT] Action: ${action} - ${reason}`);
-
-        switch (action) {
-            case 'mute':
-                videoElement.muted = true;
-                setTimeout(() => { videoElement.muted = false; }, duration * 1000);
-                break;
-            case 'skip':
-                videoElement.currentTime = Math.min(videoElement.currentTime + duration, videoElement.duration || Infinity);
-                break;
-            case 'fast_forward': {
-                const originalSpeed = videoElement.playbackRate;
-                videoElement.playbackRate = 2.0;
-                setTimeout(() => { videoElement.playbackRate = originalSpeed; }, duration * 1000);
-                break;
-            }
         }
     }
 

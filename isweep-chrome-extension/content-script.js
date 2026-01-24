@@ -30,6 +30,159 @@ let userId = 'user123';
 let backendURL = 'http://127.0.0.1:8001';
 let detectedVideos = 0;
 let appliedActions = 0;
+let lastCaptionEmitTs = Date.now();
+let speechRecognition = null;
+let speechActive = false;
+let speechVideoRef = null;
+let speechUnsupportedLogged = false;
+
+function getActiveVideo() {
+    const videos = Array.from(document.querySelectorAll('video'));
+    return videos.find(v => !v.paused && !v.ended && v.readyState >= 2) || videos[0] || null;
+}
+
+function startSpeechFallback(videoElement) {
+    if (speechActive) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        if (!speechUnsupportedLogged) {
+            speechUnsupportedLogged = true;
+            csLog('[ISweep] SpeechRecognition not available; fallback skipped');
+        }
+        return;
+    }
+
+    speechRecognition = new SpeechRecognition();
+    speechRecognition.continuous = true;
+    speechRecognition.interimResults = false;
+    speechRecognition.lang = 'en-US';
+    speechVideoRef = videoElement;
+
+    speechRecognition.onresult = (event) => {
+        const last = event.results[event.results.length - 1];
+        if (!last || !last[0]) return;
+        const transcript = (last[0].transcript || '').trim();
+        if (!transcript) return;
+        window.__isweepEmitText({
+            text: transcript,
+            timestamp_seconds: speechVideoRef ? speechVideoRef.currentTime : 0,
+            source: 'speech_fallback'
+        });
+    };
+
+    speechRecognition.onerror = () => {
+        stopSpeechFallback();
+    };
+
+    speechRecognition.onend = () => {
+        speechActive = false;
+    };
+
+    try {
+        speechRecognition.start();
+        speechActive = true;
+        csLog('[ISweep] Speech fallback started');
+    } catch (err) {
+        csLog('[ISweep] Speech fallback start failed', err.message || err);
+        speechActive = false;
+    }
+}
+
+function stopSpeechFallback() {
+    if (!speechActive && !speechRecognition) return;
+    try {
+        if (speechRecognition) {
+            speechRecognition.onresult = null;
+            speechRecognition.onerror = null;
+            speechRecognition.onend = null;
+            speechRecognition.stop();
+        }
+    } catch (_) {
+        // ignore
+    }
+    speechRecognition = null;
+    speechVideoRef = null;
+    speechActive = false;
+}
+
+window.__isweepApplyDecision = function(decision) {
+    const videoElement = getActiveVideo();
+    if (!videoElement) {
+        csLog('[ISweep] No active video to apply decision');
+        return;
+    }
+
+    const { action, duration_seconds, reason } = decision;
+    const duration = Math.max(0, Number(duration_seconds) || 3);
+
+    csLog(`[ISweep] Action: ${action} - ${reason}`);
+
+    switch (action) {
+        case 'mute':
+            videoElement.muted = true;
+            appliedActions++;
+            setTimeout(() => { videoElement.muted = false; }, duration * 1000);
+            break;
+        case 'skip':
+            videoElement.currentTime = Math.min(videoElement.currentTime + duration, videoElement.duration || Infinity);
+            appliedActions++;
+            break;
+        case 'fast_forward': {
+            const originalSpeed = videoElement.playbackRate;
+            videoElement.playbackRate = 2.0;
+            appliedActions++;
+            setTimeout(() => { videoElement.playbackRate = originalSpeed; }, duration * 1000);
+            break;
+        }
+        default:
+            break;
+    }
+
+    updateStats();
+};
+
+window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
+    if (!isEnabled) return;
+
+    lastCaptionEmitTs = Date.now();
+    if (speechActive) {
+        stopSpeechFallback();
+    }
+
+    const payload = {
+        user_id: userId,
+        text,
+        timestamp_seconds,
+        confidence: 0.9,
+        content_type: source || null
+    };
+
+    csLog('===== ISWEEP API REQUEST =====', { url: `${backendURL}/event`, payload });
+
+    try {
+        const response = await fetch(`${backendURL}/event`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            csLog('===== ISWEEP API RESPONSE =====', response.status, { ok: response.ok, body: errorText });
+            throw new Error(`API error: ${response.status}`);
+        }
+
+        const decision = await response.json();
+        csLog('===== ISWEEP API RESPONSE =====', response.status, decision);
+
+        if (decision.action !== 'none') {
+            window.__isweepApplyDecision(decision);
+        }
+    } catch (error) {
+        console.warn('[ISweep] API error:', error);
+    }
+};
 
 // Initialize on page load
 chrome.storage.local.get(['isEnabled', 'userId', 'backendURL'], (result) => {
@@ -249,81 +402,18 @@ async function checkForFilters(videoElement, index) {
     videoElement._isweepLastCheck = now;
 
 
-    try {
-        // Normalize caption text to remove special characters (♪, ♫, etc.)
-        const cleanCaption = captionText
-            .replace(/[♪♫]/g, " ")
-            .replace(/[^\p{L}\p{N}\s']/gu, " ")
-            .replace(/\s+/g, " ")
-            .trim();
+    // Normalize caption text to remove special characters (♪, ♫, etc.)
+    const cleanCaption = captionText
+        .replace(/[♪♫]/g, " ")
+        .replace(/[^\p{L}\p{N}\s']/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 
-        // Send caption text to backend for analysis
-        const response = await fetch(`${backendURL}/event`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                user_id: userId,
-                text: cleanCaption,
-                content_type: null,
-                confidence: 0.9,
-                timestamp_seconds: videoElement.currentTime
-            })
-        });
-
-        if (!response.ok) throw new Error('API error');
-
-        const decision = await response.json();
-        
-        // Only apply if action is NOT 'none'
-        if (decision.action !== 'none') {
-            applyDecision(videoElement, decision, captionText);
-        }
-    } catch (error) {
-        console.warn('[ISweep] API error:', error);
-    }
-}
-
-// Apply decision to video
-function applyDecision(videoElement, decision, captionText) {
-    const { action, duration_seconds, reason } = decision;
-    const duration = Number(duration_seconds) || 3; // Default 3 seconds if null/undefined
-
-    csLog(`[ISweep] Caption: "${captionText}"`);
-    csLog(`[ISweep] Action: ${action} - ${reason}`);
-
-    switch (action) {
-        case 'mute':
-            videoElement.muted = true;
-            appliedActions++;
-            setTimeout(() => {
-                videoElement.muted = false;
-            }, duration * 1000);
-            break;
-
-        case 'skip':
-            videoElement.currentTime += duration;
-            appliedActions++;
-            break;
-
-        case 'fast_forward':
-            // Increase playback speed
-            const originalSpeed = videoElement.playbackRate;
-            videoElement.playbackRate = 2.0;
-            appliedActions++;
-            setTimeout(() => {
-                videoElement.playbackRate = originalSpeed;
-            }, duration * 1000);
-            break;
-
-        case 'none':
-        default:
-            // No action
-            break;
-    }
-
-    updateStats();
+    await window.__isweepEmitText({
+        text: cleanCaption,
+        timestamp_seconds: videoElement.currentTime,
+        source: 'html5_dom'
+    });
 }
 
 // Handle video start
@@ -376,6 +466,28 @@ detectVideos();
 
 // Periodic check for new videos
 setInterval(detectVideos, 2000);
+
+function monitorSpeechFallback() {
+    if (!isEnabled) {
+        stopSpeechFallback();
+        return;
+    }
+
+    const video = getActiveVideo();
+    if (!video || video.paused || video.ended || video.readyState < 2) {
+        stopSpeechFallback();
+        return;
+    }
+
+    const now = Date.now();
+    if ((now - lastCaptionEmitTs) >= 5000) {
+        startSpeechFallback(video);
+    } else if (speechActive) {
+        stopSpeechFallback();
+    }
+}
+
+setInterval(monitorSpeechFallback, 1000);
 
 // Initialize YouTube handler if on YouTube (use window.isYouTubePage for safe access)
 const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
