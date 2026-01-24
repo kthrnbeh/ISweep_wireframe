@@ -502,12 +502,6 @@ if (document.body) {
     });
 }
 
-// Initial detection
-detectVideos();
-
-// Periodic check for new videos
-setInterval(detectVideos, 2000);
-
 function monitorSpeechFallback() {
     if (!isEnabled) {
         stopSpeechFallback();
@@ -528,19 +522,31 @@ function monitorSpeechFallback() {
     }
 }
 
-setInterval(monitorSpeechFallback, 1000);
+// Initialize from storage, then start monitoring
+initializeFromStorage().then(() => {
+    csLog('[ISweep] Content script initialized and ready');
 
-// Initialize YouTube handler if on YouTube (use window.isYouTubePage for safe access)
-const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
-if (isYT) {
-    if (typeof window.initYouTubeOnVideoChange === 'function') {
-        window.initYouTubeOnVideoChange();
-    }
-    if (typeof window.initYouTubeHandler === 'function') {
-        setTimeout(window.initYouTubeHandler, 1000);
-    }
-}
+    // Initial detection
+    detectVideos();
 
-csLog('[ISweep] Content script loaded - Caption extraction enabled' + (isYT ? ' + YouTube support' : ''));
+    // Periodic check for new videos
+    setInterval(detectVideos, 2000);
+
+    // Speech fallback monitor
+    setInterval(monitorSpeechFallback, 1000);
+
+    // Initialize YouTube handler if on YouTube (use window.isYouTubePage for safe access)
+    const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
+    if (isYT) {
+        if (typeof window.initYouTubeOnVideoChange === 'function') {
+            window.initYouTubeOnVideoChange();
+        }
+        if (typeof window.initYouTubeHandler === 'function') {
+            setTimeout(window.initYouTubeHandler, 1000);
+        }
+    }
+
+    csLog('[ISweep] Caption extraction enabled' + (isYT ? ' + YouTube support' : ''));
+});
 
 })();
