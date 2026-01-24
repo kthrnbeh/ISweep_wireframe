@@ -5,13 +5,13 @@
  * Supports: HTML5 video + YouTube
  */
 
-// DEBUG flag - set to false to disable all logs
-const DEBUG = true;
+// Global debug flag (shared across extension); default to true if undefined
+window.__ISWEEP_DEBUG = (window.__ISWEEP_DEBUG ?? true);
 
 // Helper function for conditional logging
-function debug(message) {
-    if (DEBUG) {
-        console.log(message);
+function csLog(...args) {
+    if (window.__ISWEEP_DEBUG) {
+        console.log('[ISweep-CS]', ...args);
     }
 }
 
