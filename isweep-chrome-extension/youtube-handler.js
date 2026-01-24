@@ -4,21 +4,21 @@
  * Detects YouTube videos and extracts captions from the page
  */
 
-// DEBUG flag - set to false to disable all logs
-const DEBUG = true;
-
-// Helper function for conditional logging
-function debug(message) {
-    if (DEBUG) {
-        console.log(message);
-    }
-}
-
 // Prevent double-injection on YouTube SPA
 if (window.__isweepYouTubeLoaded) {
-    debug("[ISweep-YT] youtube-handler already loaded; skipping duplicate injection");
+    console.log("[ISweep-YT] youtube-handler already loaded; skipping duplicate injection");
 } else {
     window.__isweepYouTubeLoaded = true;
+
+    // DEBUG flag - set to false to disable all logs
+    window.__ISWEEP_DEBUG = window.__ISWEEP_DEBUG ?? true;
+
+    // Helper function for conditional logging
+    function debug(message) {
+        if (window.__ISWEEP_DEBUG) {
+            console.log(message);
+        }
+    }
 
 let youtubePlayer = null;
 let lastCaptionText = '';
