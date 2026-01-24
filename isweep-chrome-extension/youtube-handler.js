@@ -47,50 +47,49 @@ function initYouTubeHandler() {
         ytDebug('[ISweep-YT] Player reference obtained');
     }
 
-    // Add badge to show ISweep is active
-    // addYouTubeBadge(); // commented out to keep only the top-right pill UI
+
+    // Add status pill UI
+    updateStatusIcon(typeof isEnabled !== 'undefined' ? isEnabled : true);
 
     // Monitor for caption changes (with retries)
     ytDebug('[ISweep-YT] Starting caption monitoring');
     monitorYouTubeCaptions();
     
-    return true;
-}
 
-/**
- * Check if we're on YouTube
- */
-function isYouTubePage() {
-    return location.hostname.includes('youtube.com') || location.hostname.includes('youtu.be');
-}
-
-/**
- * Get reference to YouTube player
- */
-function getYouTubePlayer() {
-    // YouTube stores player in window.ytPlayer
-    if (window.ytPlayer) {
-        return window.ytPlayer;
+    // --- Status Pill Implementation ---
+    function createStatusPill() {
+        let pill = document.getElementById('isweep-status-pill');
+        if (pill) return pill;
+        pill = document.createElement('div');
+        pill.id = 'isweep-status-pill';
+        pill.style.position = 'fixed';
+        pill.style.top = '16px';
+        pill.style.right = '16px';
+        pill.style.zIndex = '99999';
+        pill.style.display = 'flex';
+        pill.style.alignItems = 'center';
+        pill.style.background = '#fff';
+        pill.style.borderRadius = '999px';
+        pill.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+        pill.style.padding = '4px 12px 4px 8px';
+        pill.style.fontSize = '16px';
+        pill.style.fontFamily = 'system-ui,sans-serif';
+        pill.style.userSelect = 'none';
+        pill.innerHTML = `
+            <span style="margin-right:8px;">🧹</span>
+            <span id="isweep-status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ccc;"></span>
+        `;
+        document.body.appendChild(pill);
+        return pill;
     }
-    
-    // Try to find player in document
-    const playerContainer = document.querySelector('[data-player-container-id="player"]');
-    if (playerContainer && window.ytPlayers) {
-        return Object.values(window.ytPlayers)[0];
+
+    function updateStatusIcon(enabled) {
+        createStatusPill();
+        const dot = document.getElementById('isweep-status-dot');
+        if (dot) {
+            dot.style.background = enabled ? '#27c93f' : '#ff3b30';
+        }
     }
-
-    return null;
-}
-
-/**
- * Get current video element from YouTube
- */
-function getYouTubeVideoElement() {
-    // YouTube embeds an HTML5 video element
-    return document.querySelector('video');
-}
-
-/**
  * Monitor YouTube's caption display
  */
 function monitorYouTubeCaptions() {
@@ -297,13 +296,14 @@ async function handleYouTubeCaptionChange(captionText) {
     window._isweepLastYTCheck = now;
 
     try {
+
         // Get backend URL and user ID (try both local and localStorage)
         const backend = typeof backendURL !== 'undefined' ? backendURL : localStorage.getItem('backendURL') || 'http://127.0.0.1:8001';
         const user = typeof userId !== 'undefined' ? userId : localStorage.getItem('userId') || 'user123';
         
         // Get video element for timestamp
         const videoElement = getYouTubeVideoElement();
-        const timestamp = videoElement ? videoElement.currentTime : 0;
+        const timestamp_seconds = videoElement ? Math.floor(videoElement.currentTime) : 0;
         
         // Normalize caption text to remove special characters (♪, ♫, etc.)
         const cleanCaption = captionText
@@ -328,7 +328,7 @@ async function handleYouTubeCaptionChange(captionText) {
                 text: cleanCaption,
                 content_type: null,
                 confidence: 0.9,
-                timestamp_seconds: timestamp
+                timestamp_seconds: timestamp_seconds
             })
         });
 

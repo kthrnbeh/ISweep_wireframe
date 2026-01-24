@@ -43,72 +43,54 @@ chrome.storage.local.get(['isEnabled', 'userId', 'backendURL'], (result) => {
     }
 });
 
-// Add fixed icon in top-right when enabled
-function addStatusIcon() {
-    // Prevent duplicates
-    if (document.getElementById('isweep-status-icon')) return;
 
-    const icon = document.createElement('div');
-    icon.id = 'isweep-status-icon';
-    icon.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: rgba(34, 197, 94, 0.95);
-        color: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        z-index: 10000;
-        pointer-events: auto;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+// --- Status Pill Implementation ---
+function createStatusPill() {
+    let pill = document.getElementById('isweep-status-pill');
+    if (pill) return pill;
+    pill = document.createElement('div');
+    pill.id = 'isweep-status-pill';
+    pill.style.position = 'fixed';
+    pill.style.top = '16px';
+    pill.style.right = '16px';
+    pill.style.zIndex = '99999';
+    pill.style.display = 'flex';
+    pill.style.alignItems = 'center';
+    pill.style.background = '#fff';
+    pill.style.borderRadius = '999px';
+    pill.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+    pill.style.padding = '4px 12px 4px 8px';
+    pill.style.fontSize = '16px';
+    pill.style.fontFamily = 'system-ui,sans-serif';
+    pill.style.userSelect = 'none';
+    pill.innerHTML = `
+        <span style="margin-right:8px;">🧹</span>
+        <span id="isweep-status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ccc;"></span>
     `;
-    icon.textContent = '🧹 ISweep ON';
+    document.body.appendChild(pill);
+    return pill;
+}
 
-    const parent = document.body || document.documentElement;
-    if (parent) {
-        try {
-            parent.appendChild(icon);
-            debug('[ISweep] Status icon added');
-        } catch (error) {
-            console.warn('[ISweep] Failed to add status icon:', error);
-        }
+function updateStatusIcon(enabled) {
+    createStatusPill();
+    const dot = document.getElementById('isweep-status-dot');
+    if (dot) {
+        dot.style.background = enabled ? '#27c93f' : '#ff3b30';
     }
 }
 
-// Remove status icon when disabled
-function removeStatusIcon() {
-    const icon = document.getElementById('isweep-status-icon');
-    if (icon) {
-        try {
-            icon.remove();
-            debug('[ISweep] Status icon removed');
-        } catch (error) {
-            console.warn('[ISweep] Failed to remove status icon:', error);
-        }
-    }
-}
+// --- Call updateStatusIcon after storage loads ---
+chrome.storage.sync.get(['isEnabled'], (result) => {
+    const isEnabled = result.isEnabled !== false;
+    updateStatusIcon(isEnabled);
+});
 
-// Refresh badge visibility when toggle changes
-function refreshBadges() {
-    document.querySelectorAll('video').forEach(v => {
-        if (v._isweepBadge && v.parentElement) {
-            if (isEnabled) {
-                // Show badge if not already visible
-                if (!v.parentElement.contains(v._isweepBadge)) {
-                    v.parentElement.appendChild(v._isweepBadge);
-                }
-            } else {
-                // Hide badge when disabled
-                if (v.parentElement.contains(v._isweepBadge)) {
-                    v._isweepBadge.remove();
-                }
-            }
-        }
-    });
-}
+// --- Listen for toggle messages and update pill ---
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message && message.type === 'TOGGLE_ISWEEP') {
+        updateStatusIcon(message.enabled);
+    }
+});
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -150,8 +132,7 @@ function setupVideoMonitoring(videoElement, index) {
     if (videoElement._isweepSetup) return;
     videoElement._isweepSetup = true;
 
-    // Create control overlay
-        // createControlOverlay(videoElement, index); // commented out to remove duplicate UI indicators
+
 
 // --- Status Pill Implementation ---
 function createStatusPill() {
@@ -285,45 +266,7 @@ function parseVTT(vttText) {
     return cues;
 }
 
-// Create visual indicator on video
-function createControlOverlay(videoElement, index) {
-    // Create badge container
-    const badge = document.createElement('div');
-    badge.style.cssText = `
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(34, 197, 94, 0.9);
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        z-index: 10000;
-        pointer-events: none;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    `;
-    badge.textContent = '✓ ISweep Active';
 
-    // Safely wrap video in container for positioning
-    if (!videoElement.parentElement) {
-        console.warn('[ISweep] Video has no parent element, skipping badge');
-        return;
-    }
-
-    if (videoElement.parentElement.style.position !== 'relative' && 
-        videoElement.parentElement.style.position !== 'absolute') {
-        videoElement.parentElement.style.position = 'relative';
-    }
-
-    // Only show badge if enabled
-    if (isEnabled) {
-        videoElement.parentElement.appendChild(badge);
-    }
-
-    // Store reference for later updates
-    videoElement._isweepBadge = badge;
-}
 
 // Main filtering logic
 async function checkForFilters(videoElement, index) {
@@ -341,6 +284,7 @@ async function checkForFilters(videoElement, index) {
         return;
     }
     videoElement._isweepLastCheck = now;
+
 
     try {
         // Normalize caption text to remove special characters (♪, ♫, etc.)
@@ -361,7 +305,7 @@ async function checkForFilters(videoElement, index) {
                 text: cleanCaption,
                 content_type: null,
                 confidence: 0.9,
-                timestamp_seconds: videoElement.currentTime
+                timestamp_seconds: Math.floor(videoElement.currentTime)
             })
         });
 
