@@ -361,7 +361,7 @@ async function checkForFilters(videoElement, index) {
                 text: cleanCaption,
                 content_type: null,
                 confidence: 0.9,
-                timestamp: videoElement.currentTime
+                timestamp_seconds: videoElement.currentTime
             })
         });
 
