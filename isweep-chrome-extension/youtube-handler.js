@@ -23,6 +23,40 @@ if (window.__isweepYouTubeLoaded) {
 let youtubePlayer = null;
 let lastCaptionText = '';
 let ytCaptionObserver = null;
+    let isEnabled = true;
+    let backendURL = 'http://127.0.0.1:8001';
+    let userId = 'user123';
+
+    async function loadSettings() {
+        try {
+            const result = await chrome.storage.local.get(['isEnabled', 'backendURL', 'userId']);
+            if (typeof result.isEnabled !== 'undefined') isEnabled = result.isEnabled;
+            if (typeof result.backendURL === 'string') backendURL = result.backendURL;
+            if (typeof result.userId === 'string') userId = result.userId;
+            ytLog('[ISweep-YT] Settings loaded', { isEnabled, backendURL, userId });
+        } catch (e) {
+            ytLog('[ISweep-YT] Failed to load settings, using defaults');
+        }
+    }
+
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'local') return;
+        if (changes.isEnabled && typeof changes.isEnabled.newValue !== 'undefined') {
+            isEnabled = changes.isEnabled.newValue;
+        }
+        if (changes.backendURL && typeof changes.backendURL.newValue === 'string') {
+            backendURL = changes.backendURL.newValue;
+        }
+        if (changes.userId && typeof changes.userId.newValue === 'string') {
+            userId = changes.userId.newValue;
+        }
+    });
+
+    chrome.runtime.onMessage.addListener((message) => {
+        if (message && message.action === 'toggleISweep' && typeof message.enabled !== 'undefined') {
+            isEnabled = message.enabled;
+        }
+    });
 
 /**
  * Initialize YouTube handler
@@ -145,9 +179,8 @@ function initYouTubeHandler() {
                 }
 
                 async function handleYouTubeCaptionChange(captionText) {
-                    const enabled = typeof isEnabled !== 'undefined' ? isEnabled : localStorage.getItem('isweepEnabled') === 'true';
-                    if (!enabled || !captionText) {
-                        if (!enabled) ytLog('[ISweep-YT] ISweep not enabled, skipping');
+                    if (!isEnabled || !captionText) {
+                        if (!isEnabled) ytLog('[ISweep-YT] ISweep not enabled, skipping');
                         if (!captionText) ytLog('[ISweep-YT] No caption text, skipping');
                         return;
                     }
@@ -160,8 +193,8 @@ function initYouTubeHandler() {
                     window._isweepLastYTCheck = now;
 
                     try {
-                        const backend = typeof backendURL !== 'undefined' ? backendURL : localStorage.getItem('backendURL') || 'http://127.0.0.1:8001';
-                        const user = typeof userId !== 'undefined' ? userId : localStorage.getItem('userId') || 'user123';
+                        const backend = backendURL;
+                        const user = userId;
                         const videoElement = getYouTubeVideoElement();
                         const timestamp_seconds = videoElement ? videoElement.currentTime : 0;
 

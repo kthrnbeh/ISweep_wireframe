@@ -114,8 +114,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-// Detect all video elements on page
+// Detect all video elements on page (skip YouTube; handled by youtube-handler)
+const __isweepIsYouTube = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
+let __isweepYTLogged = false;
+
 function detectVideos() {
+    if (__isweepIsYouTube) {
+        if (!__isweepYTLogged) {
+            __isweepYTLogged = true;
+            csLog('[ISweep-CS] YouTube detected - skipping non-YouTube caption extraction');
+        }
+        return;
+    }
+
     const videos = document.querySelectorAll('video');
     
     if (videos.length > 0 && detectedVideos !== videos.length) {
