@@ -4,6 +4,12 @@
  * Detects YouTube videos and extracts captions from the page
  */
 
+// Prevent double-injection on YouTube SPA
+if (window.__isweepYouTubeLoaded) {
+    console.log("[ISweep-YT] youtube-handler already loaded; skipping duplicate injection");
+} else {
+    window.__isweepYouTubeLoaded = true;
+
 let youtubePlayer = null;
 let lastCaptionText = '';
 let ytCaptionObserver = null;
@@ -285,6 +291,17 @@ async function handleYouTubeCaptionChange(captionText) {
         const backend = typeof backendURL !== 'undefined' ? backendURL : localStorage.getItem('backendURL') || 'http://127.0.0.1:8001';
         const user = typeof userId !== 'undefined' ? userId : localStorage.getItem('userId') || 'user123';
         
+        // Get video element for timestamp
+        const videoElement = getYouTubeVideoElement();
+        const timestamp = videoElement ? videoElement.currentTime : 0;
+        
+        // Normalize caption text to remove special characters (♪, ♫, etc.)
+        const cleanCaption = captionText
+            .replace(/[♪♫]/g, " ")
+            .replace(/[^\p{L}\p{N}\s']/gu, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        
         console.log(`[ISweep-YT] Sending to backend: ${backend}/event with user: ${user}`);
         
         // Send to backend
@@ -295,10 +312,10 @@ async function handleYouTubeCaptionChange(captionText) {
             },
             body: JSON.stringify({
                 user_id: user,
-                text: captionText,
+                text: cleanCaption,
                 content_type: null,
                 confidence: 0.9,
-                timestamp_seconds: null
+                timestamp: timestamp
             })
         });
 
@@ -329,38 +346,41 @@ function applyYouTubeAction(decision, captionText) {
     }
 
     const { action, duration_seconds, reason } = decision;
+    const duration = Number(duration_seconds) || 3; // Default 3 seconds if null/undefined
 
     console.log(`[ISweep-YT] Action: ${action} - ${reason}`);
 
     switch (action) {
         case 'mute':
             videoElement.muted = true;
-            appliedActions++;
+            // Safe increment: only if variable exists
+            if (typeof appliedActions !== 'undefined') appliedActions++;
             showYouTubeFeedback('MUTED', 'rgba(255, 107, 107, 0.9)');
             setTimeout(() => {
                 videoElement.muted = false;
-            }, duration_seconds * 1000);
+            }, duration * 1000);
             break;
 
         case 'skip':
-            const newTime = videoElement.currentTime + duration_seconds;
+            const newTime = videoElement.currentTime + duration;
             videoElement.currentTime = Math.min(newTime, videoElement.duration);
-            appliedActions++;
+            if (typeof appliedActions !== 'undefined') appliedActions++;
             showYouTubeFeedback('SKIPPED', 'rgba(66, 133, 244, 0.9)');
             break;
 
         case 'fast_forward':
             const originalSpeed = videoElement.playbackRate;
             videoElement.playbackRate = 2.0;
-            appliedActions++;
+            if (typeof appliedActions !== 'undefined') appliedActions++;
             showYouTubeFeedback('FAST-FORWARD 2x', 'rgba(251, 188, 5, 0.9)');
             setTimeout(() => {
                 videoElement.playbackRate = originalSpeed;
-            }, duration_seconds * 1000);
+            }, duration * 1000);
             break;
     }
 
-    updateStats();
+    // Safe call: only if function exists
+    if (typeof updateStats === 'function') updateStats();
 }
 
 /**
@@ -481,14 +501,10 @@ function initYouTubeOnVideoChange() {
     }
 }
 
-// Export for use in content-script.js
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        initYouTubeHandler,
-        isYouTubePage,
-        getYouTubeVideoElement,
-        showYouTubeFeedback,
-        addYouTubeBadge,
-        removeYouTubeBadge
-    };
-}
+// Export functions to window for content-script access (Chrome content scripts don't use CommonJS)
+window.initYouTubeHandler = initYouTubeHandler;
+window.isYouTubePage = isYouTubePage;
+window.initYouTubeOnVideoChange = initYouTubeOnVideoChange;
+window.getYouTubeVideoElement = getYouTubeVideoElement;
+
+} // ← Close the guard block

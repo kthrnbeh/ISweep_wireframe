@@ -5,6 +5,12 @@
  * Supports: HTML5 video + YouTube
  */
 
+// Prevent double-injection
+if (window.__isweepContentLoaded) {
+    console.log("[ISweep] content-script already loaded; skipping duplicate injection");
+} else {
+    window.__isweepContentLoaded = true;
+
 let isEnabled = false;
 let userId = 'user123';
 let backendURL = 'http://127.0.0.1:8001';
@@ -17,18 +23,41 @@ chrome.storage.local.get(['isEnabled', 'userId', 'backendURL'], (result) => {
     userId = result.userId || 'user123';
     backendURL = result.backendURL || 'http://127.0.0.1:8001';
     
-    // Initialize YouTube handler if on YouTube (uses isYouTubePage() function from youtube-handler.js)
-    if (isYouTubePage && isYouTubePage()) {
+    // Initialize YouTube handler if on YouTube (safe window access)
+    const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
+    if (isYT) {
         console.log('[ISweep] YouTube page detected');
-        initYouTubeHandler();
+        if (typeof window.initYouTubeHandler === 'function') {
+            window.initYouTubeHandler();
+        }
     }
 });
+
+// Refresh badge visibility when toggle changes
+function refreshBadges() {
+    document.querySelectorAll('video').forEach(v => {
+        if (v._isweepBadge && v.parentElement) {
+            if (isEnabled) {
+                // Show badge if not already visible
+                if (!v.parentElement.contains(v._isweepBadge)) {
+                    v.parentElement.appendChild(v._isweepBadge);
+                }
+            } else {
+                // Hide badge when disabled
+                if (v.parentElement.contains(v._isweepBadge)) {
+                    v._isweepBadge.remove();
+                }
+            }
+        }
+    });
+}
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'toggleISweep') {
         isEnabled = request.enabled;
         console.log(`[ISweep] ${isEnabled ? 'Enabled' : 'Disabled'}`);
+        refreshBadges(); // Update badges immediately
         sendResponse({ success: true });
     }
 });
@@ -196,6 +225,13 @@ async function checkForFilters(videoElement, index) {
     videoElement._isweepLastCheck = now;
 
     try {
+        // Normalize caption text to remove special characters (♪, ♫, etc.)
+        const cleanCaption = captionText
+            .replace(/[♪♫]/g, " ")
+            .replace(/[^\p{L}\p{N}\s']/gu, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
         // Send caption text to backend for analysis
         const response = await fetch(`${backendURL}/event`, {
             method: 'POST',
@@ -204,10 +240,10 @@ async function checkForFilters(videoElement, index) {
             },
             body: JSON.stringify({
                 user_id: userId,
-                text: captionText,  // REAL caption text!
-                content_type: null,  // Let backend analyze text
+                text: cleanCaption,
+                content_type: null,
                 confidence: 0.9,
-                timestamp_seconds: videoElement.currentTime
+                timestamp: videoElement.currentTime
             })
         });
 
@@ -227,6 +263,7 @@ async function checkForFilters(videoElement, index) {
 // Apply decision to video
 function applyDecision(videoElement, decision, captionText) {
     const { action, duration_seconds, reason } = decision;
+    const duration = Number(duration_seconds) || 3; // Default 3 seconds if null/undefined
 
     console.log(`[ISweep] Caption: "${captionText}"`);
     console.log(`[ISweep] Action: ${action} - ${reason}`);
@@ -241,11 +278,11 @@ function applyDecision(videoElement, decision, captionText) {
             
             setTimeout(() => {
                 videoElement.muted = false;
-            }, duration_seconds * 1000);
+            }, duration * 1000);
             break;
 
         case 'skip':
-            videoElement.currentTime += duration_seconds;
+            videoElement.currentTime += duration;
             appliedActions++;
             
             showFeedback(videoElement, 'SKIPPED', 'rgba(66, 133, 244, 0.9)');
@@ -261,7 +298,7 @@ function applyDecision(videoElement, decision, captionText) {
             
             setTimeout(() => {
                 videoElement.playbackRate = originalSpeed;
-            }, duration_seconds * 1000);
+            }, duration * 1000);
             break;
 
         case 'none':
@@ -365,10 +402,17 @@ detectVideos();
 // Periodic check for new videos
 setInterval(detectVideos, 2000);
 
-// Initialize YouTube handler if on YouTube
-if (isYouTubePage && isYouTubePage()) {
-    initYouTubeOnVideoChange();
-    setTimeout(initYouTubeHandler, 1000);
+// Initialize YouTube handler if on YouTube (use window.isYouTubePage for safe access)
+const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
+if (isYT) {
+    if (typeof window.initYouTubeOnVideoChange === 'function') {
+        window.initYouTubeOnVideoChange();
+    }
+    if (typeof window.initYouTubeHandler === 'function') {
+        setTimeout(window.initYouTubeHandler, 1000);
+    }
 }
 
-console.log('[ISweep] Content script loaded - Caption extraction enabled' + (isYouTubePage && isYouTubePage() ? ' + YouTube support' : ''));
+console.log('[ISweep] Content script loaded - Caption extraction enabled' + (isYT ? ' + YouTube support' : ''));
+
+} // ← Close the guard block

@@ -28,9 +28,15 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "all_frames": false,
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.youtube.com/*", "*://youtube.com/*"],
       "js": ["youtube-handler.js", "content-script.js"],
       "all_frames": false,
-      "run_at": "document_start"
+      "run_at": "document_idle"
     }
   ],
   "icons": {
