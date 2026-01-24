@@ -31,6 +31,8 @@ let backendURL = 'http://127.0.0.1:8001';
 let detectedVideos = 0;
 let appliedActions = 0;
 let lastCaptionEmitTs = Date.now();
+let muteUntil = 0; // Track when mute should end to prevent over-muting
+let lastMutedPhrase = null; // Track last muted phrase to allow different phrases
 let speechRecognition = null;
 let speechActive = false;
 let speechVideoRef = null;
@@ -43,14 +45,71 @@ let isweepPrefs = {
     backendUrl: 'http://127.0.0.1:8001'
 };
 
+/**
+ * Normalize text for matching: lowercase, remove punctuation, collapse whitespace
+ */
+function normalizeText(text) {
+    return (text || '')
+        .toLowerCase()
+        .replace(/[.,!?;:\-'"()\[\]{}]/g, ' ') // Remove punctuation
+        .replace(/\s+/g, ' ') // Collapse whitespace
+        .trim();
+}
+
+/**
+ * Fetch preferences from backend for the current user
+ */
+async function fetchPreferencesFromBackend() {
+    try {
+        const url = `${backendURL}/preferences/${userId}`;
+        csLog('[ISweep] Fetching preferences from:', url);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            csLog('[ISweep] Failed to fetch preferences, using defaults');
+            return false;
+        }
+        
+        const data = await response.json();
+        csLog('[ISweep] Fetched preferences from backend:', data);
+        
+        // Parse blocked_words - ensure it's an array of individual strings
+        if (data.blocked_words) {
+            if (typeof data.blocked_words === 'string') {
+                // If it's a comma-separated string, split it
+                isweepPrefs.blocked_words = data.blocked_words
+                    .split(',')
+                    .map(word => word.trim())
+                    .filter(word => word.length > 0);
+            } else if (Array.isArray(data.blocked_words)) {
+                isweepPrefs.blocked_words = data.blocked_words;
+            }
+        }
+        
+        if (data.duration_seconds) {
+            isweepPrefs.duration_seconds = Number(data.duration_seconds);
+        }
+        
+        if (data.action) {
+            isweepPrefs.action = data.action;
+        }
+        
+        csLog('[ISweep] Cached preferences in memory:', isweepPrefs);
+        return true;
+    } catch (error) {
+        csLog('[ISweep] Error fetching preferences:', error.message || error);
+        return false;
+    }
+}
+
 // Initialize from storage on load
 async function initializeFromStorage() {
-    const result = await chrome.storage.local.get(['isEnabled', 'userId', 'backendURL', 'isweepPrefs']);
-    isEnabled = result.isEnabled !== false; // default to true if not set
+    const result = await chrome.storage.local.get(['isweep_enabled', 'userId', 'backendURL', 'isweepPrefs']);
+    isEnabled = result.isweep_enabled === true; // default to false if not explicitly set
     userId = result.userId || 'user123';
     backendURL = result.backendURL || 'http://127.0.0.1:8001';
     
-    // Load preferences or use defaults
+    // Load cached preferences or use defaults
     isweepPrefs = result.isweepPrefs || {
         blocked_words: [],
         duration_seconds: 3,
@@ -59,7 +118,14 @@ async function initializeFromStorage() {
         backendUrl: backendURL || 'http://127.0.0.1:8001'
     };
     
-    csLog('[ISweep] Initialized from storage', { isEnabled, userId, backendURL, prefs: isweepPrefs });
+    csLog('[ISweep] Loaded enabled state:', isEnabled);
+    csLog('[ISweep] Loaded from storage:', { userId, backendURL });
+    
+    // If enabled, fetch fresh preferences from backend
+    if (isEnabled) {
+        csLog('[ISweep] Extension is enabled, fetching fresh preferences from backend...');
+        await fetchPreferencesFromBackend();
+    }
 }
 
 // Listen for toggle messages from popup
@@ -74,10 +140,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             backendURL = message.prefs.backendUrl || backendURL;
         }
         
-        csLog('[ISweep] Toggled via popup:', isEnabled ? 'Enabled' : 'Disabled', { prefs: isweepPrefs });
+        csLog('[ISweep] Toggled via popup:', isEnabled ? 'ENABLED' : 'DISABLED');
         
-        // If disabled, stop speech recognition and unmute any videos
-        if (!isEnabled) {
+        // If enabled, fetch fresh preferences from backend
+        if (isEnabled) {
+            csLog('[ISweep] Fetching preferences after toggle...');
+            fetchPreferencesFromBackend();
+        } else {
+            // If disabled, stop speech recognition and unmute any videos
             stopSpeechFallback();
             document.querySelectorAll('video').forEach(v => {
                 if (v.muted) v.muted = false;
@@ -112,7 +182,7 @@ function getActiveVideo() {
 }
 
 /**
- * Check if text contains any blocked words (local, case-insensitive matching)
+ * Check if text contains any blocked words (case-insensitive, normalized matching)
  * Returns { matched: true, word: "..." } or { matched: false }
  */
 function checkLocalBlockedWords(text) {
@@ -120,11 +190,11 @@ function checkLocalBlockedWords(text) {
         return { matched: false };
     }
     
-    const lowerText = (text || '').toLowerCase().trim();
+    const normalizedText = normalizeText(text);
     for (const blockedWord of isweepPrefs.blocked_words) {
-        const lowerBlocked = (blockedWord || '').toLowerCase().trim();
-        if (lowerBlocked && lowerText.includes(lowerBlocked)) {
-            csLog('[ISweep] Local blocked word match:', { text, blockedWord });
+        const normalizedBlocked = normalizeText(blockedWord);
+        if (normalizedBlocked && normalizedText.includes(normalizedBlocked)) {
+            csLog('[ISweep] Local blocked word match:', { original: text, normalized: normalizedText, blockedWord });
             return { matched: true, word: blockedWord };
         }
     }
@@ -208,23 +278,41 @@ window.__isweepApplyDecision = function(decision) {
     // Use backend duration, fall back to prefs, then default to 3
     const duration = Math.max(0, Number(duration_seconds) ?? Number(isweepPrefs.duration_seconds) ?? 3);
 
-    csLog(`[ISweep] Action: ${action} - ${reason} (duration: ${duration}s)`);
+    csLog(`[ISweep] APPLYING ACTION: ${action} (duration: ${duration}s) - ${reason}`);
 
     switch (action) {
         case 'mute':
+            // Check if already muted and within mute window (don't extend, only if different phrase)
+            const now = Date.now();
+            if (now < muteUntil && lastMutedPhrase === reason) {
+                csLog(`[ISweep] Already muted until ${new Date(muteUntil).toISOString()}, ignoring duplicate phrase`);
+                return;
+            }
+            
             videoElement.muted = true;
+            muteUntil = now + (duration * 1000);
+            lastMutedPhrase = reason;
             appliedActions++;
-            setTimeout(() => { videoElement.muted = false; }, duration * 1000);
+            csLog(`[ISweep] MUTED: matched phrase "${reason}", will unmute at ${new Date(muteUntil).toISOString()}`);
+            setTimeout(() => { 
+                videoElement.muted = false;
+                csLog('[ISweep] UNMUTED after duration');
+            }, duration * 1000);
             break;
         case 'skip':
             videoElement.currentTime = Math.min(videoElement.currentTime + duration, videoElement.duration || Infinity);
             appliedActions++;
+            csLog(`[ISweep] SKIPPED ${duration} seconds`);
             break;
         case 'fast_forward': {
             const originalSpeed = videoElement.playbackRate;
             videoElement.playbackRate = 2.0;
             appliedActions++;
-            setTimeout(() => { videoElement.playbackRate = originalSpeed; }, duration * 1000);
+            csLog(`[ISweep] FAST FORWARD started`);
+            setTimeout(() => { 
+                videoElement.playbackRate = originalSpeed;
+                csLog('[ISweep] FAST FORWARD ended, restored speed');
+            }, duration * 1000);
             break;
         }
         default:
@@ -242,10 +330,14 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
         stopSpeechFallback();
     }
 
-    // Check for local blocked words first
+    // Normalize caption text before sending
+    const normalizedText = normalizeText(text);
+    csLog('[ISweep] Processing caption:', { original: text, normalized: normalizedText, source });
+
+    // Check for local blocked words first (before backend call)
     const blockedCheck = checkLocalBlockedWords(text);
     if (blockedCheck.matched) {
-        csLog('[ISweep] Local match on blocked word, applying action without backend');
+        csLog('[ISweep] LOCAL MATCH: Blocked word detected, applying action');
         // Apply action immediately using prefs settings
         window.__isweepApplyDecision({
             action: isweepPrefs.action || 'mute',
@@ -257,13 +349,13 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
 
     const payload = {
         user_id: userId,
-        text,
+        text: normalizedText, // Send normalized text to backend
         timestamp_seconds,
         confidence: 0.9,
         content_type: source || null
     };
 
-    csLog('===== ISWEEP API REQUEST =====', { url: `${backendURL}/event`, payload });
+    csLog('[ISweep] Backend request:', { url: `${backendURL}/event`, payload });
 
     try {
         const response = await fetch(`${backendURL}/event`, {
@@ -274,12 +366,12 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            csLog('===== ISWEEP API RESPONSE =====', response.status, { ok: response.ok, body: errorText });
+            csLog('[ISweep] Backend error:', { status: response.status, body: errorText });
             throw new Error(`API error: ${response.status}`);
         }
 
         const decision = await response.json();
-        csLog('===== ISWEEP API RESPONSE =====', response.status, decision);
+        csLog('[ISweep] Backend response:', decision);
 
         if (decision.action !== 'none') {
             window.__isweepApplyDecision(decision);
@@ -289,12 +381,8 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
     }
 };
 
-// Initialize on page load
-chrome.storage.local.get(['isEnabled', 'userId', 'backendURL'], (result) => {
-    isEnabled = result.isEnabled || false;
-    userId = result.userId || 'user123';
-    backendURL = result.backendURL || 'http://127.0.0.1:8001';
-    
+// Initialize on page load - call the async function
+initializeFromStorage().then(() => {
     // Initialize YouTube handler if on YouTube (safe window access)
     const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
     if (isYT) {
@@ -303,6 +391,8 @@ chrome.storage.local.get(['isEnabled', 'userId', 'backendURL'], (result) => {
             window.initYouTubeHandler();
         }
     }
+}).catch((err) => {
+    csLog('[ISweep] Error during initialization:', err);
 });
 
 

@@ -10,14 +10,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const actionsAppliedSpan = document.getElementById('actionsApplied');
 
     // Load state from Chrome storage
-    let { isEnabled, userId, backendURL, videosDetected, actionsApplied, isweepPrefs } = await chrome.storage.local.get([
-        'isEnabled',
+    let { isweep_enabled, userId, backendURL, videosDetected, actionsApplied, isweepPrefs } = await chrome.storage.local.get([
+        'isweep_enabled',
         'userId',
         'backendURL',
         'videosDetected',
         'actionsApplied',
         'isweepPrefs'
     ]);
+
+    console.log('[ISweep-Popup] Loaded state from storage:', { isweep_enabled, userId, backendURL });
 
     // Initialize prefs with defaults if not set
     isweepPrefs = isweepPrefs || {
@@ -52,11 +54,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    updateUI(isEnabled);
+    updateUI(isweep_enabled);
 
     // Toggle button
     toggleButton.addEventListener('click', async () => {
-        const newState = !isEnabled;
+        const newState = !isweep_enabled;
         const newUserId = userIdInput.value.trim();
         const newBackendUrl = backendUrl.value.trim();
         
@@ -65,25 +67,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         isweepPrefs.backendUrl = newBackendUrl;
         
         await chrome.storage.local.set({
-            isEnabled: newState,
+            isweep_enabled: newState,
             userId: newUserId,
             backendURL: newBackendUrl,
             isweepPrefs: isweepPrefs
         });
-        isEnabled = newState;
+        isweep_enabled = newState;
         updateUI(newState);
 
-        // Notify content scripts
-        chrome.tabs.query({}, (tabs) => {
-            tabs.forEach(tab => {
-                chrome.tabs.sendMessage(tab.id, {
+        console.log('[ISweep-Popup] Toggled state to:', newState);
+
+        // Notify active tab's content script
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length > 0) {
+                chrome.tabs.sendMessage(tabs[0].id, {
                     action: 'toggleISweep',
                     enabled: newState,
                     prefs: isweepPrefs
-                }).catch(() => {
-                    // Ignore errors for tabs that don't have content script
+                }).catch((err) => {
+                    console.log('[ISweep-Popup] Could not send message to tab:', err.message);
                 });
-            });
+            }
         });
     });
 
@@ -95,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             userId: newUserId,
             isweepPrefs: isweepPrefs
         });
+        console.log('[ISweep-Popup] Updated userId to:', newUserId);
     });
 
     // Save backend URL on input change
@@ -105,6 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             backendURL: newBackendUrl,
             isweepPrefs: isweepPrefs
         });
+        console.log('[ISweep-Popup] Updated backendURL to:', newBackendUrl);
     });
 
     // Clear stats
