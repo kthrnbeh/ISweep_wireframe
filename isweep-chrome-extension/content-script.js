@@ -17,7 +17,7 @@ function csLog(...args) {
 
 // Prevent double-injection
 if (window.__isweepContentLoaded) {
-    debug("[ISweep] content-script already loaded; skipping duplicate injection");
+    csLog("[ISweep] content-script already loaded; skipping duplicate injection");
 } else {
     window.__isweepContentLoaded = true;
 
@@ -36,7 +36,7 @@ chrome.storage.local.get(['isEnabled', 'userId', 'backendURL'], (result) => {
     // Initialize YouTube handler if on YouTube (safe window access)
     const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
     if (isYT) {
-        debug('[ISweep] YouTube page detected');
+        csLog('[ISweep] YouTube page detected');
         if (typeof window.initYouTubeHandler === 'function') {
             window.initYouTubeHandler();
         }
@@ -96,7 +96,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'toggleISweep') {
         isEnabled = request.enabled;
-        debug(`[ISweep] ${isEnabled ? 'Enabled' : 'Disabled'}`);
+        csLog(`[ISweep] ${isEnabled ? 'Enabled' : 'Disabled'}`);
         
         // Update status icon
         if (isEnabled) {
@@ -116,7 +116,7 @@ function detectVideos() {
     
     if (videos.length > 0 && detectedVideos !== videos.length) {
         detectedVideos = videos.length;
-        debug(`[ISweep] Detected ${videos.length} video(s)`);
+        csLog(`[ISweep] Detected ${videos.length} video(s)`);
         
         updateStats();
         
@@ -208,11 +208,11 @@ function extractCaptions(videoElement, index) {
     const tracks = videoElement.querySelectorAll('track[kind="captions"], track[kind="subtitles"]');
     
     if (tracks.length === 0) {
-        debug(`[ISweep] Video ${index}: No captions found`);
+        csLog(`[ISweep] Video ${index}: No captions found`);
         return;
     }
 
-    debug(`[ISweep] Video ${index}: Found ${tracks.length} caption track(s)`);
+    csLog(`[ISweep] Video ${index}: Found ${tracks.length} caption track(s)`);
 
     tracks.forEach((track, trackIndex) => {
         // Try to load and parse VTT file
@@ -222,7 +222,7 @@ function extractCaptions(videoElement, index) {
                 .then(r => r.text())
                 .then(vttText => {
                     videoElement._isweepCaptions = parseVTT(vttText);
-                    debug(`[ISweep] Loaded ${videoElement._isweepCaptions.length} caption cues`);
+                    csLog(`[ISweep] Loaded ${videoElement._isweepCaptions.length} caption cues`);
                 })
                 .catch(e => console.warn(`[ISweep] Failed to load captions: ${e}`));
         }
@@ -327,8 +327,8 @@ function applyDecision(videoElement, decision, captionText) {
     const { action, duration_seconds, reason } = decision;
     const duration = Number(duration_seconds) || 3; // Default 3 seconds if null/undefined
 
-    debug(`[ISweep] Caption: "${captionText}"`);
-    debug(`[ISweep] Action: ${action} - ${reason}`);
+    csLog(`[ISweep] Caption: "${captionText}"`);
+    csLog(`[ISweep] Action: ${action} - ${reason}`);
 
     switch (action) {
         case 'mute':
@@ -415,7 +415,7 @@ if (document.head && !document.getElementById('isweep-styles')) {
 
 // Handle video start
 function handleVideoPlaying(videoElement, index) {
-    debug(`[ISweep] Video ${index} started playing`);
+    csLog(`[ISweep] Video ${index} started playing`);
     
     // Show badge if not already shown
     if (videoElement._isweepBadge && videoElement.parentElement) {
@@ -475,6 +475,6 @@ if (isYT) {
     }
 }
 
-debug('[ISweep] Content script loaded - Caption extraction enabled' + (isYT ? ' + YouTube support' : ''));
+csLog('[ISweep] Content script loaded - Caption extraction enabled' + (isYT ? ' + YouTube support' : ''));
 
 } // ← Close the guard block
