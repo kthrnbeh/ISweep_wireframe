@@ -90,21 +90,51 @@ function initYouTubeHandler() {
             dot.style.background = enabled ? '#27c93f' : '#ff3b30';
         }
     }
+
+/**
+ * Check if YouTube captions are enabled
+ */
+function areCaptionsEnabled() {
+    const ccButton = document.querySelector('.ytp-subtitles-button');
+    if (ccButton) {
+        const isPressed = ccButton.getAttribute('aria-pressed') === 'true';
+        ytDebug(`[ISweep-YT] CC button aria-pressed: ${isPressed}`);
+        return isPressed;
+    }
+    ytDebug('[ISweep-YT] CC button not found');
+    return null;
+}
+
+/**
  * Monitor YouTube's caption display
  */
 function monitorYouTubeCaptions() {
+    // Check if captions are enabled before retrying
+    const captionsEnabled = areCaptionsEnabled();
+    if (captionsEnabled === false) {
+        const retryCount = window._ytCaptionRetryCount || 0;
+        // Only log once at the beginning
+        if (retryCount === 0) {
+            ytDebug('[ISweep-YT] Captions are OFF - stopping retry attempts');
+            window._ytCaptionRetryCount = -1; // Mark as checked
+        }
+        return;
+    }
+
     // Find caption container (try multiple times as YouTube takes time to render captions)
     let captionContainer = getCaptionContainer();
     let retryCount = window._ytCaptionRetryCount || 0;
     
     if (!captionContainer) {
-        if (retryCount < 10) {
+        // Allow up to 120 attempts (60 seconds at 500ms intervals)
+        if (retryCount < 120) {
             window._ytCaptionRetryCount = retryCount + 1;
-            ytDebug(`[ISweep-YT] Caption container not found, retrying (attempt ${retryCount + 1}/10) in 500ms...`);
+            const percent = Math.round((retryCount / 120) * 100);
+            ytDebug(`[ISweep-YT] Caption container not found, retrying (${retryCount + 1}/120, ${percent}%) in 500ms...`);
             setTimeout(monitorYouTubeCaptions, 500);
             return;
         } else {
-            console.warn('[ISweep-YT] Could not find caption container after 10 attempts');
+            console.warn('[ISweep-YT] Could not find caption container after 120 attempts (60 seconds)');
             return;
         }
     }
@@ -162,13 +192,15 @@ function monitorYouTubeCaptions() {
  */
 function getCaptionContainer() {
     // YouTube places captions in several possible locations
-    // Modern YouTube uses .captions-text for rendered captions
-    // Try common selectors in order
+    // Try YouTube-specific selectors first, then fallback to common HTML patterns
     const selectors = [
+        // YouTube caption containers (high priority)
+        '.ytp-caption-window-container',
+        '.ytp-caption-segment',
+        // Modern YouTube uses .captions-text for rendered captions
         '.captions-text',
         'div[aria-live="off"]',
         'div[role="region"][aria-label*="captions"]',
-        'div.ytp-caption-segment',
         'div.ytp-captions-text',
     ];
 
