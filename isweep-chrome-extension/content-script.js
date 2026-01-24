@@ -151,7 +151,59 @@ function setupVideoMonitoring(videoElement, index) {
     videoElement._isweepSetup = true;
 
     // Create control overlay
-    createControlOverlay(videoElement, index);
+        // createControlOverlay(videoElement, index); // commented out to remove duplicate UI indicators
+
+// --- Status Pill Implementation ---
+function createStatusPill() {
+    let pill = document.getElementById('isweep-status-pill');
+    if (pill) return pill;
+    pill = document.createElement('div');
+    pill.id = 'isweep-status-pill';
+    pill.style.position = 'fixed';
+    pill.style.top = '16px';
+    pill.style.right = '16px';
+    pill.style.zIndex = '99999';
+    pill.style.display = 'flex';
+    pill.style.alignItems = 'center';
+    pill.style.background = 'rgba(34, 34, 34, 0.95)';
+    pill.style.color = '#fff';
+    pill.style.borderRadius = '999px';
+    pill.style.padding = '6px 16px 6px 10px';
+    pill.style.fontSize = '15px';
+    pill.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+    pill.style.userSelect = 'none';
+    pill.style.gap = '8px';
+    pill.innerHTML = `
+        <span style="display: flex; align-items: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 4px;"><path d="M19.5 17.5L6.5 4.5M3 21h18M8.5 10.5l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="isweep-status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#aaa;margin-left:2px;"></span>
+        </span>
+        <span style="font-weight:500;">ISweep</span>
+    `;
+    document.body.appendChild(pill);
+    return pill;
+}
+
+function updateStatusIcon(enabled) {
+    createStatusPill();
+    const dot = document.getElementById('isweep-status-dot');
+    if (dot) {
+        dot.style.background = enabled ? '#4caf50' : '#aaa';
+    }
+}
+
+// --- Call updateStatusIcon after storage loads ---
+chrome.storage.sync.get(['isEnabled'], (result) => {
+    const isEnabled = result.isEnabled !== false;
+    updateStatusIcon(isEnabled);
+});
+
+// --- Listen for toggle messages and update pill ---
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message && message.type === 'TOGGLE_ISWEEP') {
+        updateStatusIcon(message.enabled);
+    }
+});
 
     // Extract captions from tracks
     extractCaptions(videoElement, index);

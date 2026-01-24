@@ -48,7 +48,7 @@ function initYouTubeHandler() {
     }
 
     // Add badge to show ISweep is active
-    addYouTubeBadge();
+    // addYouTubeBadge(); // commented out to keep only the top-right pill UI
 
     // Monitor for caption changes (with retries)
     ytDebug('[ISweep-YT] Starting caption monitoring');
