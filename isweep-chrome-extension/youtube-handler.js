@@ -328,7 +328,7 @@ async function handleYouTubeCaptionChange(captionText) {
                 text: cleanCaption,
                 content_type: null,
                 confidence: 0.9,
-                timestamp_seconds: timestamp_seconds
+                timestamp_seconds: timestamp
             })
         });
 
