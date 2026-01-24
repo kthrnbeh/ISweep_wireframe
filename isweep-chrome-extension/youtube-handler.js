@@ -144,6 +144,28 @@ function logCaptionDebugSnapshot() {
 }
 
 /**
+ * Get caption segments currently on screen
+ */
+function getCaptionSegments() {
+    // Prefer segments inside the caption window container; fallback to all segments
+    const scoped = Array.from(document.querySelectorAll('.ytp-caption-window-container .ytp-caption-segment'));
+    if (scoped.length > 0) return scoped;
+    return Array.from(document.querySelectorAll('.ytp-caption-segment'));
+}
+
+/**
+ * Convert caption segments into cleaned text
+ */
+function readCaptionTextFromSegments(segments) {
+    if (!segments || segments.length === 0) return '';
+    const parts = segments
+        .map(seg => (seg.textContent || '').trim())
+        .filter(Boolean);
+    const joined = parts.join(' ');
+    return joined.replace(/\s+/g, ' ').trim();
+}
+
+/**
  * Caption Hunter Fallback: Find caption node when selectors fail
  * Searches for any element containing caption-like text
  */
@@ -201,125 +223,66 @@ function findBestCaptionNode() {
  * Monitor YouTube's caption display
  */
 function monitorYouTubeCaptions() {
-    let retryCount = window._ytCaptionRetryCount || 0;
-    
-    // Check both aria-pressed and visible captions
-    const ariaPressed = areCaptionsButtonEnabled();
-    const visibleCaptions = areCaptionsVisiblyRendering();
-    
-    ytLog(`[ISweep-YT] Caption status check: ariaPressed=${ariaPressed}, visibleCaptions=${visibleCaptions}`);
-    
-    // Only give up if BOTH checks fail (not just aria-pressed)
-    if (!ariaPressed && !visibleCaptions) {
-        // Allow up to 120 attempts (60 seconds at 500ms intervals) before giving up
+    const retryCount = window._ytCaptionRetryCount || 0;
+    const observeTarget = getPlayerRoot() || document.body || document;
+
+    if (!observeTarget) {
         if (retryCount < 120) {
             window._ytCaptionRetryCount = retryCount + 1;
             const percent = Math.round((retryCount / 120) * 100);
-            logCaptionDebugSnapshot();
-            ytLog(`[ISweep-YT] No captions detected (both checks failed), retrying (${retryCount + 1}/120, ${percent}%) in 500ms...`);
+            ytLog(`[ISweep-YT] No observe target yet, retrying (${retryCount + 1}/120, ${percent}%) in 500ms...`);
             setTimeout(monitorYouTubeCaptions, 500);
             return;
-        } else {
-            console.warn('[ISweep-YT] Could not detect captions after 120 attempts (60 seconds) - both aria-pressed and visible checks failed');
-            return;
         }
+        console.warn('[ISweep-YT] Could not find an observe target after 60 seconds');
+        return;
     }
-    
-    // Captions are detected (at least one check passed)
-    ytLog('[ISweep-YT] Captions detected - proceeding with monitoring');
 
-    // Find caption container (try multiple times as YouTube takes time to render captions)
-    let captionContainer = getCaptionContainer();
-    
-    if (!captionContainer) {
-        // Try caption hunter as fallback before giving up
-        const hunterNode = findBestCaptionNode();
-        if (hunterNode) {
-            ytLog(`[ISweep-YT] Hunter found caption node: ${hunterNode.className || hunterNode.tagName} sample="${hunterNode.textContent.substring(0, 30)}..."`);
-            // Store hunter node for extraction to use
-            window.__isweepCaptionNode = hunterNode;
-            captionContainer = hunterNode;
-        } else {
-            // Allow up to 120 attempts (60 seconds at 500ms intervals)
-            if (retryCount < 120) {
-                window._ytCaptionRetryCount = retryCount + 1;
-                const percent = Math.round((retryCount / 120) * 100);
-                logCaptionDebugSnapshot();
-                ytLog(`[ISweep-YT] Caption container not found, retrying (${retryCount + 1}/120, ${percent}%) in 500ms...`);
-                setTimeout(monitorYouTubeCaptions, 500);
-                return;
-            } else {
-                console.warn('[ISweep-YT] Could not find caption container after 120 attempts (60 seconds)');
-                return;
-            }
-        }
-    }
-    
-    // Reset retry count on success
+    // Reset retry count once we have a target
     window._ytCaptionRetryCount = 0;
-
-    // Verify we have a valid node before observing
-    if (!captionContainer || !(captionContainer instanceof Node) || captionContainer.nodeType !== 1) {
-        console.warn('[ISweep-YT] Invalid caption container node (not a valid DOM element), retrying...');
-        setTimeout(monitorYouTubeCaptions, 1000);
-        return;
-    }
-
-    // Verify the node is still in the document
-    if (!document.contains(captionContainer)) {
-        console.warn('[ISweep-YT] Caption container not in document, retrying...');
-        setTimeout(monitorYouTubeCaptions, 1000);
-        return;
-    }
-
-    ytLog('[ISweep-YT] Found caption container, type:', captionContainer.nodeName);
 
     // Stop previous observer
     if (ytCaptionObserver) {
         ytCaptionObserver.disconnect();
     }
 
-    // Create observer for caption changes
-    ytCaptionObserver = new MutationObserver(() => {
-        const captionText = extractYouTubeCaptions();
+    // Mutation handler reads current segments every time
+    const handleMutation = () => {
+        const segments = getCaptionSegments();
+        const captionText = readCaptionTextFromSegments(segments);
+
+        // Throttled debug every ~2s
+        const now = Date.now();
+        if (!window._ytSegmentDebugTs || (now - window._ytSegmentDebugTs) >= 2000) {
+            window._ytSegmentDebugTs = now;
+            const sample = captionText ? captionText.slice(0, 50) : '';
+            ytLog(`[ISweep-YT] segments=${segments.length} sample="${sample}"`);
+        }
+
         if (captionText && captionText !== lastCaptionText) {
             lastCaptionText = captionText;
             handleYouTubeCaptionChange(captionText);
         }
-    });
+    };
 
-    // Determine the best node to observe: caption window container first, then player root, then caption container
-    let observeTarget = captionContainer;
-    try {
-        const captionWindow = document.querySelector('.ytp-caption-window-container');
-        if (captionWindow && document.contains(captionWindow)) {
-            observeTarget = captionWindow;
-            ytLog('[ISweep-YT] Will observe .ytp-caption-window-container');
-        } else {
-            const playerRoot = getPlayerRoot();
-            if (playerRoot !== document) {
-                observeTarget = playerRoot;
-                ytLog('[ISweep-YT] Will observe player root element');
-            } else {
-                ytLog('[ISweep-YT] Will observe caption container');
-            }
-        }
-    } catch (e) {
-        ytLog('[ISweep-YT] Error determining observe target, using caption container');
-    }
+    // Create observer for caption-related DOM changes
+    ytCaptionObserver = new MutationObserver(handleMutation);
 
-    // Observe with aggressive settings
     try {
         ytCaptionObserver.observe(observeTarget, {
             childList: true,
             subtree: true,
             characterData: true
         });
-        ytLog('[ISweep-YT] Caption monitoring started successfully');
+        ytLog('[ISweep-YT] Caption monitoring started on player/document');
+        // Run once immediately to capture current text
+        handleMutation();
     } catch (error) {
         console.error('[ISweep-YT] Failed to start monitoring:', error);
-        // Retry if observer fails
-        setTimeout(monitorYouTubeCaptions, 1000);
+        if (retryCount < 120) {
+            window._ytCaptionRetryCount = retryCount + 1;
+            setTimeout(monitorYouTubeCaptions, 1000);
+        }
     }
 }
 
@@ -505,35 +468,35 @@ async function handleYouTubeCaptionChange(captionText) {
             .replace(/\s+/g, " ")
             .trim();
         
-        ytLog(`[ISweep-YT] Sending to backend: ${backend}/event with user: ${user}`);
-        
+        // Prepare payload and log request
+        const payload = {
+            user_id: user,
+            text: cleanCaption,
+            content_type: null,
+            confidence: 0.9,
+            timestamp_seconds: timestamp_seconds
+        };
+
+        ytLog('===== ISWEEP API REQUEST =====', { url: `${backend}/event`, payload });
+
         // Send to backend
         const requestUrl = `${backend}/event`;
-        ytLog(`[ISweep-YT] ===== REQUEST START ===== URL: ${requestUrl}`);
-        
         const response = await fetch(requestUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                user_id: user,
-                text: cleanCaption,
-                content_type: null,
-                confidence: 0.9,
-                timestamp_seconds: timestamp
-            })
+            body: JSON.stringify(payload)
         });
-
-        ytLog(`[ISweep-YT] ===== RESPONSE RECEIVED ===== URL: ${requestUrl} | Status: ${response.status} (${response.ok ? 'OK' : 'ERROR'})`);
 
         if (!response.ok) {
             const errorText = await response.text();
-            ytLog(`[ISweep-YT] ===== ERROR BODY ===== ${errorText}`);
+            ytLog('===== ISWEEP API RESPONSE =====', response.status, { ok: response.ok, body: errorText });
             throw new Error(`API error: ${response.status}`);
         }
 
         const decision = await response.json();
+        ytLog('===== ISWEEP API RESPONSE =====', response.status, decision);
         
         ytLog(`[ISweep-YT] Decision received: ${decision.action} - ${decision.reason}`);
         
