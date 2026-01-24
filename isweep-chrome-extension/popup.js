@@ -10,13 +10,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const actionsAppliedSpan = document.getElementById('actionsApplied');
 
     // Load state from Chrome storage
-    let { isEnabled, userId, backendURL, videosDetected, actionsApplied } = await chrome.storage.local.get([
+    let { isEnabled, userId, backendURL, videosDetected, actionsApplied, isweepPrefs } = await chrome.storage.local.get([
         'isEnabled',
         'userId',
         'backendURL',
         'videosDetected',
-        'actionsApplied'
+        'actionsApplied',
+        'isweepPrefs'
     ]);
+
+    // Initialize prefs with defaults if not set
+    isweepPrefs = isweepPrefs || {
+        blocked_words: [],
+        duration_seconds: 3,
+        action: 'mute',
+        user_id: userId || 'user123',
+        backendUrl: backendURL || 'http://127.0.0.1:8001'
+    };
 
     // Set initial values
     userIdInput.value = userId || 'user123';
@@ -47,10 +57,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Toggle button
     toggleButton.addEventListener('click', async () => {
         const newState = !isEnabled;
+        const newUserId = userIdInput.value.trim();
+        const newBackendUrl = backendUrl.value.trim();
+        
+        // Update prefs with current UI values
+        isweepPrefs.user_id = newUserId;
+        isweepPrefs.backendUrl = newBackendUrl;
+        
         await chrome.storage.local.set({
             isEnabled: newState,
-            userId: userIdInput.value.trim(),
-            backendURL: backendUrl.value.trim()
+            userId: newUserId,
+            backendURL: newBackendUrl,
+            isweepPrefs: isweepPrefs
         });
         isEnabled = newState;
         updateUI(newState);
@@ -60,7 +78,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             tabs.forEach(tab => {
                 chrome.tabs.sendMessage(tab.id, {
                     action: 'toggleISweep',
-                    enabled: newState
+                    enabled: newState,
+                    prefs: isweepPrefs
                 }).catch(() => {
                     // Ignore errors for tabs that don't have content script
                 });
@@ -70,15 +89,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Save user ID on input change
     userIdInput.addEventListener('change', async () => {
+        const newUserId = userIdInput.value.trim();
+        isweepPrefs.user_id = newUserId;
         await chrome.storage.local.set({
-            userId: userIdInput.value.trim()
+            userId: newUserId,
+            isweepPrefs: isweepPrefs
         });
     });
 
     // Save backend URL on input change
     backendUrl.addEventListener('change', async () => {
+        const newBackendUrl = backendUrl.value.trim();
+        isweepPrefs.backendUrl = newBackendUrl;
         await chrome.storage.local.set({
-            backendURL: backendUrl.value.trim()
+            backendURL: newBackendUrl,
+            isweepPrefs: isweepPrefs
         });
     });
 

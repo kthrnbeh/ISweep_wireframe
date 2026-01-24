@@ -35,21 +35,46 @@ let speechRecognition = null;
 let speechActive = false;
 let speechVideoRef = null;
 let speechUnsupportedLogged = false;
+let isweepPrefs = {
+    blocked_words: [],
+    duration_seconds: 3,
+    action: 'mute',
+    user_id: 'user123',
+    backendUrl: 'http://127.0.0.1:8001'
+};
 
 // Initialize from storage on load
 async function initializeFromStorage() {
-    const result = await chrome.storage.local.get(['isEnabled', 'userId', 'backendURL']);
+    const result = await chrome.storage.local.get(['isEnabled', 'userId', 'backendURL', 'isweepPrefs']);
     isEnabled = result.isEnabled !== false; // default to true if not set
     userId = result.userId || 'user123';
     backendURL = result.backendURL || 'http://127.0.0.1:8001';
-    csLog('[ISweep] Initialized from storage', { isEnabled, userId, backendURL });
+    
+    // Load preferences or use defaults
+    isweepPrefs = result.isweepPrefs || {
+        blocked_words: [],
+        duration_seconds: 3,
+        action: 'mute',
+        user_id: userId || 'user123',
+        backendUrl: backendURL || 'http://127.0.0.1:8001'
+    };
+    
+    csLog('[ISweep] Initialized from storage', { isEnabled, userId, backendURL, prefs: isweepPrefs });
 }
 
 // Listen for toggle messages from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.action === 'toggleISweep' && typeof message.enabled !== 'undefined') {
         isEnabled = message.enabled;
-        csLog('[ISweep] Toggled via popup:', isEnabled ? 'Enabled' : 'Disabled');
+        
+        // Update prefs if provided
+        if (message.prefs) {
+            isweepPrefs = message.prefs;
+            userId = message.prefs.user_id || userId;
+            backendURL = message.prefs.backendUrl || backendURL;
+        }
+        
+        csLog('[ISweep] Toggled via popup:', isEnabled ? 'Enabled' : 'Disabled', { prefs: isweepPrefs });
         
         // If disabled, stop speech recognition and unmute any videos
         if (!isEnabled) {
@@ -74,12 +99,37 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         if (changes.backendURL && typeof changes.backendURL.newValue === 'string') {
             backendURL = changes.backendURL.newValue;
         }
+        if (changes.isweepPrefs && changes.isweepPrefs.newValue) {
+            isweepPrefs = changes.isweepPrefs.newValue;
+            csLog('[ISweep] Preferences updated via storage:', isweepPrefs);
+        }
     }
 });
 
 function getActiveVideo() {
     const videos = Array.from(document.querySelectorAll('video'));
     return videos.find(v => !v.paused && !v.ended && v.readyState >= 2) || videos[0] || null;
+}
+
+/**
+ * Check if text contains any blocked words (local, case-insensitive matching)
+ * Returns { matched: true, word: "..." } or { matched: false }
+ */
+function checkLocalBlockedWords(text) {
+    if (!isweepPrefs.blocked_words || isweepPrefs.blocked_words.length === 0) {
+        return { matched: false };
+    }
+    
+    const lowerText = (text || '').toLowerCase().trim();
+    for (const blockedWord of isweepPrefs.blocked_words) {
+        const lowerBlocked = (blockedWord || '').toLowerCase().trim();
+        if (lowerBlocked && lowerText.includes(lowerBlocked)) {
+            csLog('[ISweep] Local blocked word match:', { text, blockedWord });
+            return { matched: true, word: blockedWord };
+        }
+    }
+    
+    return { matched: false };
 }
 
 function startSpeechFallback(videoElement) {
@@ -155,9 +205,10 @@ window.__isweepApplyDecision = function(decision) {
     }
 
     const { action, duration_seconds, reason } = decision;
-    const duration = Math.max(0, Number(duration_seconds) || 3);
+    // Use backend duration, fall back to prefs, then default to 3
+    const duration = Math.max(0, Number(duration_seconds) ?? Number(isweepPrefs.duration_seconds) ?? 3);
 
-    csLog(`[ISweep] Action: ${action} - ${reason}`);
+    csLog(`[ISweep] Action: ${action} - ${reason} (duration: ${duration}s)`);
 
     switch (action) {
         case 'mute':
@@ -189,6 +240,19 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
     lastCaptionEmitTs = Date.now();
     if (speechActive) {
         stopSpeechFallback();
+    }
+
+    // Check for local blocked words first
+    const blockedCheck = checkLocalBlockedWords(text);
+    if (blockedCheck.matched) {
+        csLog('[ISweep] Local match on blocked word, applying action without backend');
+        // Apply action immediately using prefs settings
+        window.__isweepApplyDecision({
+            action: isweepPrefs.action || 'mute',
+            duration_seconds: isweepPrefs.duration_seconds || 3,
+            reason: `Matched blocked word: "${blockedCheck.word}"`
+        });
+        return;
     }
 
     const payload = {
