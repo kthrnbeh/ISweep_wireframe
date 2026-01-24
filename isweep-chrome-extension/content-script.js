@@ -5,9 +5,19 @@
  * Supports: HTML5 video + YouTube
  */
 
+// DEBUG flag - set to false to disable all logs
+const DEBUG = true;
+
+// Helper function for conditional logging
+function debug(message) {
+    if (DEBUG) {
+        console.log(message);
+    }
+}
+
 // Prevent double-injection
 if (window.__isweepContentLoaded) {
-    console.log("[ISweep] content-script already loaded; skipping duplicate injection");
+    debug("[ISweep] content-script already loaded; skipping duplicate injection");
 } else {
     window.__isweepContentLoaded = true;
 
@@ -26,12 +36,60 @@ chrome.storage.local.get(['isEnabled', 'userId', 'backendURL'], (result) => {
     // Initialize YouTube handler if on YouTube (safe window access)
     const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
     if (isYT) {
-        console.log('[ISweep] YouTube page detected');
+        debug('[ISweep] YouTube page detected');
         if (typeof window.initYouTubeHandler === 'function') {
             window.initYouTubeHandler();
         }
     }
 });
+
+// Add fixed icon in top-right when enabled
+function addStatusIcon() {
+    // Prevent duplicates
+    if (document.getElementById('isweep-status-icon')) return;
+
+    const icon = document.createElement('div');
+    icon.id = 'isweep-status-icon';
+    icon.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: rgba(34, 197, 94, 0.95);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 10000;
+        pointer-events: auto;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    `;
+    icon.textContent = '🧹 ISweep ON';
+
+    const parent = document.body || document.documentElement;
+    if (parent) {
+        try {
+            parent.appendChild(icon);
+            debug('[ISweep] Status icon added');
+        } catch (error) {
+            console.warn('[ISweep] Failed to add status icon:', error);
+        }
+    }
+}
+
+// Remove status icon when disabled
+function removeStatusIcon() {
+    const icon = document.getElementById('isweep-status-icon');
+    if (icon) {
+        try {
+            icon.remove();
+            debug('[ISweep] Status icon removed');
+        } catch (error) {
+            console.warn('[ISweep] Failed to remove status icon:', error);
+        }
+    }
+}
 
 // Refresh badge visibility when toggle changes
 function refreshBadges() {
@@ -56,7 +114,15 @@ function refreshBadges() {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'toggleISweep') {
         isEnabled = request.enabled;
-        console.log(`[ISweep] ${isEnabled ? 'Enabled' : 'Disabled'}`);
+        debug(`[ISweep] ${isEnabled ? 'Enabled' : 'Disabled'}`);
+        
+        // Update status icon
+        if (isEnabled) {
+            addStatusIcon();
+        } else {
+            removeStatusIcon();
+        }
+        
         refreshBadges(); // Update badges immediately
         sendResponse({ success: true });
     }
@@ -68,7 +134,7 @@ function detectVideos() {
     
     if (videos.length > 0 && detectedVideos !== videos.length) {
         detectedVideos = videos.length;
-        console.log(`[ISweep] Detected ${videos.length} video(s)`);
+        debug(`[ISweep] Detected ${videos.length} video(s)`);
         
         updateStats();
         
@@ -109,11 +175,11 @@ function extractCaptions(videoElement, index) {
     const tracks = videoElement.querySelectorAll('track[kind="captions"], track[kind="subtitles"]');
     
     if (tracks.length === 0) {
-        console.log(`[ISweep] Video ${index}: No captions found`);
+        debug(`[ISweep] Video ${index}: No captions found`);
         return;
     }
 
-    console.log(`[ISweep] Video ${index}: Found ${tracks.length} caption track(s)`);
+    debug(`[ISweep] Video ${index}: Found ${tracks.length} caption track(s)`);
 
     tracks.forEach((track, trackIndex) => {
         // Try to load and parse VTT file
@@ -123,7 +189,7 @@ function extractCaptions(videoElement, index) {
                 .then(r => r.text())
                 .then(vttText => {
                     videoElement._isweepCaptions = parseVTT(vttText);
-                    console.log(`[ISweep] Loaded ${videoElement._isweepCaptions.length} caption cues`);
+                    debug(`[ISweep] Loaded ${videoElement._isweepCaptions.length} caption cues`);
                 })
                 .catch(e => console.warn(`[ISweep] Failed to load captions: ${e}`));
         }
@@ -265,8 +331,8 @@ function applyDecision(videoElement, decision, captionText) {
     const { action, duration_seconds, reason } = decision;
     const duration = Number(duration_seconds) || 3; // Default 3 seconds if null/undefined
 
-    console.log(`[ISweep] Caption: "${captionText}"`);
-    console.log(`[ISweep] Action: ${action} - ${reason}`);
+    debug(`[ISweep] Caption: "${captionText}"`);
+    debug(`[ISweep] Action: ${action} - ${reason}`);
 
     switch (action) {
         case 'mute':
@@ -353,7 +419,7 @@ if (document.head && !document.getElementById('isweep-styles')) {
 
 // Handle video start
 function handleVideoPlaying(videoElement, index) {
-    console.log(`[ISweep] Video ${index} started playing`);
+    debug(`[ISweep] Video ${index} started playing`);
     
     // Show badge if not already shown
     if (videoElement._isweepBadge && videoElement.parentElement) {
@@ -413,6 +479,6 @@ if (isYT) {
     }
 }
 
-console.log('[ISweep] Content script loaded - Caption extraction enabled' + (isYT ? ' + YouTube support' : ''));
+debug('[ISweep] Content script loaded - Caption extraction enabled' + (isYT ? ' + YouTube support' : ''));
 
 } // ← Close the guard block
