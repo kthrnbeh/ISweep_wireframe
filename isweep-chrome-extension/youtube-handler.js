@@ -34,21 +34,22 @@
 
     async function loadSettings() {
         try {
-            const result = await chrome.storage.local.get(['isEnabled', 'backendURL', 'userId']);
-            if (typeof result.isEnabled !== 'undefined') isEnabled = result.isEnabled;
+            const result = await chrome.storage.local.get(['isweep_enabled', 'backendURL', 'userId']);
+            if (typeof result.isweep_enabled !== 'undefined') isEnabled = Boolean(result.isweep_enabled);
             if (typeof result.backendURL === 'string') backendURL = result.backendURL;
             if (typeof result.userId === 'string') userId = result.userId;
         } catch (e) {
             ytLog('[ISweep-YT] Failed to load settings, using defaults');
         } finally {
+            ytLog('[ISweep-YT] enabled state from storage:', isEnabled);
             ytLog('[ISweep-YT] Settings after load', { isEnabled, backendURL, userId });
         }
     }
 
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area !== 'local') return;
-        if (changes.isEnabled && typeof changes.isEnabled.newValue !== 'undefined') {
-            isEnabled = changes.isEnabled.newValue;
+        if (changes.isweep_enabled && typeof changes.isweep_enabled.newValue !== 'undefined') {
+            isEnabled = Boolean(changes.isweep_enabled.newValue);
         }
         if (changes.backendURL && typeof changes.backendURL.newValue === 'string') {
             backendURL = changes.backendURL.newValue;

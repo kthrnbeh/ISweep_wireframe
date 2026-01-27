@@ -37,12 +37,13 @@ let speechRecognition = null;
 let speechActive = false;
 let speechVideoRef = null;
 let speechUnsupportedLogged = false;
-let isweepPrefs = {
-    blocked_words: [],
-    duration_seconds: 3,
-    action: 'mute',
-    user_id: 'user123',
-    backendUrl: 'http://127.0.0.1:8001'
+// In-memory preferences organized by category
+let prefsByCategory = {
+    language: {
+        blocked_words: [],
+        duration_seconds: 3,
+        action: 'mute'
+    }
 };
 
 /**
@@ -72,29 +73,38 @@ async function fetchPreferencesFromBackend() {
         
         const data = await response.json();
         csLog('[ISweep] Fetched preferences from backend:', data);
-        
-        // Parse blocked_words - ensure it's an array of individual strings
-        if (data.blocked_words) {
-            if (typeof data.blocked_words === 'string') {
-                // If it's a comma-separated string, split it
-                isweepPrefs.blocked_words = data.blocked_words
-                    .split(',')
-                    .map(word => word.trim())
-                    .filter(word => word.length > 0);
-            } else if (Array.isArray(data.blocked_words)) {
-                isweepPrefs.blocked_words = data.blocked_words;
-            }
-        }
-        
-        if (data.duration_seconds) {
-            isweepPrefs.duration_seconds = Number(data.duration_seconds);
-        }
-        
-        if (data.action) {
-            isweepPrefs.action = data.action;
-        }
-        
-        csLog('[ISweep] Cached preferences in memory:', isweepPrefs);
+
+        const incoming = Array.isArray(data) ? data : [data];
+        const nextPrefs = {};
+
+        incoming.forEach(pref => {
+            if (!pref || !pref.category) return;
+            const category = pref.category;
+            const blockedWords = Array.isArray(pref.blocked_words)
+                ? pref.blocked_words
+                : typeof pref.blocked_words === 'string'
+                    ? pref.blocked_words
+                        .split(',')
+                        .map(w => w.trim())
+                        .filter(Boolean)
+                    : [];
+
+            nextPrefs[category] = {
+                blocked_words: blockedWords,
+                duration_seconds: Number(pref.duration_seconds ?? 3),
+                action: pref.action || 'mute'
+            };
+        });
+
+        // Merge incoming prefs; keep existing defaults when missing
+        prefsByCategory = {
+            ...prefsByCategory,
+            ...nextPrefs,
+        };
+        prefsByCategory.language = prefsByCategory.language || { blocked_words: [], duration_seconds: 3, action: 'mute' };
+
+        csLog('[ISweep] Loaded prefsByCategory keys:', Object.keys(prefsByCategory));
+        csLog(`[ISweep] Language words loaded: ${prefsByCategory.language.blocked_words.length}`);
         return true;
     } catch (error) {
         csLog('[ISweep] Error fetching preferences:', error.message || error);
@@ -109,17 +119,19 @@ async function initializeFromStorage() {
     userId = result.userId || 'user123';
     backendURL = result.backendURL || 'http://127.0.0.1:8001';
     
-    // Load cached preferences or use defaults
-    isweepPrefs = result.isweepPrefs || {
-        blocked_words: [],
-        duration_seconds: 3,
-        action: 'mute',
-        user_id: userId || 'user123',
-        backendUrl: backendURL || 'http://127.0.0.1:8001'
-    };
+    // Load cached preferences into language category if present
+    if (result.isweepPrefs) {
+        prefsByCategory.language = {
+            blocked_words: result.isweepPrefs.blocked_words || [],
+            duration_seconds: result.isweepPrefs.duration_seconds || 3,
+            action: result.isweepPrefs.action || 'mute'
+        };
+    }
     
     csLog('[ISweep] Loaded enabled state:', isEnabled);
     csLog('[ISweep] Loaded from storage:', { userId, backendURL });
+    csLog('[ISweep] Loaded prefsByCategory keys:', Object.keys(prefsByCategory));
+    csLog(`[ISweep] Language words loaded: ${prefsByCategory.language.blocked_words.length}`);
     
     // If enabled, fetch fresh preferences from backend
     if (isEnabled) {
@@ -135,7 +147,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         
         // Update prefs if provided
         if (message.prefs) {
-            isweepPrefs = message.prefs;
+            prefsByCategory.language = {
+                blocked_words: message.prefs.blocked_words || [],
+                duration_seconds: message.prefs.duration_seconds || 3,
+                action: message.prefs.action || 'mute'
+            };
             userId = message.prefs.user_id || userId;
             backendURL = message.prefs.backendUrl || backendURL;
         }
@@ -170,8 +186,12 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
             backendURL = changes.backendURL.newValue;
         }
         if (changes.isweepPrefs && changes.isweepPrefs.newValue) {
-            isweepPrefs = changes.isweepPrefs.newValue;
-            csLog('[ISweep] Preferences updated via storage:', isweepPrefs);
+            prefsByCategory.language = {
+                blocked_words: changes.isweepPrefs.newValue.blocked_words || [],
+                duration_seconds: changes.isweepPrefs.newValue.duration_seconds || 3,
+                action: changes.isweepPrefs.newValue.action || 'mute'
+            };
+            csLog('[ISweep] Preferences updated via storage:', prefsByCategory.language);
         }
     }
 });
@@ -185,13 +205,18 @@ function getActiveVideo() {
  * Check if text contains any blocked words (case-insensitive, normalized matching)
  * Returns { matched: true, word: "..." } or { matched: false }
  */
+function getLangPrefs() {
+    return prefsByCategory.language || { blocked_words: [], duration_seconds: 3, action: 'mute' };
+}
+
 function checkLocalBlockedWords(text) {
-    if (!isweepPrefs.blocked_words || isweepPrefs.blocked_words.length === 0) {
+    const langPrefs = getLangPrefs();
+    if (!langPrefs.blocked_words || langPrefs.blocked_words.length === 0) {
         return { matched: false };
     }
     
     const normalizedText = normalizeText(text);
-    for (const blockedWord of isweepPrefs.blocked_words) {
+    for (const blockedWord of langPrefs.blocked_words) {
         const normalizedBlocked = normalizeText(blockedWord);
         if (normalizedBlocked && normalizedText.includes(normalizedBlocked)) {
             csLog('[ISweep] Local blocked word match:', { original: text, normalized: normalizedText, blockedWord });
@@ -275,8 +300,9 @@ window.__isweepApplyDecision = function(decision) {
     }
 
     const { action, duration_seconds, reason } = decision;
+    const langPrefs = getLangPrefs();
     // Use backend duration, fall back to prefs, then default to 3
-    const duration = Math.max(0, Number(duration_seconds) ?? Number(isweepPrefs.duration_seconds) ?? 3);
+    const duration = Math.max(0, Number(duration_seconds) ?? Number(langPrefs.duration_seconds) ?? 3);
 
     csLog(`[ISweep] APPLYING ACTION: ${action} (duration: ${duration}s) - ${reason}`);
 
@@ -340,8 +366,8 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
         csLog('[ISweep] LOCAL MATCH: Blocked word detected, applying action');
         // Apply action immediately using prefs settings
         window.__isweepApplyDecision({
-            action: isweepPrefs.action || 'mute',
-            duration_seconds: isweepPrefs.duration_seconds || 3,
+            action: getLangPrefs().action || 'mute',
+            duration_seconds: getLangPrefs().duration_seconds || 3,
             reason: `Matched blocked word: "${blockedCheck.word}"`
         });
         return;
