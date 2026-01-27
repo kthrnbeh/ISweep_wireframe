@@ -475,15 +475,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'toggleISweep') {
         isEnabled = request.enabled;
         csLog(`[ISweep] ${isEnabled ? 'Enabled' : 'Disabled'}`);
-        
-        // Update status icon
-        if (isEnabled) {
-            addStatusIcon();
-        } else {
-            removeStatusIcon();
-        }
-        
-        refreshBadges(); // Update badges immediately
+        csLog('[ISweep] Status icon toggled:', isEnabled ? 'shown' : 'hidden');
         sendResponse({ success: true });
     }
 });
