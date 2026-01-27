@@ -373,7 +373,8 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
         window.__isweepApplyDecision({
             action: getLangPrefs().action || 'mute',
             duration_seconds: getLangPrefs().duration_seconds || 3,
-            reason: `Matched blocked word: "${blockedCheck.word}"`
+            reason: `Matched blocked word: "${blockedCheck.word}"`,
+            matched_term: blockedCheck.word
         });
         return;
     }
