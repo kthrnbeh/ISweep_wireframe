@@ -14,117 +14,114 @@
         </header>
 
         <main>
-            <!-- Category Settings -->
             <section class="settings-group">
                 <h2>Filter Categories</h2>
-                
-                <!-- Language Category -->
-                <div class="category-card">
-                    <div class="category-header">
-                        <h3>🚫 Language</h3>
-                        <label class="toggle">
-                            <input type="checkbox" id="languageEnabled" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="category-content">
-                        <div class="action-group">
-                            <label for="languageAction">Action:</label>
-                            <select id="languageAction">
-                                <option value="mute">Mute</option>
-                                <option value="skip">Skip</option>
-                                <option value="fast_forward">Fast Forward</option>
-                                <option value="none">None</option>
-                            </select>
-                        </div>
 
-                        <div class="duration-group">
-                            <label for="languageDuration">Duration (seconds):</label>
-                            <input type="number" id="languageDuration" min="1" max="300" value="4">
-                        </div>
-
-                        <div class="words-group">
-                            <label for="languageWords">Blocked Words (comma-separated):</label>
-                            <textarea id="languageWords" placeholder="Enter words to block, separated by commas&#10;Example: profanity, curse, swear" rows="4"></textarea>
-                        </div>
-                    </div>
+                <!-- Top category tiles -->
+                <div class="category-tiles">
+                    <button class="tile active" data-category="language">Language</button>
+                    <button class="tile" data-category="intimacy">Intimacy</button>
+                    <button class="tile" data-category="nudity">Nudity</button>
+                    <button class="tile" data-category="violence">Violence</button>
+                    <button class="tile" data-category="substance">Substance</button>
+                    <button class="tile" data-category="more">More</button>
                 </div>
 
-                <!-- Sexual Content Category -->
-                <div class="category-card">
-                    <div class="category-header">
-                        <h3>⚠️ Sexual Content</h3>
-                        <label class="toggle">
-                            <input type="checkbox" id="sexualEnabled" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
+                <!-- Language panel -->
+                <div class="panel">
+                    <div class="panel-left">
+                        <h3 class="panel-title">Language subcategories</h3>
+                        <ul class="subcat-list">
+                            <li class="active">Profanity</li>
+                            <li>Blasphemy</li>
+                            <li>Childish Language</li>
+                            <li>Mild Language</li>
+                            <li>Slurs</li>
+                            <li>Insults</li>
+                        </ul>
                     </div>
-                    
-                    <div class="category-content">
-                        <div class="action-group">
-                            <label for="sexualAction">Action:</label>
-                            <select id="sexualAction">
-                                <option value="mute">Mute</option>
-                                <option value="skip" selected>Skip</option>
-                                <option value="fast_forward">Fast Forward</option>
-                                <option value="none">None</option>
-                            </select>
+
+                    <div class="panel-right">
+                        <div class="panel-controls">
+                            <div class="control-group">
+                                <label for="langAction">Action</label>
+                                <select id="langAction">
+                                    <option value="mute">Mute</option>
+                                    <option value="skip">Skip</option>
+                                    <option value="fast_forward">Fast Forward</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="langDuration">Duration (seconds)</label>
+                                <input type="number" id="langDuration" value="4" min="0" step="0.5">
+                            </div>
                         </div>
 
-                        <div class="duration-group">
-                            <label for="sexualDuration">Duration (seconds):</label>
-                            <input type="number" id="sexualDuration" min="1" max="300" value="30">
+                        <div class="preset-list">
+                            <div class="preset-row">
+                                <div class="preset-meta">
+                                    <span class="preset-name">Strong Profanity</span>
+                                    <span class="preset-note">High severity</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <div class="preset-action" title="Mute">
+                                    🔇
+                                </div>
+                            </div>
+
+                            <div class="preset-row">
+                                <div class="preset-meta">
+                                    <span class="preset-name">Mild Language</span>
+                                    <span class="preset-note">Damn, hell, etc.</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <div class="preset-action" title="Mute">
+                                    🔇
+                                </div>
+                            </div>
+
+                            <div class="preset-row">
+                                <div class="preset-meta">
+                                    <span class="preset-name">Blasphemy</span>
+                                    <span class="preset-note">Religious irreverence</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <div class="preset-action" title="Mute">
+                                    🔇
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="words-group">
-                            <label for="sexualWords">Blocked Words (comma-separated):</label>
-                            <textarea id="sexualWords" placeholder="Enter words to block, separated by commas" rows="4"></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Violence Category -->
-                <div class="category-card">
-                    <div class="category-header">
-                        <h3>💥 Violence</h3>
-                        <label class="toggle">
-                            <input type="checkbox" id="violenceEnabled" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="category-content">
-                        <div class="action-group">
-                            <label for="violenceAction">Action:</label>
-                            <select id="violenceAction">
-                                <option value="mute">Mute</option>
-                                <option value="skip">Skip</option>
-                                <option value="fast_forward" selected>Fast Forward</option>
-                                <option value="none">None</option>
-                            </select>
-                        </div>
-
-                        <div class="duration-group">
-                            <label for="violenceDuration">Duration (seconds):</label>
-                            <input type="number" id="violenceDuration" min="1" max="300" value="10">
-                        </div>
-
-                        <div class="words-group">
-                            <label for="violenceWords">Blocked Words (comma-separated):</label>
-                            <textarea id="violenceWords" placeholder="Enter words to block, separated by commas" rows="4"></textarea>
+                        <div class="custom-entry">
+                            <label for="customWord">Add custom word/phrase</label>
+                            <div class="custom-input-row">
+                                <input type="text" id="customWord" placeholder="e.g., frickin, dang it">
+                                <button class="btn btn-primary" id="addCustom">+ Add</button>
+                            </div>
+                            <ul class="custom-list">
+                                <li>heck <button aria-label="Remove" class="remove-btn">×</button></li>
+                                <li>dang <button aria-label="Remove" class="remove-btn">×</button></li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Buttons -->
             <section class="button-group">
                 <button id="saveButton" class="btn btn-primary">Save Settings</button>
                 <button id="resetButton" class="btn btn-secondary">Reset to Defaults</button>
             </section>
 
-            <!-- Status Message -->
             <div id="statusMessage" class="status-message" style="display: none;"></div>
         </main>
 
