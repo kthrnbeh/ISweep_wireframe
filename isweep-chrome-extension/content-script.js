@@ -299,7 +299,7 @@ window.__isweepApplyDecision = function(decision) {
         return;
     }
 
-    const { action, duration_seconds, reason } = decision;
+    const { action, duration_seconds, reason, matched_term } = decision;
     const langPrefs = getLangPrefs();
     // Use backend duration, fall back to prefs, then default to 3
     const duration = Math.max(0, Number(duration_seconds) ?? Number(langPrefs.duration_seconds) ?? 3);
@@ -308,18 +308,18 @@ window.__isweepApplyDecision = function(decision) {
 
     switch (action) {
         case 'mute':
-            // Check if already muted and within mute window (don't extend, only if different phrase)
+            // Check if already muted and within mute window (don't extend, only if different term)
             const now = Date.now();
-            if (now < muteUntil && lastMutedPhrase === reason) {
-                csLog(`[ISweep] Already muted until ${new Date(muteUntil).toISOString()}, ignoring duplicate phrase`);
+            if (now < muteUntil && lastMutedPhrase === matched_term) {
+                csLog(`[ISweep] Already muted until ${new Date(muteUntil).toISOString()}, ignoring duplicate term: "${matched_term}"`);
                 return;
             }
             
             videoElement.muted = true;
             muteUntil = now + (duration * 1000);
-            lastMutedPhrase = reason;
+            lastMutedPhrase = matched_term;
             appliedActions++;
-            csLog(`[ISweep] MUTED: matched phrase "${reason}", will unmute at ${new Date(muteUntil).toISOString()}`);
+            csLog(`[ISweep] MUTED: matched term "${matched_term}", will unmute at ${new Date(muteUntil).toISOString()}`);
             setTimeout(() => { 
                 videoElement.muted = false;
                 csLog('[ISweep] UNMUTED after duration');
