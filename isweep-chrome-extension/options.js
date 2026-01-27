@@ -151,13 +151,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         log('Effective word count:', effectiveWords.length);
 
         const langDuration = durationSecondsByCategory.language ?? DEFAULT_DURATION.language;
+        const langAction = actionByCategory.language ?? DEFAULT_ACTION.language;
         const userId = (await chrome.storage.local.get(['userId'])).userId || 'user123';
         const backendURL = (await chrome.storage.local.get(['backendURL'])).backendURL || 'http://127.0.0.1:8001';
 
         const payload = {
             user_id: userId,
             category: 'language',
-            action: 'mute',
+            action: langAction,
             duration_seconds: langDuration,
             enabled: true,
             blocked_words: effectiveWords
