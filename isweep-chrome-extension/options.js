@@ -147,33 +147,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function saveToBackend() {
-        const effectiveWords = buildEffectiveBlockedWords('language');
-        log('Effective word count:', effectiveWords.length);
-
-        const langDuration = durationSecondsByCategory.language ?? DEFAULT_DURATION.language;
-        const langAction = actionByCategory.language ?? DEFAULT_ACTION.language;
         const userId = (await chrome.storage.local.get(['userId'])).userId || 'user123';
         const backendURL = (await chrome.storage.local.get(['backendURL'])).backendURL || 'http://127.0.0.1:8001';
 
+        // Build preferences object for all categories
+        const categories = ['language', 'violence', 'sexual']; // All supported categories
+        const preferences = {};
+
+        categories.forEach(category => {
+            const effectiveWords = buildEffectiveBlockedWords(category);
+            const duration = durationSecondsByCategory[category] ?? (category === 'language' ? 4 : category === 'violence' ? 10 : 30);
+            const action = actionByCategory[category] ?? (category === 'language' ? 'mute' : category === 'violence' ? 'fast_forward' : 'skip');
+            
+            preferences[category] = {
+                enabled: true,
+                action: action,
+                duration_seconds: duration,
+                blocked_words: effectiveWords
+            };
+        });
+
         const payload = {
             user_id: userId,
-            category: 'language',
-            action: langAction,
-            duration_seconds: langDuration,
-            enabled: true,
-            blocked_words: effectiveWords
+            preferences: preferences
         };
 
+        log('Bulk save payload:', payload);
+
         try {
-            const res = await fetch(`${backendURL}/preferences`, {
+            const res = await fetch(`${backendURL}/preferences/bulk`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (!res.ok) throw new Error(`Backend error ${res.status}`);
-            log('Saved preferences to backend', payload);
-            updateSummary(effectiveWords);
-            showStatus('Saved to backend', 'success');
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(`Backend error ${res.status}: ${errorText}`);
+            }
+            const result = await res.json();
+            log('Bulk save response:', result);
+            
+            // Update summary with language category words for display
+            const langWords = preferences.language.blocked_words;
+            updateSummary(langWords);
+            showStatus(`Saved ${result.categories_saved?.length || 0} categories`, 'success');
         } catch (err) {
             console.warn('[ISweep-Options] Failed to save to backend', err);
             showStatus('Save failed', 'error');
