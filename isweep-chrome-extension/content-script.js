@@ -72,14 +72,14 @@ async function fetchPreferencesFromBackend() {
         }
         
         const data = await response.json();
-        csLog('[ISweep] Fetched preferences from backend:', data);
+        csLog('[ISweep] Raw backend response:', JSON.stringify(data));
 
-        const incoming = Array.isArray(data) ? data : [data];
+        // Response format: { user_id, preferences: { category: {...}, ... } }
+        const prefDict = data.preferences || {};
         const nextPrefs = {};
 
-        incoming.forEach(pref => {
-            if (!pref || !pref.category) return;
-            const category = pref.category;
+        Object.entries(prefDict).forEach(([category, pref]) => {
+            if (!pref) return;
             const blockedWords = Array.isArray(pref.blocked_words)
                 ? pref.blocked_words
                 : typeof pref.blocked_words === 'string'
@@ -104,7 +104,7 @@ async function fetchPreferencesFromBackend() {
         prefsByCategory.language = prefsByCategory.language || { blocked_words: [], duration_seconds: 3, action: 'mute' };
 
         csLog('[ISweep] Loaded prefsByCategory keys:', Object.keys(prefsByCategory));
-        csLog(`[ISweep] Language words loaded: ${prefsByCategory.language.blocked_words.length}`);
+        csLog(`[ISweep] Language blocked_words derived count: ${(prefsByCategory.language.blocked_words || []).length}`);
         return true;
     } catch (error) {
         csLog('[ISweep] Error fetching preferences:', error.message || error);
