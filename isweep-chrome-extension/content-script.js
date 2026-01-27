@@ -178,6 +178,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 unmuteTimerId = null;
             }
             isMuted = false;
+            lastMutedPhrase = null;
+            muteUntil = 0;
         }
         
         sendResponse({ success: true });
@@ -222,18 +224,37 @@ function getLangPrefs() {
     return prefsByCategory.language || { blocked_words: [], duration_seconds: 3, action: 'mute' };
 }
 
-function checkLocalBlockedWords(text) {
-    const langPrefs = getLangPrefs();
-    if (!langPrefs.blocked_words || langPrefs.blocked_words.length === 0) {
-        return { matched: false };
-    }
-    
+/**
+ * Check all categories for blocked words
+ * Returns { matched: true, category, word, action, duration_seconds } or { matched: false }
+ */
+function checkAllCategoriesForBlockedWords(text) {
     const normalizedText = normalizeText(text);
-    for (const blockedWord of langPrefs.blocked_words) {
-        const normalizedBlocked = normalizeText(blockedWord);
-        if (normalizedBlocked && normalizedText.includes(normalizedBlocked)) {
-            csLog('[ISweep] Local blocked word match:', { original: text, normalized: normalizedText, blockedWord });
-            return { matched: true, word: blockedWord };
+    
+    // Iterate through all categories in prefsByCategory
+    for (const [category, prefs] of Object.entries(prefsByCategory)) {
+        if (!prefs || !prefs.blocked_words || prefs.blocked_words.length === 0) {
+            continue;
+        }
+        
+        // Check if any blocked word in this category matches
+        for (const blockedWord of prefs.blocked_words) {
+            const normalizedBlocked = normalizeText(blockedWord);
+            if (normalizedBlocked && normalizedText.includes(normalizedBlocked)) {
+                csLog('[ISweep] Local blocked word match in category:', { 
+                    category, 
+                    original: text, 
+                    normalized: normalizedText, 
+                    blockedWord 
+                });
+                return { 
+                    matched: true, 
+                    category, 
+                    word: blockedWord,
+                    action: prefs.action || 'mute',
+                    duration_seconds: prefs.duration_seconds || 3
+                };
+            }
         }
     }
     
@@ -398,16 +419,17 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
     const normalizedText = normalizeText(text);
     csLog('[ISweep] Processing caption:', { original: text, normalized: normalizedText, source });
 
-    // Check for local blocked words first (before backend call)
-    const blockedCheck = checkLocalBlockedWords(text);
+    // Check for local blocked words across all categories
+    const blockedCheck = checkAllCategoriesForBlockedWords(text);
     if (blockedCheck.matched) {
-        csLog('[ISweep] LOCAL MATCH: Blocked word detected, applying action');
-        // Apply action immediately using prefs settings
+        csLog('[ISweep] LOCAL MATCH: Blocked word detected in category:', blockedCheck.category);
+        // Apply action immediately using category-specific settings
         window.__isweepApplyDecision({
-            action: getLangPrefs().action || 'mute',
-            duration_seconds: getLangPrefs().duration_seconds || 3,
-            reason: `Matched blocked word: "${blockedCheck.word}"`,
-            matched_term: blockedCheck.word
+            action: blockedCheck.action || 'mute',
+            duration_seconds: blockedCheck.duration_seconds || 3,
+            reason: `Matched blocked word in "${blockedCheck.category}": "${blockedCheck.word}"`,
+            matched_term: blockedCheck.word,
+            matched_category: blockedCheck.category
         });
         return;
     }
@@ -569,10 +591,12 @@ function extractCaptions(videoElement, index) {
         }
 
         // Also listen for cues that are added dynamically
-        track.addEventListener('cuechange', () => {
+        track.track.addEventListener('cuechange', () => {
             const activeCues = track.track.activeCues;
             if (activeCues && activeCues.length > 0) {
-                videoElement._isweepCurrentCaption = activeCues[0].text;
+                const captionText = activeCues[0].text;
+                videoElement._isweepCurrentCaption = captionText;
+                csLog(`[ISweep] Cue captured from track ${trackIndex}:`, captionText.slice(0, 60));
             }
         });
     });
