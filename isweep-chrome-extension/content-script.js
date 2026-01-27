@@ -69,7 +69,7 @@ async function fetchPreferencesFromBackend() {
         
         const response = await fetch(url);
         if (!response.ok) {
-            csLog('[ISweep] Failed to fetch preferences, using defaults');
+            csLog('[ISweep] Failed to fetch preferences, using cached/defaults');
             return false;
         }
         
@@ -105,6 +105,10 @@ async function fetchPreferencesFromBackend() {
         };
         prefsByCategory.language = prefsByCategory.language || { blocked_words: [], duration_seconds: 3, action: 'mute' };
 
+        // Cache the unified prefsByCategory structure to localStorage
+        await chrome.storage.local.set({ cachedPrefsByCategory: prefsByCategory });
+        csLog('[ISweep] Cached prefsByCategory to storage');
+
         csLog('[ISweep] Loaded prefsByCategory keys:', Object.keys(prefsByCategory));
         csLog(`[ISweep] Language blocked_words derived count: ${(prefsByCategory.language.blocked_words || []).length}`);
         return true;
@@ -116,18 +120,15 @@ async function fetchPreferencesFromBackend() {
 
 // Initialize from storage on load
 async function initializeFromStorage() {
-    const result = await chrome.storage.local.get(['isweep_enabled', 'userId', 'backendURL', 'isweepPrefs']);
+    const result = await chrome.storage.local.get(['isweep_enabled', 'userId', 'backendURL', 'cachedPrefsByCategory']);
     isEnabled = result.isweep_enabled === true; // default to false if not explicitly set
     userId = result.userId || 'user123';
     backendURL = result.backendURL || 'http://127.0.0.1:8001';
     
-    // Load cached preferences into language category if present
-    if (result.isweepPrefs) {
-        prefsByCategory.language = {
-            blocked_words: result.isweepPrefs.blocked_words || [],
-            duration_seconds: result.isweepPrefs.duration_seconds || 3,
-            action: result.isweepPrefs.action || 'mute'
-        };
+    // Load cached preferences if available
+    if (result.cachedPrefsByCategory) {
+        prefsByCategory = result.cachedPrefsByCategory;
+        csLog('[ISweep] Loaded cachedPrefsByCategory from storage:', Object.keys(prefsByCategory));
     }
     
     csLog('[ISweep] Loaded enabled state:', isEnabled);
@@ -135,7 +136,7 @@ async function initializeFromStorage() {
     csLog('[ISweep] Loaded prefsByCategory keys:', Object.keys(prefsByCategory));
     csLog(`[ISweep] Language words loaded: ${prefsByCategory.language.blocked_words.length}`);
     
-    // If enabled, fetch fresh preferences from backend
+    // If enabled, fetch fresh preferences from backend (and update cache)
     if (isEnabled) {
         csLog('[ISweep] Extension is enabled, fetching fresh preferences from backend...');
         await fetchPreferencesFromBackend();
@@ -200,13 +201,9 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         if (changes.backendURL && typeof changes.backendURL.newValue === 'string') {
             backendURL = changes.backendURL.newValue;
         }
-        if (changes.isweepPrefs && changes.isweepPrefs.newValue) {
-            prefsByCategory.language = {
-                blocked_words: changes.isweepPrefs.newValue.blocked_words || [],
-                duration_seconds: changes.isweepPrefs.newValue.duration_seconds || 3,
-                action: changes.isweepPrefs.newValue.action || 'mute'
-            };
-            csLog('[ISweep] Preferences updated via storage:', prefsByCategory.language);
+        if (changes.cachedPrefsByCategory && changes.cachedPrefsByCategory.newValue) {
+            prefsByCategory = changes.cachedPrefsByCategory.newValue;
+            csLog('[ISweep] Preferences updated via storage:', Object.keys(prefsByCategory));
         }
     }
 });
