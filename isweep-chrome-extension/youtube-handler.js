@@ -29,20 +29,15 @@
     let ytCaptionObserver = null;
 
     let isEnabled = false;
-    let backendURL = 'http://127.0.0.1:8001';
-    let userId = 'user123';
 
     async function loadSettings() {
         try {
-            const result = await chrome.storage.local.get(['isweep_enabled', 'backendURL', 'userId']);
+            const result = await chrome.storage.local.get(['isweep_enabled']);
             if (typeof result.isweep_enabled !== 'undefined') isEnabled = Boolean(result.isweep_enabled);
-            if (typeof result.backendURL === 'string') backendURL = result.backendURL;
-            if (typeof result.userId === 'string') userId = result.userId;
         } catch (e) {
             ytLog('[ISweep-YT] Failed to load settings, using defaults');
         } finally {
             ytLog('[ISweep-YT] enabled state from storage:', isEnabled);
-            ytLog('[ISweep-YT] Settings after load', { isEnabled, backendURL, userId });
         }
     }
 
@@ -65,12 +60,6 @@
                 ytLog('[ISweep-YT] Restarting caption monitoring (enabled)');
                 monitorYouTubeCaptions();
             }
-        }
-        if (changes.backendURL && typeof changes.backendURL.newValue === 'string') {
-            backendURL = changes.backendURL.newValue;
-        }
-        if (changes.userId && typeof changes.userId.newValue === 'string') {
-            userId = changes.userId.newValue;
         }
     });
 
