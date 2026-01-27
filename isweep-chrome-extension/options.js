@@ -107,14 +107,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         customWordsByCategory.language = updated;
         chrome.storage.local.set({ customWordsByCategory });
         renderCustom(updated);
-        log('customWords updated:', customWordsByCategory);
+        log('customWord removed', word);
     }
 
     function addCustomWord() {
         const normalized = normalizeWord(customInput.value);
         if (!normalized) return;
+        if (normalized.length < 2 || normalized.length > 40) {
+            showStatus('Word must be 2-40 characters', 'error');
+            return;
+        }
         const current = customWordsByCategory.language || [];
         if (current.includes(normalized)) {
+            showStatus('Already added', 'info');
             customInput.value = '';
             return;
         }
@@ -123,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         chrome.storage.local.set({ customWordsByCategory });
         renderCustom(updated);
         customInput.value = '';
-        log('customWords updated:', customWordsByCategory);
+        log('customWord added', normalized);
     }
 
     function buildEffectiveBlockedWords(category) {
