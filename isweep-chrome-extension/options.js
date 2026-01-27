@@ -2,16 +2,13 @@ import { PRESET_PACKS, getPackWords, mergeWords } from './preset-packs.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const statusMessage = document.getElementById('statusMessage');
-    const presetRows = Array.from(document.querySelectorAll('.preset-row'));
-    const customList = document.querySelector('.custom-list');
-    const addCustomBtn = document.getElementById('addCustom');
-    const customInput = document.getElementById('customWord');
-    const actionSelect = document.getElementById('langAction');
-    const durationInput = document.getElementById('langDuration');
     const saveBtn = document.getElementById('saveButton');
     const effectiveCount = document.getElementById('effectiveCount');
     const effectivePreview = document.getElementById('effectivePreview');
     const lastSavedTime = document.getElementById('lastSavedTime');
+
+    // Category state
+    let currentCategory = 'language';
 
     const DEFAULT_SELECTED = {
         language: {
