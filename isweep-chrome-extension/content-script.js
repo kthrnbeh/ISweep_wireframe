@@ -39,6 +39,7 @@ let speechRecognition = null;
 let speechActive = false;
 let speechVideoRef = null;
 let speechUnsupportedLogged = false;
+let lastSpeechErrorTs = 0; // Track speech fallback errors for cooldown
 // In-memory preferences organized by category
 let prefsByCategory = {
     language: {
@@ -270,6 +271,12 @@ function startSpeechFallback(videoElement) {
         return;
     }
 
+    // Check if we're in cooldown period after an error (30 second cooldown)
+    const now = Date.now();
+    if (now - lastSpeechErrorTs < 30000) {
+        return;
+    }
+
     speechRecognition = new SpeechRecognition();
     speechRecognition.continuous = true;
     speechRecognition.interimResults = false;
@@ -289,6 +296,8 @@ function startSpeechFallback(videoElement) {
     };
 
     speechRecognition.onerror = () => {
+        lastSpeechErrorTs = Date.now();
+        csLog('[ISweep] Speech recognition error, cooldown until', new Date(lastSpeechErrorTs + 30000).toISOString());
         stopSpeechFallback();
     };
 
@@ -488,6 +497,7 @@ function createStatusPill() {
     pill.style.fontSize = '16px';
     pill.style.fontFamily = 'system-ui,sans-serif';
     pill.style.userSelect = 'none';
+    pill.style.pointerEvents = 'none'; // Don't block clicks on video controls
     pill.innerHTML = `
         <span style="margin-right:8px;">🧹</span>
         <span id="isweep-status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ccc;"></span>
@@ -713,6 +723,13 @@ function monitorSpeechFallback() {
         return;
     }
 
+    // Don't use speech fallback on YouTube (captions are handled separately by youtube-handler)
+    const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
+    if (isYT) {
+        stopSpeechFallback();
+        return;
+    }
+
     const video = getActiveVideo();
     if (!video || video.paused || video.ended || video.readyState < 2) {
         stopSpeechFallback();
@@ -720,6 +737,7 @@ function monitorSpeechFallback() {
     }
 
     const now = Date.now();
+    // Only start speech fallback if no captions for 5+ seconds
     if ((now - lastCaptionEmitTs) >= 5000) {
         startSpeechFallback(video);
     } else if (speechActive) {
