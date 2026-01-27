@@ -424,6 +424,70 @@ textarea {
     }
 }
 
+/* Summary Section */
+.summary-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 14px;
+    background: #f9f9f9;
+    margin-top: 20px;
+}
+
+.summary-section h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #555;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.summary-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.summary-label {
+    font-weight: 600;
+    color: #666;
+    min-width: 120px;
+}
+
+.summary-value {
+    color: #333;
+    font-weight: 600;
+}
+
+.preview-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    max-width: 500px;
+}
+
+.preview-tag {
+    background: #e8eaf6;
+    color: #3f51b5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid #c5cae9;
+}
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Footer */
 footer {
     background: #f9f9f9;

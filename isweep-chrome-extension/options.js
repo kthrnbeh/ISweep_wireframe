@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const actionSelect = document.getElementById('langAction');
     const durationInput = document.getElementById('langDuration');
     const saveBtn = document.getElementById('saveButton');
+    const effectiveCount = document.getElementById('effectiveCount');
+    const effectivePreview = document.getElementById('effectivePreview');
+    const lastSavedTime = document.getElementById('lastSavedTime');
 
     const DEFAULT_SELECTED = {
         language: {
@@ -168,11 +171,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             if (!res.ok) throw new Error(`Backend error ${res.status}`);
             log('Saved preferences to backend', payload);
+            updateSummary(effectiveWords);
             showStatus('Saved to backend', 'success');
         } catch (err) {
             console.warn('[ISweep-Options] Failed to save to backend', err);
             showStatus('Save failed', 'error');
         }
+    }
+
+    function updateSummary(effectiveWords) {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString();
+
+        effectiveCount.textContent = effectiveWords.length;
+
+        effectivePreview.innerHTML = '';
+        effectiveWords.slice(0, 10).forEach(word => {
+            const tag = document.createElement('span');
+            tag.className = 'preview-tag';
+            tag.textContent = word;
+            effectivePreview.appendChild(tag);
+        });
+
+        lastSavedTime.textContent = timeStr;
+        log('Summary updated:', { count: effectiveWords.length, time: timeStr });
     }
 
     addCustomBtn.addEventListener('click', (e) => {
