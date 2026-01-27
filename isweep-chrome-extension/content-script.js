@@ -407,19 +407,8 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
     }
 };
 
-// Initialize on page load - call the async function
-initializeFromStorage().then(() => {
-    // Initialize YouTube handler if on YouTube (safe window access)
-    const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
-    if (isYT) {
-        csLog('[ISweep] YouTube page detected');
-        if (typeof window.initYouTubeHandler === 'function') {
-            window.initYouTubeHandler();
-        }
-    }
-}).catch((err) => {
-    csLog('[ISweep] Error during initialization:', err);
-});
+// Initialize on page load - all setup happens once after preferences load
+// (see end of script for the single initializeFromStorage call)
 
 
 // --- Status Pill Implementation ---
@@ -694,22 +683,24 @@ function monitorSpeechFallback() {
     }
 }
 
-// Initialize from storage, then start monitoring
+// Initialize from storage once, then start all monitoring
+// This is the ONLY initialization call to avoid duplicate intervals/observers
 initializeFromStorage().then(() => {
     csLog('[ISweep] Content script initialized and ready');
 
     // Initial detection
     detectVideos();
 
-    // Periodic check for new videos
+    // Periodic check for new videos (single interval)
     setInterval(detectVideos, 2000);
 
-    // Speech fallback monitor
+    // Speech fallback monitor (single interval)
     setInterval(monitorSpeechFallback, 1000);
 
-    // Initialize YouTube handler if on YouTube (use window.isYouTubePage for safe access)
+    // Initialize YouTube handler if on YouTube
     const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
     if (isYT) {
+        csLog('[ISweep] YouTube detected - initializing YouTube handlers');
         if (typeof window.initYouTubeOnVideoChange === 'function') {
             window.initYouTubeOnVideoChange();
         }
@@ -719,6 +710,8 @@ initializeFromStorage().then(() => {
     }
 
     csLog('[ISweep] Caption extraction enabled' + (isYT ? ' + YouTube support' : ''));
+}).catch((err) => {
+    csLog('[ISweep] Critical initialization error:', err);
 });
 
 })();
