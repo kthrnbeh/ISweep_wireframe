@@ -18,12 +18,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             strong_profanity: true,
             mild_language: false,
             blasphemy: false
-        }
+        },
+        violence: {},
+        sexual: {}
     };
 
-    const DEFAULT_CUSTOM = { language: [] };
-    const DEFAULT_DURATION = { language: 4 };
-    const DEFAULT_ACTION = { language: 'mute' };
+    const DEFAULT_CUSTOM = { 
+        language: [],
+        violence: [],
+        sexual: []
+    };
+    const DEFAULT_DURATION = { 
+        language: 4,
+        violence: 10,
+        sexual: 30
+    };
+    const DEFAULT_ACTION = { 
+        language: 'mute',
+        violence: 'fast_forward',
+        sexual: 'skip'
+    };
 
     let selectedPacks = { ...DEFAULT_SELECTED };
     let customWordsByCategory = { ...DEFAULT_CUSTOM };
@@ -66,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const prefs = data.preferences || {};
 
             // Hydrate state from backend
-            const categories = ['language', 'violence', 'sexual'];
+            const categories = ['language', 'violence', 'sexual']; // Standardized category keys
             categories.forEach(category => {
                 const categoryPref = prefs[category];
                 if (!categoryPref) return;
@@ -81,14 +95,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     durationSecondsByCategory[category] = categoryPref.duration_seconds;
                 }
 
-                // Set custom words from backend blocked_words
-                if (Array.isArray(categoryPref.blocked_words)) {
-                    customWordsByCategory[category] = categoryPref.blocked_words;
+                // Set selected packs from backend
+                if (categoryPref.selected_packs && typeof categoryPref.selected_packs === 'object') {
+                    if (!selectedPacks[category]) selectedPacks[category] = {};
+                    selectedPacks[category] = categoryPref.selected_packs;
+                }
+
+                // Set custom words from backend
+                if (Array.isArray(categoryPref.custom_words)) {
+                    customWordsByCategory[category] = categoryPref.custom_words;
                 }
             });
 
             // Save hydrated state to local storage
             await chrome.storage.local.set({
+                selectedPacks,
                 actionByCategory,
                 durationSecondsByCategory,
                 customWordsByCategory
@@ -215,19 +236,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const backendURL = (await chrome.storage.local.get(['backendURL'])).backendURL || 'http://127.0.0.1:8001';
 
         // Build preferences object for all categories
-        const categories = ['language', 'violence', 'sexual']; // All supported categories
-        const preferences = {};
+            const categories = ['language', 'violence', 'sexual']; // All supported categories (standardized keys)
 
         categories.forEach(category => {
             const effectiveWords = buildEffectiveBlockedWords(category);
             const duration = durationSecondsByCategory[category] ?? (category === 'language' ? 4 : category === 'violence' ? 10 : 30);
             const action = actionByCategory[category] ?? (category === 'language' ? 'mute' : category === 'violence' ? 'fast_forward' : 'skip');
+            const packs = selectedPacks[category] || {};
+            const customWords = customWordsByCategory[category] || [];
             
             preferences[category] = {
                 enabled: true,
                 action: action,
                 duration_seconds: duration,
-                blocked_words: effectiveWords
+                blocked_words: effectiveWords,
+                selected_packs: packs,
+                custom_words: customWords
             };
         });
 
@@ -253,6 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Update local storage to match what was saved to backend
             await chrome.storage.local.set({
+                selectedPacks,
                 actionByCategory,
                 durationSecondsByCategory,
                 customWordsByCategory
