@@ -173,7 +173,7 @@
 
             const cleanCaption = captionText
                 .replace(/[♪♫]/g, ' ')
-                .replace(/[^\p{L}\p{N}\s']/gu, ' ')
+                .replace(/[^\p{L}\p{N}\s']/gu, ' ') // Preserve apostrophes for contractions (don't, can't, etc.)
                 .replace(/\s+/g, ' ')
                 .trim();
 

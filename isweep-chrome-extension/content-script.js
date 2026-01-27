@@ -50,12 +50,12 @@ let prefsByCategory = {
 };
 
 /**
- * Normalize text for matching: lowercase, remove punctuation, collapse whitespace
+ * Normalize text for matching: lowercase, remove punctuation (preserve apostrophes), collapse whitespace
  */
 function normalizeText(text) {
     return (text || '')
         .toLowerCase()
-        .replace(/[.,!?;:\-'"()\[\]{}]/g, ' ') // Remove punctuation
+        .replace(/[.,!?;:\-"()\[\]{}]/g, ' ') // Remove punctuation but preserve apostrophes
         .replace(/\s+/g, ' ') // Collapse whitespace
         .trim();
 }
@@ -658,10 +658,10 @@ async function checkForFilters(videoElement, index) {
     videoElement._isweepLastCheck = now;
 
 
-    // Normalize caption text to remove special characters (♪, ♫, etc.)
+    // Normalize caption text: remove musical notes and special characters, but preserve apostrophes
     const cleanCaption = captionText
         .replace(/[♪♫]/g, " ")
-        .replace(/[^\p{L}\p{N}\s']/gu, " ")
+        .replace(/[^\p{L}\p{N}\s']/gu, " ") // Preserve apostrophes for contractions (don't, can't, etc.)
         .replace(/\s+/g, " ")
         .trim();
 
