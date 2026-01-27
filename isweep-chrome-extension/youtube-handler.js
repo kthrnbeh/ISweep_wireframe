@@ -28,7 +28,7 @@
     let lastCaptionText = '';
     let ytCaptionObserver = null;
 
-    let isEnabled = true;
+    let isEnabled = false;
     let backendURL = 'http://127.0.0.1:8001';
     let userId = 'user123';
 
@@ -49,7 +49,9 @@
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area !== 'local') return;
         if (changes.isweep_enabled && typeof changes.isweep_enabled.newValue !== 'undefined') {
+            const oldValue = isEnabled;
             isEnabled = Boolean(changes.isweep_enabled.newValue);
+            ytLog('[ISweep-YT] isweep_enabled changed:', { from: oldValue, to: isEnabled });
         }
         if (changes.backendURL && typeof changes.backendURL.newValue === 'string') {
             backendURL = changes.backendURL.newValue;
