@@ -314,15 +314,20 @@ window.__isweepApplyDecision = function(decision) {
 
     const { action, duration_seconds, reason, matched_term } = decision;
     const langPrefs = getLangPrefs();
-    // Use backend duration, fall back to prefs, then default to 3
-    const duration = Math.max(0, Number(duration_seconds) ?? Number(langPrefs.duration_seconds) ?? 3);
+    // Use backend duration if finite number, else prefs duration if finite, else 3
+    const backendDuration = Number(duration_seconds);
+    const prefsDuration = Number(langPrefs.duration_seconds);
+    const durationSeconds = Number.isFinite(backendDuration) ? backendDuration 
+                          : Number.isFinite(prefsDuration) ? prefsDuration 
+                          : 3;
+    const duration = Math.max(0, durationSeconds);
+    const durationMs = duration * 1000;
 
     csLog(`[ISweep] APPLYING ACTION: ${action} (duration: ${duration}s) - ${reason}`);
 
     switch (action) {
         case 'mute':
             const now = Date.now();
-            const durationMs = duration * 1000;
             
             // If already muted with same term, ignore duplicate
             if (isMuted && lastMutedPhrase === matched_term) {
@@ -371,7 +376,7 @@ window.__isweepApplyDecision = function(decision) {
             setTimeout(() => { 
                 videoElement.playbackRate = originalSpeed;
                 csLog('[ISweep] FAST FORWARD ended, restored speed');
-            }, duration * 1000);
+            }, durationMs);
             break;
         }
         default:
