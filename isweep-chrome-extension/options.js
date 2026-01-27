@@ -48,7 +48,67 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('[ISweep-Options]', msg, data ?? '');
     }
 
+    async function fetchPreferencesFromBackend() {
+        try {
+            const userId = (await chrome.storage.local.get(['userId'])).userId || 'user123';
+            const backendURL = (await chrome.storage.local.get(['backendURL'])).backendURL || 'http://127.0.0.1:8001';
+
+            const res = await fetch(`${backendURL}/preferences/${userId}`);
+            if (!res.ok) {
+                log('Backend fetch failed, using local storage');
+                return false;
+            }
+
+            const data = await res.json();
+            log('Backend preferences fetched:', data);
+
+            // Parse backend response: { user_id, preferences: { category: {...}, ... } }
+            const prefs = data.preferences || {};
+
+            // Hydrate state from backend
+            const categories = ['language', 'violence', 'sexual'];
+            categories.forEach(category => {
+                const categoryPref = prefs[category];
+                if (!categoryPref) return;
+
+                // Set action
+                if (categoryPref.action) {
+                    actionByCategory[category] = categoryPref.action;
+                }
+
+                // Set duration
+                if (typeof categoryPref.duration_seconds === 'number') {
+                    durationSecondsByCategory[category] = categoryPref.duration_seconds;
+                }
+
+                // Set custom words from backend blocked_words
+                if (Array.isArray(categoryPref.blocked_words)) {
+                    customWordsByCategory[category] = categoryPref.blocked_words;
+                }
+            });
+
+            // Save hydrated state to local storage
+            await chrome.storage.local.set({
+                actionByCategory,
+                durationSecondsByCategory,
+                customWordsByCategory
+            });
+
+            log('State hydrated from backend:', {
+                actionByCategory,
+                durationSecondsByCategory,
+                customWordsByCategory
+            });
+
+            return true;
+        } catch (error) {
+            log('Error fetching from backend:', error);
+            return false;
+        }
+    }
+
     async function loadState() {
+        // First, load from local storage
         const stored = await chrome.storage.local.get([
             'selectedPacks',
             'customWordsByCategory',
@@ -60,6 +120,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         customWordsByCategory = stored.customWordsByCategory || { ...DEFAULT_CUSTOM };
         durationSecondsByCategory = stored.durationSecondsByCategory || { ...DEFAULT_DURATION };
         actionByCategory = stored.actionByCategory || { ...DEFAULT_ACTION };
+
+        // Then, fetch from backend and override with server state
+        await fetchPreferencesFromBackend();
 
         render();
     }
@@ -143,6 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const words = getPackWords(category, sub) || [];
             presetWords.push(...words);
         });
+        // Merge preset words with custom words (backend words are in customWordsByCategory)
         return mergeWords(presetWords, custom);
     }
 
@@ -186,6 +250,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             const result = await res.json();
             log('Bulk save response:', result);
+            
+            // Update local storage to match what was saved to backend
+            await chrome.storage.local.set({
+                actionByCategory,
+                durationSecondsByCategory,
+                customWordsByCategory
+            });
             
             // Update summary with language category words for display
             const langWords = preferences.language.blocked_words;
