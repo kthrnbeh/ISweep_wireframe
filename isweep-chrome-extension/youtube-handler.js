@@ -52,6 +52,19 @@
             const oldValue = isEnabled;
             isEnabled = Boolean(changes.isweep_enabled.newValue);
             ytLog('[ISweep-YT] isweep_enabled changed:', { from: oldValue, to: isEnabled });
+            
+            // Stop monitoring if disabled
+            if (!isEnabled) {
+                if (ytCaptionObserver) {
+                    ytCaptionObserver.disconnect();
+                    ytCaptionObserver = null;
+                    ytLog('[ISweep-YT] Caption observer disconnected (disabled)');
+                }
+            } else {
+                // Restart monitoring if enabled
+                ytLog('[ISweep-YT] Restarting caption monitoring (enabled)');
+                monitorYouTubeCaptions();
+            }
         }
         if (changes.backendURL && typeof changes.backendURL.newValue === 'string') {
             backendURL = changes.backendURL.newValue;
