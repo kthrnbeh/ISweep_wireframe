@@ -31,6 +31,8 @@ let backendURL = 'http://127.0.0.1:8001';
 let detectedVideos = 0;
 let appliedActions = 0;
 let lastCaptionEmitTs = Date.now();
+let isMuted = false; // Safe mute state
+let unmuteTimerId = null; // Track scheduled unmute timer
 let muteUntil = 0; // Track when mute should end to prevent over-muting
 let lastMutedPhrase = null; // Track last muted phrase to allow different phrases
 let speechRecognition = null;
@@ -170,6 +172,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             document.querySelectorAll('video').forEach(v => {
                 if (v.muted) v.muted = false;
             });
+            // Clear any pending unmute timer and reset mute state
+            if (unmuteTimerId !== null) {
+                clearTimeout(unmuteTimerId);
+                unmuteTimerId = null;
+            }
+            isMuted = false;
         }
         
         sendResponse({ success: true });
@@ -313,22 +321,42 @@ window.__isweepApplyDecision = function(decision) {
 
     switch (action) {
         case 'mute':
-            // Check if already muted and within mute window (don't extend, only if different term)
             const now = Date.now();
-            if (now < muteUntil && lastMutedPhrase === matched_term) {
-                csLog(`[ISweep] Already muted until ${new Date(muteUntil).toISOString()}, ignoring duplicate term: "${matched_term}"`);
+            const durationMs = duration * 1000;
+            
+            // If already muted with same term, ignore duplicate
+            if (isMuted && lastMutedPhrase === matched_term) {
+                csLog(`[ISweep] Already muted for term "${matched_term}", ignoring duplicate`);
                 return;
             }
             
+            // If already muted with different term, allow but clear old timer first
+            if (isMuted && unmuteTimerId !== null) {
+                csLog(`[ISweep] Switching mute from term "${lastMutedPhrase}" to "${matched_term}", clearing old timer`);
+                clearTimeout(unmuteTimerId);
+                unmuteTimerId = null;
+            }
+            
+            // Apply new mute
             videoElement.muted = true;
-            muteUntil = now + (duration * 1000);
+            isMuted = true;
+            muteUntil = now + durationMs;
             lastMutedPhrase = matched_term;
             appliedActions++;
             csLog(`[ISweep] MUTED: matched term "${matched_term}", will unmute at ${new Date(muteUntil).toISOString()}`);
-            setTimeout(() => { 
-                videoElement.muted = false;
-                csLog('[ISweep] UNMUTED after duration');
-            }, duration * 1000);
+            
+            // Schedule unmute with safety check - only unmute if this is the active mute
+            unmuteTimerId = setTimeout(() => {
+                // Only unmute if enough time has passed (prevents old timers from unmuting early)
+                if (Date.now() >= muteUntil) {
+                    videoElement.muted = false;
+                    isMuted = false;
+                    unmuteTimerId = null;
+                    csLog('[ISweep] UNMUTED after duration');
+                } else {
+                    csLog('[ISweep] Unmute timer fired early, skipping (newer mute active)');
+                }
+            }, durationMs);
             break;
         case 'skip':
             videoElement.currentTime = Math.min(videoElement.currentTime + duration, videoElement.duration || Infinity);
