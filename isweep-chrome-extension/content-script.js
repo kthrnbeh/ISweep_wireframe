@@ -140,10 +140,14 @@ async function initializeFromStorage() {
     }
 }
 
-// Listen for toggle messages from popup
+// Listen for toggle messages from popup (SINGLE unified listener)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.action === 'toggleISweep' && typeof message.enabled !== 'undefined') {
         isEnabled = message.enabled;
+        csLog('[ISweep] Toggled via popup:', isEnabled ? 'ENABLED' : 'DISABLED');
+        
+        // Update status pill
+        updateStatusIcon(isEnabled);
         
         // Update prefs if provided
         if (message.prefs) {
@@ -156,8 +160,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             backendURL = message.prefs.backendUrl || backendURL;
         }
         
-        csLog('[ISweep] Toggled via popup:', isEnabled ? 'ENABLED' : 'DISABLED');
-        
         // If enabled, fetch fresh preferences from backend
         if (isEnabled) {
             csLog('[ISweep] Fetching preferences after toggle...');
@@ -169,15 +171,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 if (v.muted) v.muted = false;
             });
         }
+        
+        sendResponse({ success: true });
     }
 });
 
 // Listen for storage changes from other tabs/windows
 chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local') {
-        if (changes.isEnabled && typeof changes.isEnabled.newValue !== 'undefined') {
-            isEnabled = changes.isEnabled.newValue;
-            csLog('[ISweep] isEnabled changed via storage:', isEnabled);
+        if (changes.isweep_enabled && typeof changes.isweep_enabled.newValue !== 'undefined') {
+            isEnabled = Boolean(changes.isweep_enabled.newValue);
+            csLog('[ISweep] isweep_enabled changed via storage:', isEnabled);
+            updateStatusIcon(isEnabled);
         }
         if (changes.userId && typeof changes.userId.newValue === 'string') {
             userId = changes.userId.newValue;
@@ -446,27 +451,11 @@ function updateStatusIcon(enabled) {
     }
 }
 
-// --- Call updateStatusIcon after storage loads ---
-chrome.storage.sync.get(['isEnabled'], (result) => {
-    const isEnabled = result.isEnabled !== false;
-    updateStatusIcon(isEnabled);
-});
-
-// --- Listen for toggle messages and update pill ---
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message && message.type === 'TOGGLE_ISWEEP') {
-        updateStatusIcon(message.enabled);
-    }
-});
-
-// Listen for messages from popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'toggleISweep') {
-        isEnabled = request.enabled;
-        csLog(`[ISweep] ${isEnabled ? 'Enabled' : 'Disabled'}`);
-        csLog('[ISweep] Status icon toggled:', isEnabled ? 'shown' : 'hidden');
-        sendResponse({ success: true });
-    }
+// Initialize status pill from local storage
+chrome.storage.local.get(['isweep_enabled'], (result) => {
+    const enabled = Boolean(result.isweep_enabled);
+    updateStatusIcon(enabled);
+    csLog('[ISweep] Status pill initialized with isweep_enabled:', enabled);
 });
 
 // Detect all video elements on page (skip YouTube; handled by youtube-handler)
