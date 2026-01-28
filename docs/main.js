@@ -442,8 +442,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // Check if filtering is enabled (developer mode: always enabled)
-      const planKey = localStorage.getItem(PLAN_KEY) || "free";
-      const filteringEnabled = true; // Developer: always allow filtering
+      const filteringEnabled = isFilteringEnabled();
 
       if (!filteringEnabled) {
         decisionOutput.textContent =
