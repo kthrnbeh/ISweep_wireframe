@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Toggle button (guarded)
     if (toggleButton) {
         toggleButton.addEventListener('click', async () => {
-            isweepPrefs.enabled = !isweepPrefs.enabled;
+            isweep_enabled = !isweep_enabled;
             isweepPrefs.user_id = userIdInput.value.trim();
             const backendUrl = backendUrlInput.value.trim();
             
@@ -131,18 +131,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             showBackendUrlError('');
             isweepPrefs.backendUrl = backendUrl;
             
-            // Save to storage
-            await chrome.storage.local.set({ isweepPrefs });
-            updateUI(isweepPrefs.enabled);
+            // Save to storage (separate keys for enabled and prefs)
+            await chrome.storage.local.set({
+                isweep_enabled,
+                isweepPrefs
+            });
+            updateUI(isweep_enabled);
 
-            console.log('[ISweep-Popup] TOGGLED enabled:', isweepPrefs.enabled);
+            console.log('[ISweep-Popup] TOGGLED enabled:', isweep_enabled);
 
             // Notify active tab's content script to toggle immediately
             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                 if (tabs.length > 0) {
                     chrome.tabs.sendMessage(tabs[0].id, {
                         action: 'toggleISweep',
-                        enabled: isweepPrefs.enabled,
+                        enabled: isweep_enabled,
                         prefs: isweepPrefs
                     }).catch((err) => {
                         console.log('[ISweep-Popup] Could not send message to active tab (expected on non-content pages):', err.message);
