@@ -494,7 +494,7 @@ window.__isweepApplyDecision = function(decision) {
                 isMuted = true;
                 muteUntil = scheduledMuteEnd;
                 lastMutedTerm = matched_term;
-                lastMuteStartTs = now;
+                lastMuteStartTs = Date.now(); // Capture actual mute start time (not scheduled time)
                 appliedActions++;
                 
                 csLog(`[ISweep] MUTED: term="${matched_term}" duration=${duration.toFixed(2)}s offset=${captionOffsetMs}ms unmute_at=${new Date(muteUntil).toISOString()}`);
