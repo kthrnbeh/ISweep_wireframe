@@ -653,8 +653,11 @@ function extractCaptions(videoElement, index) {
         track.track.addEventListener('cuechange', () => {
             const activeCues = track.track.activeCues;
             if (activeCues && activeCues.length > 0) {
-                const captionText = activeCues[0].text;
+                const cue = activeCues[0];
+                const captionText = cue.text;
                 videoElement._isweepCurrentCaption = captionText;
+                videoElement._isweepCurrentCaptionStart = cue.startTime;
+                videoElement._isweepCurrentCaptionEnd = cue.endTime;
                 csLog(`[ISweep] Cue captured from track ${trackIndex}:`, captionText.slice(0, 60));
             }
         });
@@ -720,7 +723,9 @@ async function checkForFilters(videoElement, index) {
     await window.__isweepEmitText({
         text: cleanCaption,
         timestamp_seconds: videoElement.currentTime,
-        source: 'html5_dom'
+        source: 'html5_dom',
+        caption_start_seconds: videoElement._isweepCurrentCaptionStart,
+        caption_end_seconds: videoElement._isweepCurrentCaptionEnd
     });
 }
 
