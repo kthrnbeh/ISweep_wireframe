@@ -92,81 +92,89 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateUI(isweep_enabled);
     console.log('[ISweep-Popup] Initial enabled state loaded as:', isweep_enabled);
 
-    // Toggle button
-    toggleButton.addEventListener('click', async () => {
-        const newState = !isweep_enabled;
-        const newUserId = userIdInput.value.trim();
-        const newBackendUrl = backendUrl.value.trim();
-        
-        // Update prefs with current UI values
-        isweepPrefs.user_id = newUserId;
-        isweepPrefs.backendUrl = newBackendUrl;
-        
-        // Save to storage
-        await chrome.storage.local.set({
-            isweep_enabled: newState,
-            userId: newUserId,
-            backendURL: newBackendUrl,
-            isweepPrefs: isweepPrefs
+    // Toggle button (guarded)
+    if (toggleButton) {
+        toggleButton.addEventListener('click', async () => {
+            const newState = !isweep_enabled;
+            const newUserId = userIdInput.value.trim();
+            const newBackendUrl = backendUrl.value.trim();
+            
+            // Update prefs with current UI values
+            isweepPrefs.user_id = newUserId;
+            isweepPrefs.backendUrl = newBackendUrl;
+            
+            // Save to storage
+            await chrome.storage.local.set({
+                isweep_enabled: newState,
+                userId: newUserId,
+                backendURL: newBackendUrl,
+                isweepPrefs: isweepPrefs
+            });
+            isweep_enabled = newState;
+            updateUI(newState);
+
+            console.log('[ISweep-Popup] TOGGLED isweep_enabled:', newState);
+
+            // Notify active tab's content script to toggle immediately
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                if (tabs.length > 0) {
+                    chrome.tabs.sendMessage(tabs[0].id, {
+                        action: 'toggleISweep',
+                        enabled: newState,
+                        prefs: isweepPrefs
+                    }).catch((err) => {
+                        console.log('[ISweep-Popup] Could not send message to active tab (expected on non-content pages):', err.message);
+                    });
+                }
+            });
         });
-        isweep_enabled = newState;
-        updateUI(newState);
+    }
 
-        console.log('[ISweep-Popup] TOGGLED isweep_enabled:', newState);
-
-        // Notify active tab's content script to toggle immediately
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs.length > 0) {
-                chrome.tabs.sendMessage(tabs[0].id, {
-                    action: 'toggleISweep',
-                    enabled: newState,
-                    prefs: isweepPrefs
-                }).catch((err) => {
-                    console.log('[ISweep-Popup] Could not send message to active tab (expected on non-content pages):', err.message);
-                });
-            }
+    // Save user ID on input change (guarded)
+    if (userIdInput) {
+        userIdInput.addEventListener('change', async () => {
+            const newUserId = userIdInput.value.trim();
+            isweepPrefs.user_id = newUserId;
+            await chrome.storage.local.set({
+                userId: newUserId,
+                isweepPrefs: isweepPrefs
+            });
+            console.log('[ISweep-Popup] Updated userId to:', newUserId);
         });
-    });
+    }
 
-    // Save user ID on input change
-    userIdInput.addEventListener('change', async () => {
-        const newUserId = userIdInput.value.trim();
-        isweepPrefs.user_id = newUserId;
-        await chrome.storage.local.set({
-            userId: newUserId,
-            isweepPrefs: isweepPrefs
+    // Save backend URL on input change (guarded)
+    if (backendUrl) {
+        backendUrl.addEventListener('change', async () => {
+            const newBackendUrl = backendUrl.value.trim();
+            isweepPrefs.backendUrl = newBackendUrl;
+            await chrome.storage.local.set({
+                backendURL: newBackendUrl,
+                isweepPrefs: isweepPrefs
+            });
+            console.log('[ISweep-Popup] Updated backendURL to:', newBackendUrl);
         });
-        console.log('[ISweep-Popup] Updated userId to:', newUserId);
-    });
+    }
 
-    // Save backend URL on input change
-    backendUrl.addEventListener('change', async () => {
-        const newBackendUrl = backendUrl.value.trim();
-        isweepPrefs.backendUrl = newBackendUrl;
-        await chrome.storage.local.set({
-            backendURL: newBackendUrl,
-            isweepPrefs: isweepPrefs
+    // Clear stats (guarded)
+    if (clearStatsBtn) {
+        clearStatsBtn.addEventListener('click', async () => {
+            await chrome.storage.local.set({
+                videosDetected: 0,
+                actionsApplied: 0
+            });
+            if (videosDetectedSpan) videosDetectedSpan.textContent = '0';
+            if (actionsAppliedSpan) actionsAppliedSpan.textContent = '0';
         });
-        console.log('[ISweep-Popup] Updated backendURL to:', newBackendUrl);
-    });
+    }
 
-    // Clear stats
-    clearStatsBtn.addEventListener('click', async () => {
-        await chrome.storage.local.set({
-            videosDetected: 0,
-            actionsApplied: 0
-        });
-        videosDetectedSpan.textContent = '0';
-        actionsAppliedSpan.textContent = '0';
-    });
-
-    // Listen for updates from background script
+    // Listen for updates from background script (guarded)
     chrome.storage.onChanged.addListener((changes, areaName) => {
         if (areaName === 'local') {
-            if (changes.videosDetected) {
+            if (changes.videosDetected && videosDetectedSpan) {
                 videosDetectedSpan.textContent = changes.videosDetected.newValue;
             }
-            if (changes.actionsApplied) {
+            if (changes.actionsApplied && actionsAppliedSpan) {
                 actionsAppliedSpan.textContent = changes.actionsApplied.newValue;
             }
         }
