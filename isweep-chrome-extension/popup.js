@@ -207,35 +207,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             const updated = changes.isweepPrefs.newValue;
             if (updated) {
                 isweepPrefs = updated;
-                // Update UI to reflect new prefs
-                updateUI(isweepPrefs.enabled);
                 if (userIdInput) userIdInput.value = isweepPrefs.user_id || 'user123';
                 if (backendUrlInput) backendUrlInput.value = isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
-                if (videosDetectedSpan) videosDetectedSpan.textContent = isweepPrefs.videosDetected || 0;
-                if (actionsAppliedSpan) actionsAppliedSpan.textContent = isweepPrefs.actionsApplied || 0;
                 console.log('[ISweep-Popup] Updated from isweepPrefs:', isweepPrefs);
             }
         }
 
-        // Handle legacy isweep_enabled changes (for backward compatibility)
+        // Handle isweep_enabled changes
         if (changes.isweep_enabled) {
-            isweepPrefs.enabled = Boolean(changes.isweep_enabled.newValue);
-            updateUI(isweepPrefs.enabled);
-            console.log('[ISweep-Popup] Updated enabled from isweep_enabled:', isweepPrefs.enabled);
+            isweep_enabled = Boolean(changes.isweep_enabled.newValue);
+            updateUI(isweep_enabled);
+            console.log('[ISweep-Popup] Updated enabled from isweep_enabled:', isweep_enabled);
         }
 
         // Handle videosDetected changes
         if (changes.videosDetected && videosDetectedSpan) {
-            isweepPrefs.videosDetected = changes.videosDetected.newValue;
-            videosDetectedSpan.textContent = isweepPrefs.videosDetected || 0;
-            console.log('[ISweep-Popup] Updated videosDetected:', isweepPrefs.videosDetected);
+            videosDetected = changes.videosDetected.newValue;
+            videosDetectedSpan.textContent = videosDetected || 0;
+            console.log('[ISweep-Popup] Updated videosDetected:', videosDetected);
         }
 
         // Handle actionsApplied changes
         if (changes.actionsApplied && actionsAppliedSpan) {
-            isweepPrefs.actionsApplied = changes.actionsApplied.newValue;
-            actionsAppliedSpan.textContent = isweepPrefs.actionsApplied || 0;
-            console.log('[ISweep-Popup] Updated actionsApplied:', isweepPrefs.actionsApplied);
+            actionsApplied = changes.actionsApplied.newValue;
+            actionsAppliedSpan.textContent = actionsApplied || 0;
+            console.log('[ISweep-Popup] Updated actionsApplied:', actionsApplied);
         }
     });
 });
