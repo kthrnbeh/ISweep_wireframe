@@ -47,7 +47,8 @@ let prefsByCategory = {
     language: {
         blocked_words: [],
         duration_seconds: 0.5,
-        action: 'mute'
+        action: 'mute',
+        caption_offset_ms: 300
     }
 };
 
@@ -143,7 +144,8 @@ async function fetchPreferencesFromBackend() {
             nextPrefs[category] = {
                 blocked_words: blockedWords,
                 duration_seconds: Number(pref.duration_seconds ?? 0.5),
-                action: pref.action || 'mute'
+                action: pref.action || 'mute',
+                caption_offset_ms: Number(pref.caption_offset_ms ?? 300)
             };
         });
 
@@ -152,7 +154,7 @@ async function fetchPreferencesFromBackend() {
             ...prefsByCategory,
             ...nextPrefs,
         };
-        prefsByCategory.language = prefsByCategory.language || { blocked_words: [], duration_seconds: 0.5, action: 'mute' };
+        prefsByCategory.language = prefsByCategory.language || { blocked_words: [], duration_seconds: 0.5, action: 'mute', caption_offset_ms: 300 };
 
         // Cache the unified prefsByCategory structure to localStorage
         await chrome.storage.local.set({ cachedPrefsByCategory: prefsByCategory });
@@ -429,31 +431,43 @@ window.__isweepApplyDecision = function(decision) {
                 return;
             }
             
+            // Get caption offset from category prefs
+            const categoryPrefs = prefsByCategory[matched_category] || {};
+            const captionOffsetMs = Number(categoryPrefs.caption_offset_ms ?? 300);
+            
+            csLog(`[ISweep] Using caption_offset_ms: ${captionOffsetMs}ms for category "${matched_category}"`);
+            
             // Clear any existing unmute timer
             if (unmuteTimerId !== null) {
                 clearTimeout(unmuteTimerId);
                 unmuteTimerId = null;
             }
             
-            // Apply short word-based mute
-            videoElement.muted = true;
-            isMuted = true;
-            muteUntil = now + durationMs;
-            lastMutedTerm = matched_term;
-            lastMuteStartTs = now;
-            appliedActions++;
+            // Schedule mute to start after caption offset
+            const muteStartTime = now + captionOffsetMs;
+            const muteEndTime = muteStartTime + durationMs;
             
-            csLog(`[ISweep] MUTED: term="${matched_term}" duration=${duration.toFixed(2)}s unmute_at=${new Date(muteUntil).toISOString()}`);
-            
-            // Schedule unmute
-            unmuteTimerId = setTimeout(() => {
-                if (Date.now() >= muteUntil) {
-                    videoElement.muted = false;
-                    isMuted = false;
-                    unmuteTimerId = null;
-                    csLog('[ISweep] UNMUTED after word duration');
-                }
-            }, durationMs);
+            setTimeout(() => {
+                // Apply short word-based mute
+                videoElement.muted = true;
+                isMuted = true;
+                muteUntil = muteEndTime;
+                lastMutedTerm = matched_term;
+                lastMuteStartTs = now;
+                appliedActions++;
+                
+                csLog(`[ISweep] MUTED: term="${matched_term}" duration=${duration.toFixed(2)}s offset=${captionOffsetMs}ms unmute_at=${new Date(muteUntil).toISOString()}`);
+                
+                // Schedule unmute
+                unmuteTimerId = setTimeout(() => {
+                    if (Date.now() >= muteUntil) {
+                        videoElement.muted = false;
+                        isMuted = false;
+                        unmuteTimerId = null;
+                        csLog('[ISweep] UNMUTED after word duration');
+                    }
+                }, durationMs);
+            }, captionOffsetMs);
             break;
         case 'skip':
             videoElement.currentTime = Math.min(videoElement.currentTime + duration, videoElement.duration || Infinity);

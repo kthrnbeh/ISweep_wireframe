@@ -34,10 +34,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         sexual: 'skip'
     };
 
+    const DEFAULT_CAPTION_OFFSET = {
+        language: 300,
+        violence: 300,
+        sexual: 300
+    };
+
     let selectedPacks = { ...DEFAULT_SELECTED };
     let customWordsByCategory = { ...DEFAULT_CUSTOM };
     let durationSecondsByCategory = { ...DEFAULT_DURATION };
     let actionByCategory = { ...DEFAULT_ACTION };
+    let captionOffsetByCategory = { ...DEFAULT_CAPTION_OFFSET };
 
     function log(msg, data) {
         console.log('[ISweep-Options]', msg, data ?? '');
@@ -74,6 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (categoryPref.action) actionByCategory[category] = categoryPref.action;
                 if (typeof categoryPref.duration_seconds === 'number') durationSecondsByCategory[category] = categoryPref.duration_seconds;
+                if (typeof categoryPref.caption_offset_ms === 'number') captionOffsetByCategory[category] = categoryPref.caption_offset_ms;
                 if (categoryPref.selected_packs && typeof categoryPref.selected_packs === 'object') {
                     if (!selectedPacks[category]) selectedPacks[category] = {};
                     selectedPacks[category] = categoryPref.selected_packs;
@@ -81,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (Array.isArray(categoryPref.custom_words)) customWordsByCategory[category] = categoryPref.custom_words;
             });
 
-            await chrome.storage.local.set({ selectedPacks, actionByCategory, durationSecondsByCategory, customWordsByCategory });
+            await chrome.storage.local.set({ selectedPacks, actionByCategory, durationSecondsByCategory, customWordsByCategory, captionOffsetByCategory });
             log('State hydrated from backend');
             return true;
         } catch (error) {
@@ -91,11 +99,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function loadState() {
-        const stored = await chrome.storage.local.get(['selectedPacks', 'customWordsByCategory', 'durationSecondsByCategory', 'actionByCategory']);
+        const stored = await chrome.storage.local.get(['selectedPacks', 'customWordsByCategory', 'durationSecondsByCategory', 'actionByCategory', 'captionOffsetByCategory']);
         selectedPacks = stored.selectedPacks || { ...DEFAULT_SELECTED };
         customWordsByCategory = stored.customWordsByCategory || { ...DEFAULT_CUSTOM };
         durationSecondsByCategory = stored.durationSecondsByCategory || { ...DEFAULT_DURATION };
         actionByCategory = stored.actionByCategory || { ...DEFAULT_ACTION };
+        captionOffsetByCategory = stored.captionOffsetByCategory || { ...DEFAULT_CAPTION_OFFSET };
 
         await fetchPreferencesFromBackend();
         render();
@@ -148,6 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderCategoryControls(category) {
         const actionSelect = document.getElementById(`${category}Action`);
         const durationInput = document.getElementById(`${category}Duration`);
+        const captionOffsetInput = document.getElementById(`${category}CaptionOffset`);
 
         if (actionSelect) {
             actionSelect.value = actionByCategory[category] ?? DEFAULT_ACTION[category];
@@ -166,6 +176,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 durationSecondsByCategory[category] = safeVal;
                 chrome.storage.local.set({ durationSecondsByCategory });
                 log(`${category} duration updated:`, durationSecondsByCategory[category]);
+            };
+        }
+
+        if (captionOffsetInput) {
+            captionOffsetInput.value = captionOffsetByCategory[category] ?? DEFAULT_CAPTION_OFFSET[category];
+            captionOffsetInput.onchange = () => {
+                const val = parseInt(captionOffsetInput.value, 10);
+                const safeVal = Number.isFinite(val) ? Math.max(0, Math.min(2000, val)) : DEFAULT_CAPTION_OFFSET[category];
+                captionOffsetByCategory[category] = safeVal;
+                chrome.storage.local.set({ captionOffsetByCategory });
+                log(`${category} caption_offset_ms updated:`, captionOffsetByCategory[category]);
             };
         }
     }
@@ -270,16 +291,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const effectiveWords = buildEffectiveBlockedWords(category);
             const duration = durationSecondsByCategory[category] ?? DEFAULT_DURATION[category];
             const action = actionByCategory[category] ?? DEFAULT_ACTION[category];
+            const captionOffset = captionOffsetByCategory[category] ?? DEFAULT_CAPTION_OFFSET[category];
             const packs = selectedPacks[category] || {};
             const customWords = customWordsByCategory[category] || [];
 
-            log(`[saveToBackend] ${category}: ${effectiveWords.length} blocked words, action="${action}", duration=${duration}s`);
+            log(`[saveToBackend] ${category}: ${effectiveWords.length} blocked words, action="${action}", duration=${duration}s, caption_offset=${captionOffset}ms`);
             log(`[saveToBackend] ${category} blocked words:`, effectiveWords);
 
             preferences[category] = {
                 enabled: true,
                 action: action,
                 duration_seconds: duration,
+                caption_offset_ms: captionOffset,
                 blocked_words: effectiveWords,
                 selected_packs: packs,
                 custom_words: customWords
