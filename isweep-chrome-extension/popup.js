@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusIndicator = document.getElementById('statusIndicator');
     const statusText = document.getElementById('statusText');
     const userIdInput = document.getElementById('userIdInput');
-    const backendUrl = document.getElementById('backendUrl');
+    const backendUrlInput = document.getElementById('backendUrl');
     const clearStatsBtn = document.getElementById('clearStats');
     const videosDetectedSpan = document.getElementById('videosDetected');
     const actionsAppliedSpan = document.getElementById('actionsApplied');
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         statusIndicator,
         statusText,
         userIdInput,
-        backendUrl,
+        backendUrlInput,
         clearStatsBtn,
         videosDetectedSpan,
         actionsAppliedSpan
@@ -38,32 +38,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Load state from Chrome storage
-    let { isweep_enabled, userId, backendURL, videosDetected, actionsApplied, isweepPrefs } = await chrome.storage.local.get([
-        'isweep_enabled',
-        'userId',
-        'backendURL',
-        'videosDetected',
-        'actionsApplied',
-        'isweepPrefs'
-    ]);
+    // Load state from Chrome storage (single source: isweepPrefs)
+    let { isweepPrefs } = await chrome.storage.local.get('isweepPrefs');
 
-    console.log('[ISweep-Popup] Loaded state from storage:', { isweep_enabled, userId, backendURL });
+    console.log('[ISweep-Popup] Loaded preferences from storage:', isweepPrefs);
 
     // Initialize prefs with defaults if not set
     isweepPrefs = isweepPrefs || {
+        enabled: false,
+        user_id: 'user123',
+        backendUrl: 'http://127.0.0.1:8001',
         blocked_words: [],
         duration_seconds: 3,
         action: 'mute',
-        user_id: userId || 'user123',
-        backendUrl: backendURL || 'http://127.0.0.1:8001'
+        videosDetected: 0,
+        actionsApplied: 0
     };
 
-    // Set initial values
-    userIdInput.value = userId || 'user123';
-    backendUrl.value = backendURL || 'http://127.0.0.1:8001';
-    videosDetectedSpan.textContent = videosDetected || 0;
-    actionsAppliedSpan.textContent = actionsApplied || 0;
+    // Set initial values in UI
+    userIdInput.value = isweepPrefs.user_id || 'user123';
+    backendUrlInput.value = isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
+    videosDetectedSpan.textContent = isweepPrefs.videosDetected || 0;
+    actionsAppliedSpan.textContent = isweepPrefs.actionsApplied || 0;
 
     // Update UI based on state
     const updateUI = (enabled) => {
@@ -87,40 +83,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Ensure isweep_enabled is boolean
-    isweep_enabled = Boolean(isweep_enabled);
-    updateUI(isweep_enabled);
-    console.log('[ISweep-Popup] Initial enabled state loaded as:', isweep_enabled);
+    // Ensure enabled is boolean
+    isweepPrefs.enabled = Boolean(isweepPrefs.enabled);
+    updateUI(isweepPrefs.enabled);
+    console.log('[ISweep-Popup] Initial enabled state:', isweepPrefs.enabled);
 
     // Toggle button (guarded)
     if (toggleButton) {
         toggleButton.addEventListener('click', async () => {
-            const newState = !isweep_enabled;
-            const newUserId = userIdInput.value.trim();
-            const newBackendUrl = backendUrl.value.trim();
-            
-            // Update prefs with current UI values
-            isweepPrefs.user_id = newUserId;
-            isweepPrefs.backendUrl = newBackendUrl;
+            isweepPrefs.enabled = !isweepPrefs.enabled;
+            isweepPrefs.user_id = userIdInput.value.trim();
+            isweepPrefs.backendUrl = backendUrlInput.value.trim();
             
             // Save to storage
-            await chrome.storage.local.set({
-                isweep_enabled: newState,
-                userId: newUserId,
-                backendURL: newBackendUrl,
-                isweepPrefs: isweepPrefs
-            });
-            isweep_enabled = newState;
-            updateUI(newState);
+            await chrome.storage.local.set({ isweepPrefs });
+            updateUI(isweepPrefs.enabled);
 
-            console.log('[ISweep-Popup] TOGGLED isweep_enabled:', newState);
+            console.log('[ISweep-Popup] TOGGLED enabled:', isweepPrefs.enabled);
 
             // Notify active tab's content script to toggle immediately
             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                 if (tabs.length > 0) {
                     chrome.tabs.sendMessage(tabs[0].id, {
                         action: 'toggleISweep',
-                        enabled: newState,
+                        enabled: isweepPrefs.enabled,
                         prefs: isweepPrefs
                     }).catch((err) => {
                         console.log('[ISweep-Popup] Could not send message to active tab (expected on non-content pages):', err.message);
@@ -133,36 +119,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Save user ID on input change (guarded)
     if (userIdInput) {
         userIdInput.addEventListener('change', async () => {
-            const newUserId = userIdInput.value.trim();
-            isweepPrefs.user_id = newUserId;
-            await chrome.storage.local.set({
-                userId: newUserId,
-                isweepPrefs: isweepPrefs
-            });
-            console.log('[ISweep-Popup] Updated userId to:', newUserId);
+            isweepPrefs.user_id = userIdInput.value.trim();
+            await chrome.storage.local.set({ isweepPrefs });
+            console.log('[ISweep-Popup] Updated user_id to:', isweepPrefs.user_id);
         });
     }
 
     // Save backend URL on input change (guarded)
-    if (backendUrl) {
-        backendUrl.addEventListener('change', async () => {
-            const newBackendUrl = backendUrl.value.trim();
-            isweepPrefs.backendUrl = newBackendUrl;
-            await chrome.storage.local.set({
-                backendURL: newBackendUrl,
-                isweepPrefs: isweepPrefs
-            });
-            console.log('[ISweep-Popup] Updated backendURL to:', newBackendUrl);
+    if (backendUrlInput) {
+        backendUrlInput.addEventListener('change', async () => {
+            isweepPrefs.backendUrl = backendUrlInput.value.trim();
+            await chrome.storage.local.set({ isweepPrefs });
+            console.log('[ISweep-Popup] Updated backendUrl to:', isweepPrefs.backendUrl);
         });
     }
 
     // Clear stats (guarded)
     if (clearStatsBtn) {
         clearStatsBtn.addEventListener('click', async () => {
-            await chrome.storage.local.set({
-                videosDetected: 0,
-                actionsApplied: 0
-            });
+            isweepPrefs.videosDetected = 0;
+            isweepPrefs.actionsApplied = 0;
+            await chrome.storage.local.set({ isweepPrefs });
             if (videosDetectedSpan) videosDetectedSpan.textContent = '0';
             if (actionsAppliedSpan) actionsAppliedSpan.textContent = '0';
         });
@@ -170,12 +147,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Listen for updates from background script (guarded)
     chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName === 'local') {
-            if (changes.videosDetected && videosDetectedSpan) {
-                videosDetectedSpan.textContent = changes.videosDetected.newValue;
-            }
-            if (changes.actionsApplied && actionsAppliedSpan) {
-                actionsAppliedSpan.textContent = changes.actionsApplied.newValue;
+        if (areaName === 'local' && changes.isweepPrefs) {
+            const updated = changes.isweepPrefs.newValue;
+            if (updated) {
+                isweepPrefs = updated;
+                if (videosDetectedSpan) videosDetectedSpan.textContent = updated.videosDetected || 0;
+                if (actionsAppliedSpan) actionsAppliedSpan.textContent = updated.actionsApplied || 0;
             }
         }
     });
