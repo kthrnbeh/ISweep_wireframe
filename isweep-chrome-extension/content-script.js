@@ -342,6 +342,12 @@ function checkAllCategoriesForBlockedWords(text) {
 
 function startSpeechFallback(videoElement) {
     if (speechActive) return;
+    
+    // Skip speech fallback on YouTube (handled by youtube-handler)
+    if (isYouTubeHost()) {
+        csLog('[ISweep] YouTube detected - skipping speech fallback');
+        return;
+    }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {

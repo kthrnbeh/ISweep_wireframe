@@ -69,8 +69,12 @@
         }
     });
 
-    function isYouTubePage() {
+    function isYouTubeHost() {
         return /youtube\.com|youtu\.be/.test(location.host);
+    }
+
+    function isYouTubePage() {
+        return isYouTubeHost();
     }
 
     function getYouTubePlayer() {
