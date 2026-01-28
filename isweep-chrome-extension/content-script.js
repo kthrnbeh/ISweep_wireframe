@@ -641,8 +641,14 @@ chrome.storage.local.get(['isweep_enabled'], (result) => {
     csLog('[ISweep] Status pill initialized with isweep_enabled:', enabled);
 });
 
+// YouTube detection - simple and reliable host check
+// Do NOT rely on window.isYouTubePage; use direct location.host check
+function isYouTubeHost() {
+    return /youtube\.com|youtu\.be/.test(location.host);
+}
+
 // Detect all video elements on page (skip YouTube; handled by youtube-handler)
-const __isweepIsYouTube = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
+const __isweepIsYouTube = isYouTubeHost();
 let __isweepYTLogged = false;
 
 function detectVideos() {
