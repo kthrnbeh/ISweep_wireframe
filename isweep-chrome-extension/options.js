@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const DEFAULT_SELECTED = {
         language: { strong_profanity: true, mild_language: false, blasphemy: false },
-        violence: {},
-        sexual: {}
+        violence: { graphic_violence: false },
+        sexual: { explicit_terms: false, intimate_acts: false }
     };
 
     const DEFAULT_CUSTOM = {
@@ -123,6 +123,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function render() {
         renderLanguagePresets();
+        renderViolencePresets();
+        renderSexualPresets();
         renderCategoryControls('language');
         renderCategoryControls('violence');
         renderCategoryControls('sexual');
@@ -150,6 +152,52 @@ document.addEventListener('DOMContentLoaded', async () => {
                 selectedPacks.language[slug] = cb.checked;
                 chrome.storage.local.set({ selectedPacks });
                 log('selectedPacks updated:', selectedPacks);
+            };
+        });
+    }
+
+    function renderViolencePresets() {
+        const presetList = document.getElementById('violencePresets');
+        if (!presetList) return;
+
+        const violenceSelected = selectedPacks.violence || {};
+        const presetRows = presetList.querySelectorAll('.preset-row');
+
+        presetRows.forEach(row => {
+            const nameEl = row.querySelector('.preset-name');
+            const cb = row.querySelector('input[type="checkbox"]');
+            if (!nameEl || !cb) return;
+
+            const slug = slugify(nameEl.textContent);
+            cb.checked = Boolean(violenceSelected[slug]);
+            cb.onchange = () => {
+                selectedPacks.violence = selectedPacks.violence || {};
+                selectedPacks.violence[slug] = cb.checked;
+                chrome.storage.local.set({ selectedPacks });
+                log('selectedPacks (violence) updated:', selectedPacks);
+            };
+        });
+    }
+
+    function renderSexualPresets() {
+        const presetList = document.getElementById('sexualPresets');
+        if (!presetList) return;
+
+        const sexualSelected = selectedPacks.sexual || {};
+        const presetRows = presetList.querySelectorAll('.preset-row');
+
+        presetRows.forEach(row => {
+            const nameEl = row.querySelector('.preset-name');
+            const cb = row.querySelector('input[type="checkbox"]');
+            if (!nameEl || !cb) return;
+
+            const slug = slugify(nameEl.textContent);
+            cb.checked = Boolean(sexualSelected[slug]);
+            cb.onchange = () => {
+                selectedPacks.sexual = selectedPacks.sexual || {};
+                selectedPacks.sexual[slug] = cb.checked;
+                chrome.storage.local.set({ selectedPacks });
+                log('selectedPacks (sexual) updated:', selectedPacks);
             };
         });
     }
