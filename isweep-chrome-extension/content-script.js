@@ -35,6 +35,10 @@ let isMuted = false; // Safe mute state
 let unmuteTimerId = null; // Track scheduled unmute timer
 let muteUntil = 0; // Track when mute should end to prevent over-muting
 let lastMutedPhrase = null; // Track last muted phrase to allow different phrases
+let holdMuteActive = false; // Keep muted until caption clears (YouTube)
+let holdMuteTerm = null;
+let holdMuteSource = null;
+let holdMuteTimerId = null;
 let speechRecognition = null;
 let speechActive = false;
 let speechVideoRef = null;
@@ -58,6 +62,28 @@ function normalizeText(text) {
         .replace(/[.,!?;:\-"()\[\]{}]/g, ' ') // Remove punctuation but preserve apostrophes
         .replace(/\s+/g, ' ') // Collapse whitespace
         .trim();
+}
+
+function textIncludesTerm(normalizedText, term) {
+    const normalizedTerm = normalizeText(term);
+    if (!normalizedText || !normalizedTerm) return false;
+    return normalizedText.includes(normalizedTerm);
+}
+
+function clearHoldMute(reason) {
+    if (holdMuteTimerId !== null) {
+        clearTimeout(holdMuteTimerId);
+        holdMuteTimerId = null;
+    }
+    holdMuteActive = false;
+    holdMuteTerm = null;
+    holdMuteSource = null;
+    if (isMuted) {
+        const videoElement = getActiveVideo();
+        if (videoElement) videoElement.muted = false;
+    }
+    isMuted = false;
+    csLog('[ISweep] Hold-mute cleared', reason || '');
 }
 
 /**
@@ -471,6 +497,14 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source, capt
     const normalizedText = normalizeText(text);
     csLog('[ISweep] Processing caption:', { original: text, normalized: normalizedText, source });
 
+    // If we're holding mute for YouTube, unmute when the term is no longer present
+    if (holdMuteActive && holdMuteSource === 'youtube_dom') {
+        const stillPresent = textIncludesTerm(normalizedText, holdMuteTerm);
+        if (!stillPresent) {
+            clearHoldMute('caption cleared');
+        }
+    }
+
     // Check for local blocked words across all categories
     const blockedCheck = checkAllCategoriesForBlockedWords(text);
     if (blockedCheck.matched) {
@@ -484,7 +518,8 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source, capt
             matched_category: blockedCheck.category,
             timestamp_seconds,
             caption_start_seconds,
-            caption_end_seconds
+            caption_end_seconds,
+            hold_until_caption_clear: source === 'youtube_dom'
         });
         return;
     }
@@ -519,6 +554,9 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source, capt
             decision.timestamp_seconds = timestamp_seconds;
             decision.caption_start_seconds = caption_start_seconds;
             decision.caption_end_seconds = caption_end_seconds;
+            if (source === 'youtube_dom' && decision.action === 'mute' && decision.matched_term) {
+                decision.hold_until_caption_clear = true;
+            }
             window.__isweepApplyDecision(decision);
         }
     } catch (error) {
