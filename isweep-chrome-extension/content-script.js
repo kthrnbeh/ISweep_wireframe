@@ -34,11 +34,9 @@ let lastCaptionEmitTs = Date.now();
 let isMuted = false; // Safe mute state
 let unmuteTimerId = null; // Track scheduled unmute timer
 let muteUntil = 0; // Track when mute should end to prevent over-muting
-let lastMutedPhrase = null; // Track last muted phrase to allow different phrases
-let holdMuteActive = false; // Keep muted until caption clears (YouTube)
-let holdMuteTerm = null;
-let holdMuteSource = null;
-let holdMuteTimerId = null;
+let lastMutedTerm = null; // Track last muted term for cooldown
+let lastMuteStartTs = 0; // Timestamp when last mute started
+let muteCooldownMs = 250; // Cooldown to prevent re-muting same term too quickly
 let speechRecognition = null;
 let speechActive = false;
 let speechVideoRef = null;
@@ -70,52 +68,44 @@ function textIncludesTerm(normalizedText, term) {
     return normalizedText.includes(normalizedTerm);
 }
 
-function clearHoldMute(reason) {
-    if (holdMuteTimerId !== null) {
-        clearTimeout(holdMuteTimerId);
-        holdMuteTimerId = null;
-    }
-    holdMuteActive = false;
-    holdMuteTerm = null;
-    holdMuteSource = null;
-    
-    // Add grace period before unmuting to handle rapid-fire bad words
-    const gracePeriodMs = 300;
-    if (unmuteTimerId !== null) {
-        clearTimeout(unmuteTimerId);
-    }
-    unmuteTimerId = setTimeout(() => {
-        if (!holdMuteActive && isMuted) {
-            const videoElement = getActiveVideo();
-            if (videoElement) videoElement.muted = false;
-            isMuted = false;
-            unmuteTimerId = null;
-            csLog('[ISweep] Unmuted after grace period');
-        }
-    }, gracePeriodMs);
-    
-    csLog('[ISweep] Hold-mute cleared, grace period active', reason || '');
-}
-
 /**
- * Estimate a natural mute duration for a matched term.
- * Uses word/character length as a lightweight proxy for spoken duration.
+ * Estimate a natural mute duration for a matched term based on spoken word timing.
+ * Uses character/word length as proxy for speech duration.
  */
 function computeMuteDuration(term, baseDurationSeconds) {
-    const base = Number.isFinite(Number(baseDurationSeconds)) ? Number(baseDurationSeconds) : 0.5;
     const normalized = normalizeText(term || '');
     if (!normalized) {
-        return base;
+        return 0.35; // Very short default
     }
 
     const words = normalized.split(' ').filter(Boolean);
     const wordCount = Math.max(1, words.length);
     const charCount = normalized.replace(/\s+/g, '').length;
 
-    // Heuristic: longer words/phrases get slightly longer mute.
-    const factor = Math.min(1.8, Math.max(0.7, 0.6 + (0.08 * charCount) + (0.15 * (wordCount - 1))));
-    const duration = base * factor;
-    return Math.min(1.0, Math.max(0.2, duration));
+    // Heuristic timing model:
+    // 3-4 chars: ~0.30-0.40s
+    // 5-6 chars: ~0.40-0.55s
+    // 7+ chars: ~0.55-0.80s
+    let duration = 0.25 + (charCount * 0.045) + ((wordCount - 1) * 0.12);
+    
+    // Add small release padding
+    const releasePadding = 0.10;
+    duration += releasePadding;
+    
+    // Clamp to reasonable bounds for spoken words
+    return Math.min(0.90, Math.max(0.25, duration));
+}
+
+function shouldApplyMute(term) {
+    const now = Date.now();
+    
+    // Check if we're in cooldown for the same term
+    if (lastMutedTerm === term && (now - lastMuteStartTs) < muteCooldownMs) {
+        csLog(`[ISweep] Cooldown active for term "${term}", skipping mute`);
+        return false;
+    }
+    
+    return true;
 }
 
 /**
@@ -397,27 +387,24 @@ window.__isweepApplyDecision = function(decision) {
         return;
     }
 
-    const { action, duration_seconds, reason, matched_term, caption_end_seconds, timestamp_seconds, hold_until_caption_clear } = decision;
+    const { action, duration_seconds, reason, matched_term } = decision;
     const langPrefs = getLangPrefs();
-    // Use backend duration if finite number, else prefs duration if finite, else fallback
-    const backendDuration = Number(duration_seconds);
-    const prefsDuration = Number(langPrefs.duration_seconds);
-    const fallbackDuration = action === 'mute' ? 0.5 : 3;
-    let durationSeconds = Number.isFinite(backendDuration) ? backendDuration 
+    
+    // For mute actions, always use word-based timing heuristic
+    let durationSeconds;
+    if (action === 'mute' && matched_term) {
+        durationSeconds = computeMuteDuration(matched_term, 0.5);
+        csLog(`[ISweep] Computed mute duration for "${matched_term}": ${durationSeconds.toFixed(2)}s`);
+    } else {
+        // Non-mute actions use backend/prefs duration
+        const backendDuration = Number(duration_seconds);
+        const prefsDuration = Number(langPrefs.duration_seconds);
+        const fallbackDuration = 3;
+        durationSeconds = Number.isFinite(backendDuration) ? backendDuration 
                         : Number.isFinite(prefsDuration) ? prefsDuration 
                         : fallbackDuration;
-
-    if (action === 'mute' && matched_term) {
-        durationSeconds = computeMuteDuration(matched_term, durationSeconds);
     }
-
-    const captionEnd = Number(caption_end_seconds);
-    const captionTs = Number(timestamp_seconds);
-    if (action === 'mute' && Number.isFinite(captionEnd) && Number.isFinite(captionTs)) {
-        const remaining = Math.max(0, captionEnd - captionTs);
-        // Extend to cover the remainder of the caption line (but cap to avoid long mutes)
-        durationSeconds = Math.max(durationSeconds, Math.min(2.5, remaining));
-    }
+    
     const duration = Math.max(0, durationSeconds);
     const durationMs = duration * 1000;
 
@@ -426,83 +413,35 @@ window.__isweepApplyDecision = function(decision) {
     switch (action) {
         case 'mute':
             const now = Date.now();
-
-            if (hold_until_caption_clear && matched_term) {
-                const videoElement = getActiveVideo();
-                if (!videoElement) return;
-                
-                // Cancel any pending unmute grace period
-                if (unmuteTimerId !== null) {
-                    clearTimeout(unmuteTimerId);
-                    unmuteTimerId = null;
-                }
-                
-                videoElement.muted = true;
-                isMuted = true;
-                holdMuteActive = true;
-                holdMuteTerm = matched_term;
-                holdMuteSource = 'youtube_dom';
-                lastMutedPhrase = matched_term;
-                appliedActions++;
-                // Safety cap based on word duration: scale to 2-4 seconds based on word length
-                const wordDurationForCap = computeMuteDuration(matched_term, 1.0) * 1000;
-                const maxHoldMs = Math.min(4000, Math.max(2000, wordDurationForCap * 1.5));
-                muteUntil = now + maxHoldMs;
-                if (holdMuteTimerId !== null) {
-                    clearTimeout(holdMuteTimerId);
-                }
-                holdMuteTimerId = setTimeout(() => {
-                    if (holdMuteActive) {
-                        clearHoldMute('hold cap reached');
-                    }
-                }, maxHoldMs);
-                csLog(`[ISweep] HOLD-MUTED: term "${matched_term}" (until caption clears, cap=${(maxHoldMs/1000).toFixed(1)}s)`);
+            
+            // Check cooldown
+            if (!shouldApplyMute(matched_term)) {
                 return;
             }
             
-            // If already muted, only extend if this mute would last longer
-            if (isMuted) {
-                const now = Date.now();
-                const proposedUntil = now + durationMs;
-                if (proposedUntil > muteUntil) {
-                    csLog(`[ISweep] Extending mute for term "${matched_term}"`);
-                    muteUntil = proposedUntil;
-                    if (unmuteTimerId !== null) {
-                        clearTimeout(unmuteTimerId);
-                        unmuteTimerId = null;
-                    }
-                    unmuteTimerId = setTimeout(() => {
-                        if (Date.now() >= muteUntil) {
-                            videoElement.muted = false;
-                            isMuted = false;
-                            unmuteTimerId = null;
-                            csLog('[ISweep] UNMUTED after extended duration');
-                        }
-                    }, muteUntil - now);
-                } else {
-                    csLog(`[ISweep] Already muted, keeping existing duration for term "${matched_term}"`);
-                }
-                return;
+            // Clear any existing unmute timer
+            if (unmuteTimerId !== null) {
+                clearTimeout(unmuteTimerId);
+                unmuteTimerId = null;
             }
             
-            // Apply new mute
+            // Apply short word-based mute
             videoElement.muted = true;
             isMuted = true;
             muteUntil = now + durationMs;
-            lastMutedPhrase = matched_term;
+            lastMutedTerm = matched_term;
+            lastMuteStartTs = now;
             appliedActions++;
-            csLog(`[ISweep] MUTED: matched term "${matched_term}", will unmute at ${new Date(muteUntil).toISOString()}`);
             
-            // Schedule unmute with safety check - only unmute if this is the active mute
+            csLog(`[ISweep] MUTED: term="${matched_term}" duration=${duration.toFixed(2)}s unmute_at=${new Date(muteUntil).toISOString()}`);
+            
+            // Schedule unmute
             unmuteTimerId = setTimeout(() => {
-                // Only unmute if enough time has passed (prevents old timers from unmuting early)
                 if (Date.now() >= muteUntil) {
                     videoElement.muted = false;
                     isMuted = false;
                     unmuteTimerId = null;
-                    csLog('[ISweep] UNMUTED after duration');
-                } else {
-                    csLog('[ISweep] Unmute timer fired early, skipping (newer mute active)');
+                    csLog('[ISweep] UNMUTED after word duration');
                 }
             }, durationMs);
             break;
@@ -541,14 +480,6 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source, capt
     const normalizedText = normalizeText(text);
     csLog('[ISweep] Processing caption:', { original: text, normalized: normalizedText, source });
 
-    // If we're holding mute for YouTube, unmute when the term is no longer present
-    if (holdMuteActive && holdMuteSource === 'youtube_dom') {
-        const stillPresent = textIncludesTerm(normalizedText, holdMuteTerm);
-        if (!stillPresent) {
-            clearHoldMute('caption cleared');
-        }
-    }
-
     // Check for local blocked words across all categories
     const blockedCheck = checkAllCategoriesForBlockedWords(text);
     if (blockedCheck.matched) {
@@ -562,8 +493,7 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source, capt
             matched_category: blockedCheck.category,
             timestamp_seconds,
             caption_start_seconds,
-            caption_end_seconds,
-            hold_until_caption_clear: source === 'youtube_dom'
+            caption_end_seconds
         });
         return;
     }
@@ -598,9 +528,6 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source, capt
             decision.timestamp_seconds = timestamp_seconds;
             decision.caption_start_seconds = caption_start_seconds;
             decision.caption_end_seconds = caption_end_seconds;
-            if (source === 'youtube_dom' && decision.action === 'mute' && decision.matched_term) {
-                decision.hold_until_caption_clear = true;
-            }
             window.__isweepApplyDecision(decision);
         }
     } catch (error) {
