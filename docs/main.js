@@ -85,31 +85,40 @@ if (themeBtn) {
 //-----------------------------------------------------
 //  ACCOUNT PAGE DISPLAY
 //-----------------------------------------------------
-function updateAccountPagePlanDisplay() {
+document.addEventListener("DOMContentLoaded", () => {
   const displayElement = document.getElementById("current-plan-display");
   const inputElement = document.querySelector('input[name="plan"]');
 
-  const planLabel = localStorage.getItem(PLAN_LABEL_KEY);
+  try {
+    const planData = localStorage.getItem(CURRENT_PLAN_KEY);
+    const plan = planData ? JSON.parse(planData) : null;
+    const planLabel = plan ? plan.label : "No plan selected yet";
 
-  if (planLabel) {
     if (displayElement) displayElement.textContent = planLabel;
-    if (inputElement) inputElement.value = planLabel;
-  } else {
-    // Default case if no plan chosen yet
+    if (inputElement) {
+      inputElement.value = planLabel;
+      if (!plan) inputElement.placeholder = "No plan selected yet";
+    }
+  } catch (err) {
+    console.error("Failed to load plan from localStorage", err);
     if (displayElement) displayElement.textContent = "No plan selected yet";
     if (inputElement) inputElement.placeholder = "No plan selected yet";
   }
-}
-
-// Run automatically whenever the page loads
-document.addEventListener("DOMContentLoaded", updateAccountPagePlanDisplay);
+});
 
 //-----------------------------------------------------
 //  CHECK IF FILTERING IS ENABLED
 //-----------------------------------------------------
 function isFilteringEnabled() {
-  const planKey = localStorage.getItem(PLAN_KEY) || "free";
-  return planHasFiltering(planKey);
+  try {
+    const planData = localStorage.getItem(CURRENT_PLAN_KEY);
+    const plan = planData ? JSON.parse(planData) : null;
+    const planKey = plan ? plan.key : "free";
+    return planHasFiltering(planKey);
+  } catch (err) {
+    console.error("Failed to check filtering status", err);
+    return planHasFiltering("free");
+  }
 }
 // Example usage:
 // -----------------------------------------------------
