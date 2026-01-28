@@ -1,10 +1,15 @@
 //-----------------------------------------------------
-//  ISWEEP PLAN SYSTEM (Unified Version)
+//  ISWEEP PLAN SYSTEM
 //-----------------------------------------------------
 
-// Keys used in localStorage
-const PLAN_KEY = "isweep-plan";          // internal value
-const PLAN_LABEL_KEY = "isweep-plan-label"; // display value
+const CURRENT_PLAN_KEY = "currentPlan"; // Single localStorage key for plan data
+
+// Plan data structure: { key: "free"|"flexible"|"full", label: "Plan Name" }
+const PLAN_CONFIGS = {
+  free: { key: "free", label: "Free Tier" },
+  flexible: { key: "flexible", label: "Flexible Subscription" },
+  full: { key: "full", label: "Full Ownership" },
+};
 
 // Which plans allow filtering?
 function planHasFiltering(planKey) {
@@ -17,18 +22,13 @@ function planHasFiltering(planKey) {
   // full = filtering ON
 }
 
-// Apply selected plan + redirect if needed
-function selectPlan(planKey, planLabel) {
-  // Save to localStorage
-  localStorage.setItem(PLAN_KEY, planKey);
-  localStorage.setItem(PLAN_LABEL_KEY, planLabel);
+// Apply selected plan + redirect to Account.html
+function selectPlan(planKey) {
+  const planConfig = PLAN_CONFIGS[planKey];
+  if (!planConfig) return;
 
-  // Tell the user what happened
-  const filteringMsg = planHasFiltering(planKey)
-    ? "Filtering is ENABLED on this plan."
-    : "Filtering is DISABLED on the Free plan.";
-
-  alert(`Your plan is now: ${planLabel}\n${filteringMsg}`);
+  // Save plan data as single JSON object
+  localStorage.setItem(CURRENT_PLAN_KEY, JSON.stringify(planConfig));
 
   // Redirect user to Account page
   window.location.href = "Account.html";
@@ -37,30 +37,32 @@ function selectPlan(planKey, planLabel) {
 //-----------------------------------------------------
 //  HOOK PLAN BUTTONS (Plans page)
 //-----------------------------------------------------
-const btnFree = document.getElementById("planFreeBtn");
-const btnFlexible = document.getElementById("planFlexibleBtn");
-const btnFull = document.getElementById("planFullBtn");
+document.addEventListener("DOMContentLoaded", () => {
+  const btnFree = document.getElementById("planFreeBtn");
+  const btnFlexible = document.getElementById("planFlexibleBtn");
+  const btnFull = document.getElementById("planFullBtn");
 
-if (btnFree) {
-  btnFree.addEventListener("click", (e) => {
-    e.preventDefault();
-    selectPlan("free", "Free Tier");
-  });
-}
+  if (btnFree) {
+    btnFree.addEventListener("click", (e) => {
+      e.preventDefault();
+      selectPlan("free");
+    });
+  }
 
-if (btnFlexible) {
-  btnFlexible.addEventListener("click", (e) => {
-    e.preventDefault();
-    selectPlan("flexible", "Flexible Subscription");
-  });
-}
+  if (btnFlexible) {
+    btnFlexible.addEventListener("click", (e) => {
+      e.preventDefault();
+      selectPlan("flexible");
+    });
+  }
 
-if (btnFull) {
-  btnFull.addEventListener("click", (e) => {
-    e.preventDefault();
-    selectPlan("full", "Full Ownership");
-  });
-}
+  if (btnFull) {
+    btnFull.addEventListener("click", (e) => {
+      e.preventDefault();
+      selectPlan("full");
+    });
+  }
+});
 
 //-----------------------------------------------------
 //  THEME TOGGLE (All pages)
