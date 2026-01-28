@@ -360,7 +360,7 @@ window.__isweepApplyDecision = function(decision) {
         return;
     }
 
-    const { action, duration_seconds, reason, matched_term } = decision;
+    const { action, duration_seconds, reason, matched_term, caption_end_seconds, timestamp_seconds } = decision;
     const langPrefs = getLangPrefs();
     // Use backend duration if finite number, else prefs duration if finite, else fallback
     const backendDuration = Number(duration_seconds);
@@ -372,6 +372,14 @@ window.__isweepApplyDecision = function(decision) {
 
     if (action === 'mute' && matched_term) {
         durationSeconds = computeMuteDuration(matched_term, durationSeconds);
+    }
+
+    const captionEnd = Number(caption_end_seconds);
+    const captionTs = Number(timestamp_seconds);
+    if (action === 'mute' && Number.isFinite(captionEnd) && Number.isFinite(captionTs)) {
+        const remaining = Math.max(0, captionEnd - captionTs);
+        // Extend to cover the remainder of the caption line (but cap to avoid long mutes)
+        durationSeconds = Math.max(durationSeconds, Math.min(2.5, remaining));
     }
     const duration = Math.max(0, durationSeconds);
     const durationMs = duration * 1000;
@@ -432,7 +440,7 @@ window.__isweepApplyDecision = function(decision) {
     updateStats();
 };
 
-window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
+window.__isweepEmitText = async function({ text, timestamp_seconds, source, caption_start_seconds, caption_end_seconds }) {
     if (!isEnabled) return;
 
     lastCaptionEmitTs = Date.now();
@@ -454,7 +462,10 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
             duration_seconds: blockedCheck.duration_seconds || 0.5,
             reason: `Matched blocked word in "${blockedCheck.category}": "${blockedCheck.word}"`,
             matched_term: blockedCheck.word,
-            matched_category: blockedCheck.category
+            matched_category: blockedCheck.category,
+            timestamp_seconds,
+            caption_start_seconds,
+            caption_end_seconds
         });
         return;
     }
@@ -486,6 +497,9 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
         csLog('[ISweep] Backend response:', decision);
 
         if (decision.action !== 'none') {
+            decision.timestamp_seconds = timestamp_seconds;
+            decision.caption_start_seconds = caption_start_seconds;
+            decision.caption_end_seconds = caption_end_seconds;
             window.__isweepApplyDecision(decision);
         }
     } catch (error) {
