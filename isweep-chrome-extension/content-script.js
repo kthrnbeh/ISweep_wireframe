@@ -278,10 +278,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             csLog('[ISweep] Fetching preferences after toggle...');
             fetchPreferencesFromBackend();
         } else {
-            // If disabled, stop speech recognition and unmute any videos
+            // If disabled, stop speech recognition and unmute only videos ISweep muted
             stopSpeechFallback();
             document.querySelectorAll('video').forEach(v => {
-                if (v.muted) v.muted = false;
+                // Only unmute if ISweep muted it (don't unmute user-manual mutes)
+                if (v._isweepMutedByUs) {
+                    v.muted = false;
+                    v._isweepMutedByUs = false;
+                    csLog('[ISweep] Unmuted video (ISweep cleanup on disable)');
+                }
             });
             // Clear any pending unmute timer and reset mute state
             if (unmuteTimerId !== null) {
