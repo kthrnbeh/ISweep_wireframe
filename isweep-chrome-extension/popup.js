@@ -152,10 +152,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Save backend URL on input change (guarded)
+    // Save backend URL on input change (guarded with validation)
     if (backendUrlInput) {
         backendUrlInput.addEventListener('change', async () => {
-            isweepPrefs.backendUrl = backendUrlInput.value.trim();
+            const backendUrl = backendUrlInput.value.trim();
+            
+            // Validate backend URL
+            if (!isValidBackendUrl(backendUrl)) {
+                showBackendUrlError('Invalid URL: must start with http:// or https://');
+                // Revert to saved value
+                backendUrlInput.value = isweepPrefs.backendUrl;
+                return;
+            }
+            
+            showBackendUrlError('');
+            isweepPrefs.backendUrl = backendUrl;
             await chrome.storage.local.set({ isweepPrefs });
             console.log('[ISweep-Popup] Updated backendUrl to:', isweepPrefs.backendUrl);
         });
