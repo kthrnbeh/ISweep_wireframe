@@ -145,15 +145,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Listen for updates from background script (guarded)
+    // Listen for updates from background script or other parts of extension
     chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName === 'local' && changes.isweepPrefs) {
+        if (areaName !== 'local') return;
+
+        // Handle isweepPrefs changes
+        if (changes.isweepPrefs) {
             const updated = changes.isweepPrefs.newValue;
             if (updated) {
                 isweepPrefs = updated;
-                if (videosDetectedSpan) videosDetectedSpan.textContent = updated.videosDetected || 0;
-                if (actionsAppliedSpan) actionsAppliedSpan.textContent = updated.actionsApplied || 0;
+                // Update UI to reflect new prefs
+                updateUI(isweepPrefs.enabled);
+                if (userIdInput) userIdInput.value = isweepPrefs.user_id || 'user123';
+                if (backendUrlInput) backendUrlInput.value = isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
+                if (videosDetectedSpan) videosDetectedSpan.textContent = isweepPrefs.videosDetected || 0;
+                if (actionsAppliedSpan) actionsAppliedSpan.textContent = isweepPrefs.actionsApplied || 0;
+                console.log('[ISweep-Popup] Updated from isweepPrefs:', isweepPrefs);
             }
+        }
+
+        // Handle legacy isweep_enabled changes (for backward compatibility)
+        if (changes.isweep_enabled) {
+            isweepPrefs.enabled = Boolean(changes.isweep_enabled.newValue);
+            updateUI(isweepPrefs.enabled);
+            console.log('[ISweep-Popup] Updated enabled from isweep_enabled:', isweepPrefs.enabled);
+        }
+
+        // Handle videosDetected changes
+        if (changes.videosDetected && videosDetectedSpan) {
+            isweepPrefs.videosDetected = changes.videosDetected.newValue;
+            videosDetectedSpan.textContent = isweepPrefs.videosDetected || 0;
+            console.log('[ISweep-Popup] Updated videosDetected:', isweepPrefs.videosDetected);
+        }
+
+        // Handle actionsApplied changes
+        if (changes.actionsApplied && actionsAppliedSpan) {
+            isweepPrefs.actionsApplied = changes.actionsApplied.newValue;
+            actionsAppliedSpan.textContent = isweepPrefs.actionsApplied || 0;
+            console.log('[ISweep-Popup] Updated actionsApplied:', isweepPrefs.actionsApplied);
         }
     });
 });
