@@ -28,8 +28,8 @@ export const PRESET_PACKS = {
                 "scrotum",
                 "anus",
                 "arse",
+                "tits",
                 "boobs",
-                "breasts",
                 "nipples"
             ]
         },
