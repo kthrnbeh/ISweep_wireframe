@@ -3,7 +3,7 @@
 
 export const PRESET_PACKS = {
     language: {
-        profanity: {
+        strong_profanity: {
             words: [
                 "fuck",
                 "shit",
@@ -11,26 +11,9 @@ export const PRESET_PACKS = {
                 "bastard",
                 "asshole",
                 "motherfucker",
-                "dick",
                 "cunt",
                 "piss",
-                "bollocks",
-                "cock",
-                "penis",
-                "vagina",
-                "pussy",
-                "blowjob",
-                "handjob",
-                "cum",
-                "ejaculation",
-                "nutsack",
-                "testicles",
-                "scrotum",
-                "anus",
-                "arse",
-                "tits",
-                "boobs",
-                "nipples"
+                "bollocks"
             ]
         },
         mild_language: {
@@ -56,8 +39,57 @@ export const PRESET_PACKS = {
                 "god almighty"
             ]
         }
+    },
+    sexual: {
+        explicit_terms: {
+            words: [
+                "cock",
+                "dick",
+                "penis",
+                "vagina",
+                "pussy",
+                "blowjob",
+                "handjob",
+                "cum",
+                "ejaculation",
+                "nutsack",
+                "testicles",
+                "scrotum",
+                "anus",
+                "arse",
+                "tits",
+                "boobs",
+                "nipples"
+            ]
+        },
+        intimate_acts: {
+            words: [
+                "sex",
+                "intercourse",
+                "oral sex",
+                "anal sex",
+                "masturbate",
+                "masturbation",
+                "orgasm",
+                "climax",
+                "erection"
+            ]
+        }
+    },
+    violence: {
+        graphic_violence: {
+            words: [
+                "kill",
+                "murder",
+                "stab",
+                "shoot",
+                "blood",
+                "gore",
+                "torture",
+                "mutilate"
+            ]
+        }
     }
-    // Future categories can be added here, e.g. intimacy, nudity, violence, substance.
 };
 
 /**

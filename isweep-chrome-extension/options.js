@@ -285,7 +285,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const categories = ['language', 'violence', 'sexual'];
         const preferences = {};
 
-        log(`[saveToBackend] Starting save for userId: ${userId}`);
+        log(`[saveToBackend] ========== STARTING SAVE ==========`);
+        log(`[saveToBackend] userId: ${userId}`);
+        log(`[saveToBackend] backendURL: ${backendURL}`);
 
         categories.forEach(category => {
             const effectiveWords = buildEffectiveBlockedWords(category);
@@ -296,7 +298,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const customWords = customWordsByCategory[category] || [];
 
             log(`[saveToBackend] ${category}: ${effectiveWords.length} blocked words, action="${action}", duration=${duration}s, caption_offset=${captionOffset}ms`);
-            log(`[saveToBackend] ${category} blocked words:`, effectiveWords);
+            log(`[saveToBackend] ${category} selected_packs:`, packs);
+            log(`[saveToBackend] ${category} custom_words:`, customWords);
+            log(`[saveToBackend] ${category} effective blocked_words:`, effectiveWords.slice(0, 20));
 
             preferences[category] = {
                 enabled: true,
@@ -310,31 +314,69 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         const payload = { user_id: userId, preferences: preferences };
-        log('Bulk save payload:', payload);
+        const url = `${backendURL}/preferences/bulk`;
+        
+        log(`[saveToBackend] POST URL: ${url}`);
+        log(`[saveToBackend] Payload structure:`, {
+            user_id: payload.user_id,
+            preferences_keys: Object.keys(payload.preferences),
+            language_blocked_count: payload.preferences.language?.blocked_words?.length || 0,
+            violence_blocked_count: payload.preferences.violence?.blocked_words?.length || 0,
+            sexual_blocked_count: payload.preferences.sexual?.blocked_words?.length || 0
+        });
 
         try {
-            const res = await fetch(`${backendURL}/preferences/bulk`, {
+            log('[saveToBackend] Sending fetch request...');
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
+            log(`[saveToBackend] Response status: ${res.status} ${res.statusText}`);
+            log(`[saveToBackend] Response headers:`, Object.fromEntries(res.headers.entries()));
+
             if (!res.ok) {
                 const errorText = await res.text();
-                throw new Error(`Backend error ${res.status}: ${errorText}`);
+                log(`[saveToBackend] ERROR RESPONSE BODY:`, errorText);
+                throw new Error(`HTTP ${res.status}: ${errorText}`);
             }
 
             const result = await res.json();
-            log('Bulk save response:', result);
+            log('[saveToBackend] SUCCESS RESPONSE:', result);
 
-            await chrome.storage.local.set({ selectedPacks, actionByCategory, durationSecondsByCategory, customWordsByCategory });
+            await chrome.storage.local.set({ 
+                selectedPacks, 
+                actionByCategory, 
+                durationSecondsByCategory, 
+                customWordsByCategory,
+                captionOffsetByCategory 
+            });
 
             const langWords = preferences.language.blocked_words;
             updateSummary(langWords);
-            showStatus(`Saved ${result.categories_saved?.length || 0} categories`, 'success');
+            showStatus(`✅ Saved ${result.categories_saved?.length || 0} categories`, 'success');
+            log('[saveToBackend] ========== SAVE COMPLETED ==========');
         } catch (err) {
-            console.warn('[ISweep-Options] Failed to save to backend', err);
-            showStatus('Save failed', 'error');
+            log('[saveToBackend] ========== SAVE FAILED ==========');
+            log('[saveToBackend] Error type:', err.name);
+            log('[saveToBackend] Error message:', err.message);
+            log('[saveToBackend] Error stack:', err.stack);
+            
+            // Detailed error message for user
+            let userMessage = 'Save failed: ';
+            if (err.message.includes('Failed to fetch')) {
+                userMessage += 'Cannot reach backend. Is it running?';
+            } else if (err.message.includes('CORS')) {
+                userMessage += 'CORS error. Check backend CORS settings.';
+            } else if (err.message.includes('HTTP')) {
+                userMessage += err.message;
+            } else {
+                userMessage += 'Network error. Check console.';
+            }
+            
+            console.error('[ISweep-Options] Save failed:', err);
+            showStatus(userMessage, 'error');
         }
     }
 

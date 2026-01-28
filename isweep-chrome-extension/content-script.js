@@ -72,28 +72,55 @@ function textIncludesTerm(normalizedText, term) {
 /**
  * Estimate a natural mute duration for a matched term based on spoken word timing.
  * Uses character/word length as proxy for speech duration.
+ * 
+ * Timing model:
+ * - Base: 0.20s (minimum word duration)
+ * - Per character: 0.04s (average speaking rate ~3-4 chars/second)
+ * - Per word: 0.15s (word boundary pause)
+ * - Padding: 0.08s (release buffer)
+ * - Bounds: 0.25s - 0.90s (prevents too short/long mutes)
  */
 function computeMuteDuration(term, baseDurationSeconds) {
     const normalized = normalizeText(term || '');
     if (!normalized) {
-        return 0.35; // Very short default
+        return 0.30; // Short default for empty/invalid terms
     }
 
     const words = normalized.split(' ').filter(Boolean);
     const wordCount = Math.max(1, words.length);
     const charCount = normalized.replace(/\s+/g, '').length;
 
-    // Heuristic timing model:
-    // 3-4 chars: ~0.30-0.40s
-    // 5-6 chars: ~0.40-0.55s
-    // 7+ chars: ~0.55-0.80s
-    let duration = 0.25 + (charCount * 0.045) + ((wordCount - 1) * 0.12);
+    // Known term duration map for common words
+    const knownDurations = {
+        'god': 0.35,
+        'fuck': 0.40,
+        'shit': 0.35,
+        'damn': 0.35,
+        'hell': 0.35,
+        'jesus': 0.45,
+        'christ': 0.40,
+        'bitch': 0.40,
+        'ass': 0.30,
+        'asshole': 0.50
+    };
+
+    // Check for exact match in known durations
+    if (knownDurations[normalized]) {
+        return knownDurations[normalized];
+    }
+
+    // Heuristic calculation for unknown terms
+    // Base timing: 0.20s + 0.04s per char + 0.15s per word boundary
+    let duration = 0.20 + (charCount * 0.04) + ((wordCount - 1) * 0.15);
     
-    // Add small release padding
-    const releasePadding = 0.10;
+    // Add small release padding for natural unmute
+    const releasePadding = 0.08;
     duration += releasePadding;
     
-    // Clamp to reasonable bounds for spoken words
+    // Clamp to reasonable bounds (0.25s - 0.90s)
+    // This prevents:
+    // - Too short: <0.25s might cut off word start
+    // - Too long: >0.90s keeps muted past word end
     return Math.min(0.90, Math.max(0.25, duration));
 }
 
