@@ -36,6 +36,17 @@
       "js": ["youtube-handler.js"],
       "all_frames": false,
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "exclude_matches": [
+        "*://*.youtube.com/*",
+        "*://youtube.com/*",
+        "*://youtu.be/*"
+      ],
+      "js": ["content-script.js"],
+      "all_frames": false,
+      "run_at": "document_idle"
     }
   ],
   "icons": {
