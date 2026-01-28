@@ -46,12 +46,14 @@ export const PRESET_PACKS = {
         },
         blasphemy: {
             words: [
-                "jesus christ",
+                "god",
+                "jesus",
+                "christ",
                 "goddamn",
+                "jesus christ",
                 "oh my god",
                 "for god's sake",
-                "god almighty",
-                "christ"
+                "god almighty"
             ]
         }
     }
