@@ -6,7 +6,6 @@ export const PRESET_PACKS = {
         profanity: {
             words: [
                 "fuck",
-                "damn",
                 "shit",
                 "bitch",
                 "bastard",
@@ -15,7 +14,15 @@ export const PRESET_PACKS = {
                 "dick",
                 "cunt",
                 "piss",
-                "bollocks"
+                "bollocks",
+                "cock",
+                "penis",
+                "vagina",
+                "pussy",
+                "blowjob",
+                "handjob",
+                "cum",
+                "ejaculation"
             ]
         },
         mild_language: {
