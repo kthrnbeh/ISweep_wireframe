@@ -229,7 +229,8 @@
         monitorYouTubeCaptions();
     }
 
-    // Expose for content-script reentry
+    // Expose for potential future extensions or debugging
+    // Note: content-script.js does NOT call these; youtube-handler initializes independently
     window.initYouTubeOnVideoChange = initYouTubeOnVideoChange;
     window.getYouTubeVideoElement = getYouTubeVideoElement;
 
