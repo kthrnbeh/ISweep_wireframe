@@ -366,9 +366,13 @@ window.__isweepApplyDecision = function(decision) {
     const backendDuration = Number(duration_seconds);
     const prefsDuration = Number(langPrefs.duration_seconds);
     const fallbackDuration = action === 'mute' ? 0.5 : 3;
-    const durationSeconds = Number.isFinite(backendDuration) ? backendDuration 
-                          : Number.isFinite(prefsDuration) ? prefsDuration 
-                          : fallbackDuration;
+    let durationSeconds = Number.isFinite(backendDuration) ? backendDuration 
+                        : Number.isFinite(prefsDuration) ? prefsDuration 
+                        : fallbackDuration;
+
+    if (action === 'mute' && matched_term) {
+        durationSeconds = computeMuteDuration(matched_term, durationSeconds);
+    }
     const duration = Math.max(0, durationSeconds);
     const durationMs = duration * 1000;
 
