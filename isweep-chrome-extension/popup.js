@@ -39,28 +39,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Load state from Chrome storage (single source: isweepPrefs)
-    let { isweepPrefs } = await chrome.storage.local.get('isweepPrefs');
+    // Load state from Chrome storage
+    // isweepPrefs: stores user_id, backendUrl, and filter config
+    // isweep_enabled, videosDetected, actionsApplied: separate top-level keys
+    let { isweepPrefs, isweep_enabled, videosDetected, actionsApplied } = await chrome.storage.local.get([
+        'isweepPrefs',
+        'isweep_enabled',
+        'videosDetected',
+        'actionsApplied'
+    ]);
 
-    console.log('[ISweep-Popup] Loaded preferences from storage:', isweepPrefs);
+    console.log('[ISweep-Popup] Loaded state from storage:', { isweepPrefs, isweep_enabled, videosDetected, actionsApplied });
 
-    // Initialize prefs with defaults if not set
+    // Initialize isweepPrefs with defaults if not set
     isweepPrefs = isweepPrefs || {
-        enabled: false,
         user_id: 'user123',
         backendUrl: 'http://127.0.0.1:8001',
         blocked_words: [],
         duration_seconds: 3,
-        action: 'mute',
-        videosDetected: 0,
-        actionsApplied: 0
+        action: 'mute'
     };
+
+    // Initialize other state with defaults
+    isweep_enabled = Boolean(isweep_enabled);
+    videosDetected = videosDetected || 0;
+    actionsApplied = actionsApplied || 0;
 
     // Set initial values in UI
     userIdInput.value = isweepPrefs.user_id || 'user123';
     backendUrlInput.value = isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
-    videosDetectedSpan.textContent = isweepPrefs.videosDetected || 0;
-    actionsAppliedSpan.textContent = isweepPrefs.actionsApplied || 0;
+    videosDetectedSpan.textContent = videosDetected;
+    actionsAppliedSpan.textContent = actionsApplied;
 
     // Update UI based on state
     const updateUI = (enabled) => {
