@@ -203,26 +203,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         const input = document.getElementById(`${category}CustomInput`);
         if (!input) return;
 
-        const normalized = normalizeWord(input.value);
-        if (!normalized) return;
-        if (normalized.length < 2 || normalized.length > 40) {
-            showStatus('Word must be 2-40 characters', 'error');
+        // Parse input: split on commas/newlines, trim, lowercase, remove empties
+        const words = input.value
+            .split(/[,\n]/)
+            .map(w => (w || '').trim().toLowerCase())
+            .filter(w => w.length > 0)
+            .map(w => w.replace(/\s+/g, ' ')) // Collapse multiple spaces
+            .filter((w, i, arr) => arr.indexOf(w) === i); // Dedupe
+
+        if (words.length === 0) {
+            showStatus('Please enter at least one word', 'error');
             return;
         }
 
         const current = customWordsByCategory[category] || [];
-        if (current.includes(normalized)) {
-            showStatus('Already added', 'info');
+        const newWords = words.filter(w => {
+            if (w.length < 2 || w.length > 40) {
+                showStatus(`Word must be 2-40 characters: "${w}"`, 'error');
+                return false;
+            }
+            if (current.includes(w)) {
+                showStatus(`Already added: "${w}"`, 'info');
+                return false;
+            }
+            return true;
+        });
+
+        if (newWords.length === 0) {
             input.value = '';
             return;
         }
 
-        const updated = [...current, normalized];
+        const updated = [...current, ...newWords];
         customWordsByCategory[category] = updated;
         chrome.storage.local.set({ customWordsByCategory });
         renderCustomWords(category);
         input.value = '';
-        log(`Custom word added to ${category}:`, normalized);
+        log(`Added ${newWords.length} word(s) to ${category}:`, newWords);
+        showStatus(`Added ${newWords.length} word(s)`, 'success');
     }
 
     function buildEffectiveBlockedWords(category) {
@@ -246,12 +264,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const categories = ['language', 'violence', 'sexual'];
         const preferences = {};
 
+        log(`[saveToBackend] Starting save for userId: ${userId}`);
+
         categories.forEach(category => {
             const effectiveWords = buildEffectiveBlockedWords(category);
             const duration = durationSecondsByCategory[category] ?? DEFAULT_DURATION[category];
             const action = actionByCategory[category] ?? DEFAULT_ACTION[category];
             const packs = selectedPacks[category] || {};
             const customWords = customWordsByCategory[category] || [];
+
+            log(`[saveToBackend] ${category}: ${effectiveWords.length} blocked words, action="${action}", duration=${duration}s`);
+            log(`[saveToBackend] ${category} blocked words:`, effectiveWords);
 
             preferences[category] = {
                 enabled: true,

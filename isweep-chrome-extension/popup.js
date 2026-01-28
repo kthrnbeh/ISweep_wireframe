@@ -54,7 +54,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // Ensure isweep_enabled is boolean
+    isweep_enabled = Boolean(isweep_enabled);
     updateUI(isweep_enabled);
+    console.log('[ISweep-Popup] Initial enabled state loaded as:', isweep_enabled);
 
     // Toggle button
     toggleButton.addEventListener('click', async () => {
@@ -66,6 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         isweepPrefs.user_id = newUserId;
         isweepPrefs.backendUrl = newBackendUrl;
         
+        // Save to storage
         await chrome.storage.local.set({
             isweep_enabled: newState,
             userId: newUserId,
@@ -75,9 +79,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         isweep_enabled = newState;
         updateUI(newState);
 
-        console.log('[ISweep-Popup] Toggled state to:', newState);
+        console.log('[ISweep-Popup] TOGGLED isweep_enabled:', newState);
 
-        // Notify active tab's content script
+        // Notify active tab's content script to toggle immediately
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (tabs.length > 0) {
                 chrome.tabs.sendMessage(tabs[0].id, {
@@ -85,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     enabled: newState,
                     prefs: isweepPrefs
                 }).catch((err) => {
-                    console.log('[ISweep-Popup] Could not send message to tab:', err.message);
+                    console.log('[ISweep-Popup] Could not send message to active tab (expected on non-content pages):', err.message);
                 });
             }
         });

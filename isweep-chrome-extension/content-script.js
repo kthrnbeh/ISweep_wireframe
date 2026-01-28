@@ -177,19 +177,23 @@ async function initializeFromStorage() {
     // Load cached preferences if available
     if (result.cachedPrefsByCategory) {
         prefsByCategory = result.cachedPrefsByCategory;
-        csLog('[ISweep] Loaded cachedPrefsByCategory from storage:', Object.keys(prefsByCategory));
+        csLog('[ISweep] LOADED cachedPrefsByCategory from storage, categories:', Object.keys(prefsByCategory));
     }
     
-    csLog('[ISweep] Loaded enabled state:', isEnabled);
-    csLog('[ISweep] Loaded from storage:', { userId, backendURL });
-    csLog('[ISweep] Loaded prefsByCategory keys:', Object.keys(prefsByCategory));
-    csLog(`[ISweep] Language words loaded: ${prefsByCategory.language.blocked_words.length}`);
+    csLog('[ISweep] LOADED enabled state from storage:', isEnabled);
+    csLog('[ISweep] LOADED userId:', userId);
+    csLog('[ISweep] LOADED backendURL:', backendURL);
+    csLog(`[ISweep] LOADED language blocked_words count: ${(prefsByCategory.language?.blocked_words || []).length}`);
+    
+    // Only proceed if enabled
+    if (!isEnabled) {
+        csLog('[ISweep] Extension is DISABLED, skipping preference fetch');
+        return;
+    }
     
     // If enabled, fetch fresh preferences from backend (and update cache)
-    if (isEnabled) {
-        csLog('[ISweep] Extension is enabled, fetching fresh preferences from backend...');
-        await fetchPreferencesFromBackend();
-    }
+    csLog('[ISweep] Extension is ENABLED, fetching fresh preferences from backend...');
+    await fetchPreferencesFromBackend();
 }
 
 // Listen for toggle messages from popup (SINGLE unified listener)
@@ -414,6 +418,12 @@ window.__isweepApplyDecision = function(decision) {
         case 'mute':
             const now = Date.now();
             
+            // Check if already muted and within duration window
+            if (isMuted && now < muteUntil) {
+                csLog(`[ISweep] MUTE LOCK ACTIVE: Already muted until ${new Date(muteUntil).toISOString()}, skipping restart`);
+                return; // Don't restart the timer
+            }
+            
             // Check cooldown
             if (!shouldApplyMute(matched_term)) {
                 return;
@@ -476,14 +486,14 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source, capt
         stopSpeechFallback();
     }
 
-    // Normalize caption text before sending
+    // Normalize caption text before matching
     const normalizedText = normalizeText(text);
     csLog('[ISweep] Processing caption:', { original: text, normalized: normalizedText, source });
 
     // Check for local blocked words across all categories
     const blockedCheck = checkAllCategoriesForBlockedWords(text);
     if (blockedCheck.matched) {
-        csLog('[ISweep] LOCAL MATCH: Blocked word detected in category:', blockedCheck.category);
+        csLog(`[ISweep] MATCHED blocked word in "${blockedCheck.category}": "${blockedCheck.word}"`);
         // Apply action immediately using category-specific settings
         window.__isweepApplyDecision({
             action: blockedCheck.action || 'mute',
