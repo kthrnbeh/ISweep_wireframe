@@ -413,7 +413,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 //-----------------------------------------------------
-//  INDEX PAGE DEMO
+//  INDEX & HELP PAGE DEMO
 //-----------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
   const checkBtn = document.getElementById("checkSubtitleBtn");
@@ -424,25 +424,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (checkBtn && subtitleInput && decisionOutput) {
     checkBtn.addEventListener("click", () => {
-      const text = subtitleInput.value.trim();
+      const text = subtitleInput.value.trim().toLowerCase();
       if (!text) {
-        decisionOutput.textContent = "Please enter some subtitle text.";
+        decisionOutput.textContent = "(Enter a subtitle line to test ISweep)";
         return;
       }
 
-      // Simple demo logic: check for bad words
-      const badWords = ["damn", "hell", "shit", "fuck"];
-      const hasBadWord = badWords.some(word => text.toLowerCase().includes(word));
+      // Check if filtering is enabled (developer mode: always enabled)
+      const planKey = localStorage.getItem(PLAN_KEY) || "free";
+      const filteringEnabled = true; // Developer: always allow filtering
 
-      if (hasBadWord) {
-        decisionOutput.textContent = `ISweep detected profanity: "${text}" → MUTED for 4 seconds.`;
-        // Show broom icon briefly
+      if (!filteringEnabled) {
+        decisionOutput.textContent =
+          "ISweep Filtering is DISABLED on your current plan.\nUpgrade to Flexible or Full plan to enable filtering.";
+        return;
+      }
+
+      // Check for blocked words
+      const blockedWords = [
+        "badword",
+        "profanity",
+        "swear",
+        "curse",
+        "hell",
+        "damn",
+        "crap",
+      ];
+      let foundWords = [];
+      blockedWords.forEach((word) => {
+        if (text.includes(word)) {
+          foundWords.push(word);
+        }
+      });
+
+      if (foundWords.length > 0) {
+        decisionOutput.textContent = `🧹 ISweep DETECTED: ${foundWords.join(
+          ", "
+        )}\nAction: MUTE\nDuration: 5 seconds`;
         if (broomIcon) {
           broomIcon.style.display = "block";
-          setTimeout(() => broomIcon.style.display = "none", 3000);
+          setTimeout(() => {
+            broomIcon.style.display = "none";
+          }, 3000);
         }
       } else {
-        decisionOutput.textContent = `ISweep: "${text}" → No action needed.`;
+        decisionOutput.textContent =
+          "✓ ISweep PASSED: No blocked content detected.\nAction: PLAY";
+      }
+    });
+
+    // Allow Enter key to trigger test
+    subtitleInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        checkBtn.click();
       }
     });
   }
@@ -452,6 +486,78 @@ document.addEventListener("DOMContentLoaded", () => {
     demoVideo.addEventListener("play", () => {
       broomIcon.style.display = "block";
       setTimeout(() => broomIcon.style.display = "none", 5000);
+    });
+  }
+});
+
+//-----------------------------------------------------
+//  HELP PAGE: CONTACT FORM
+//-----------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const contactForm = document.querySelector("#contact-form .profile-form");
+  if (contactForm) {
+    contactForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const name = contactForm.elements["name"].value;
+      const email = contactForm.elements["email"].value;
+      const topic = contactForm.elements["topic"].value;
+      const message = contactForm.elements["message"].value;
+
+      // Show confirmation
+      alert(
+        `Thank you, ${name}! Your message about "${topic}" has been received. We'll respond to ${email} within 24 hours.`
+      );
+
+      // Reset form
+      contactForm.reset();
+    });
+  }
+});
+
+//-----------------------------------------------------
+//  HELP PAGE: CHAT WIDGET
+//-----------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const chatToggle = document.getElementById("chatToggle");
+  const chatWidget = document.getElementById("chatWidget");
+  const chatClose = document.getElementById("chatClose");
+  const chatForm = document.getElementById("chatForm");
+  const chatInput = document.getElementById("chatInput");
+  const chatLog = document.getElementById("chatLog");
+
+  if (chatToggle && chatWidget && chatClose && chatForm) {
+    chatToggle.addEventListener("click", () => {
+      chatWidget.classList.toggle("open");
+    });
+
+    chatClose.addEventListener("click", () => {
+      chatWidget.classList.remove("open");
+    });
+
+    // Fake chat: just echoes the user message into the window
+    chatForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      const msg = document.createElement("p");
+      msg.className = "chat-message user";
+      msg.textContent = text;
+      chatLog.appendChild(msg);
+
+      // Clear input
+      chatInput.value = "";
+
+      // Fake bot reply
+      const reply = document.createElement("p");
+      reply.className = "chat-message bot";
+      reply.textContent =
+        "Thanks for your message! In a real app, this would send to support.";
+      chatLog.appendChild(reply);
+
+      // Scroll to bottom
+      chatLog.scrollTop = chatLog.scrollHeight;
     });
   }
 });
