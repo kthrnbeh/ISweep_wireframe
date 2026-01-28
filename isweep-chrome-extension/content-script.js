@@ -519,6 +519,7 @@ window.__isweepApplyDecision = function(decision) {
             setTimeout(() => {
                 // Apply short word-based mute
                 videoElement.muted = true;
+                videoElement._isweepMutedByUs = true; // Track that ISweep muted this video
                 isMuted = true;
                 muteUntil = scheduledMuteEnd;
                 lastMutedTerm = matched_term;
@@ -530,10 +531,14 @@ window.__isweepApplyDecision = function(decision) {
                 // Schedule unmute
                 unmuteTimerId = setTimeout(() => {
                     if (Date.now() >= muteUntil) {
-                        videoElement.muted = false;
+                        // Only unmute if ISweep muted it (don't unmute user-manual mutes)
+                        if (videoElement._isweepMutedByUs) {
+                            videoElement.muted = false;
+                            videoElement._isweepMutedByUs = false; // Clear flag after unmuting
+                            csLog('[ISweep] UNMUTED after word duration');
+                        }
                         isMuted = false;
                         unmuteTimerId = null;
-                        csLog('[ISweep] UNMUTED after word duration');
                     }
                 }, durationMs);
             }, Math.max(0, captionOffsetMs)); // Use max(0, offset) to allow negative premute but execute immediately for instant timing
