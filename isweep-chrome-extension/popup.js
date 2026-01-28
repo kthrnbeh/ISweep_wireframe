@@ -68,6 +68,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update UI based on state
     const updateUI = (enabled) => {
         const dot = statusIndicator.querySelector('.status-dot');
+        if (!dot) {
+            console.error('[ISweep-Popup] WARNING: .status-dot element not found in statusIndicator');
+            return;
+        }
         if (enabled) {
             dot.classList.remove('inactive');
             dot.classList.add('active');
