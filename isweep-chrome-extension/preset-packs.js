@@ -6,6 +6,7 @@ export const PRESET_PACKS = {
         profanity: {
             words: [
                 "fuck",
+                "damn",
                 "shit",
                 "bitch",
                 "bastard",
