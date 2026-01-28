@@ -446,23 +446,34 @@ window.__isweepApplyDecision = function(decision) {
     switch (action) {
         case 'mute':
             const now = Date.now();
-            
-            // Check if already muted and within duration window
-            if (isMuted && now < muteUntil) {
-                csLog(`[ISweep] MUTE LOCK ACTIVE: Already muted until ${new Date(muteUntil).toISOString()}, skipping restart`);
-                return; // Don't restart the timer
-            }
-            
-            // Check cooldown
-            if (!shouldApplyMute(matched_term)) {
-                return;
-            }
-            
-            // Get caption offset from category prefs
             const categoryPrefs = prefsByCategory[matched_category] || {};
             const captionOffsetMs = Number(categoryPrefs.caption_offset_ms ?? 300);
             
-            csLog(`[ISweep] Using caption_offset_ms: ${captionOffsetMs}ms for category "${matched_category}"`);
+            csLog(`[ISweep] Timing: caption_offset_ms=${captionOffsetMs}ms for category "${matched_category}"`);
+            
+            // Calculate when this mute would end
+            const scheduledMuteStart = now + captionOffsetMs;
+            const scheduledMuteEnd = scheduledMuteStart + durationMs;
+            
+            csLog(`[ISweep] Timing: now=${now}ms, scheduledStart=${scheduledMuteStart}ms, scheduledEnd=${scheduledMuteEnd}ms`);
+            
+            // If already muted, extend the mute period (don't block if already filtering)
+            if (isMuted && now < muteUntil) {
+                const oldMuteUntil = muteUntil;
+                muteUntil = Math.max(muteUntil, scheduledMuteEnd);
+                const extended = muteUntil > oldMuteUntil;
+                
+                csLog(`[ISweep] Cooldown: isMuted=true, muteUntil_before=${oldMuteUntil}ms, muteUntil_after=${muteUntil}ms, extended=${extended}`);
+                return; // Already muted, just extended timing
+            }
+            
+            // Cooldown check only applies to NEW mutes (not when extending active ones)
+            if (!shouldApplyMute(matched_term)) {
+                csLog(`[ISweep] Cooldown: blocked starting new mute for term "${matched_term}"`);
+                return;
+            }
+            
+            csLog(`[ISweep] Cooldown: cooldown check passed, starting new mute`);
             
             // Clear any existing unmute timer
             if (unmuteTimerId !== null) {
@@ -471,14 +482,11 @@ window.__isweepApplyDecision = function(decision) {
             }
             
             // Schedule mute to start after caption offset
-            const muteStartTime = now + captionOffsetMs;
-            const muteEndTime = muteStartTime + durationMs;
-            
             setTimeout(() => {
                 // Apply short word-based mute
                 videoElement.muted = true;
                 isMuted = true;
-                muteUntil = muteEndTime;
+                muteUntil = scheduledMuteEnd;
                 lastMutedTerm = matched_term;
                 lastMuteStartTs = now;
                 appliedActions++;
@@ -494,7 +502,7 @@ window.__isweepApplyDecision = function(decision) {
                         csLog('[ISweep] UNMUTED after word duration');
                     }
                 }, durationMs);
-            }, captionOffsetMs);
+            }, Math.max(0, captionOffsetMs)); // Use max(0, offset) to allow negative premute but execute immediately for instant timing
             break;
         case 'skip':
             videoElement.currentTime = Math.min(videoElement.currentTime + duration, videoElement.duration || Infinity);
