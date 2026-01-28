@@ -198,15 +198,43 @@ async function fetchPreferencesFromBackend() {
 
 // Initialize from storage on load
 async function initializeFromStorage() {
-    const result = await chrome.storage.local.get(['isweep_enabled', 'userId', 'backendURL', 'cachedPrefsByCategory']);
+    const result = await chrome.storage.local.get(['isweep_enabled', 'isweepPrefs', 'cachedPrefsByCategory', 'userId', 'backendURL']);
     isEnabled = result.isweep_enabled === true; // default to false if not explicitly set
-    userId = result.userId || 'user123';
-    backendURL = result.backendURL || 'http://127.0.0.1:8001';
     
-    // Load cached preferences if available
-    if (result.cachedPrefsByCategory) {
-        prefsByCategory = result.cachedPrefsByCategory;
-        csLog('[ISweep] LOADED cachedPrefsByCategory from storage, categories:', Object.keys(prefsByCategory));
+    // Use isweepPrefs as primary source, fallback to individual keys for backward compatibility
+    if (result.isweepPrefs) {
+        userId = result.isweepPrefs.user_id || result.userId || 'user123';
+        backendURL = result.isweepPrefs.backendUrl || result.backendURL || 'http://127.0.0.1:8001';
+        
+        // Set blocked_words from isweepPrefs
+        if (result.isweepPrefs.blocked_words && Array.isArray(result.isweepPrefs.blocked_words)) {
+            prefsByCategory.language.blocked_words = result.isweepPrefs.blocked_words;
+        }
+        
+        // Set other language category settings from isweepPrefs if available
+        if (result.isweepPrefs.duration_seconds) {
+            prefsByCategory.language.duration_seconds = result.isweepPrefs.duration_seconds;
+        }
+        if (result.isweepPrefs.action) {
+            prefsByCategory.language.action = result.isweepPrefs.action;
+        }
+        if (result.isweepPrefs.caption_offset_ms) {
+            prefsByCategory.language.caption_offset_ms = result.isweepPrefs.caption_offset_ms;
+        }
+        
+        csLog('[ISweep] LOADED settings from isweepPrefs (primary source)');
+    } else {
+        // Fallback to individual keys for backward compatibility
+        userId = result.userId || 'user123';
+        backendURL = result.backendURL || 'http://127.0.0.1:8001';
+        
+        // Load cached preferences if available
+        if (result.cachedPrefsByCategory) {
+            prefsByCategory = result.cachedPrefsByCategory;
+            csLog('[ISweep] LOADED cachedPrefsByCategory from storage, categories:', Object.keys(prefsByCategory));
+        }
+        
+        csLog('[ISweep] LOADED settings from legacy keys (backward compatibility)');
     }
     
     csLog('[ISweep] LOADED enabled state from storage:', isEnabled);
