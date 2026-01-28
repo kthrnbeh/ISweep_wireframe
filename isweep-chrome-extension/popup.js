@@ -89,12 +89,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateUI(isweepPrefs.enabled);
     console.log('[ISweep-Popup] Initial enabled state:', isweepPrefs.enabled);
 
+    // Validation function for backend URL
+    const isValidBackendUrl = (url) => {
+        if (!url || typeof url !== 'string') return false;
+        return url.startsWith('http://') || url.startsWith('https://');
+    };
+
+    // Display or clear error message
+    const showBackendUrlError = (message) => {
+        if (backendUrlError) {
+            backendUrlError.textContent = message;
+            backendUrlError.style.display = message ? 'block' : 'none';
+        }
+        if (message) {
+            console.warn('[ISweep-Popup] Backend URL validation error:', message);
+        }
+    };
+
     // Toggle button (guarded)
     if (toggleButton) {
         toggleButton.addEventListener('click', async () => {
             isweepPrefs.enabled = !isweepPrefs.enabled;
             isweepPrefs.user_id = userIdInput.value.trim();
-            isweepPrefs.backendUrl = backendUrlInput.value.trim();
+            const backendUrl = backendUrlInput.value.trim();
+            
+            // Validate backend URL before saving
+            if (!isValidBackendUrl(backendUrl)) {
+                showBackendUrlError('Invalid URL: must start with http:// or https://');
+                return;
+            }
+            
+            showBackendUrlError('');
+            isweepPrefs.backendUrl = backendUrl;
             
             // Save to storage
             await chrome.storage.local.set({ isweepPrefs });
