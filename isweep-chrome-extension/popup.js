@@ -1,5 +1,6 @@
 // popup.js
 document.addEventListener('DOMContentLoaded', async () => {
+    // Guard: Check for all required elements
     const toggleButton = document.getElementById('toggleButton');
     const statusIndicator = document.getElementById('statusIndicator');
     const statusText = document.getElementById('statusText');
@@ -8,6 +9,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     const clearStatsBtn = document.getElementById('clearStats');
     const videosDetectedSpan = document.getElementById('videosDetected');
     const actionsAppliedSpan = document.getElementById('actionsApplied');
+
+    // Validate all required elements exist
+    const requiredElements = {
+        toggleButton,
+        statusIndicator,
+        statusText,
+        userIdInput,
+        backendUrl,
+        clearStatsBtn,
+        videosDetectedSpan,
+        actionsAppliedSpan
+    };
+
+    const missingElements = Object.entries(requiredElements)
+        .filter(([_, element]) => !element)
+        .map(([name]) => name);
+
+    if (missingElements.length > 0) {
+        console.error('[ISweep-Popup] FATAL: Missing required HTML elements:', missingElements);
+        return;
+    }
+
+    // Guard: Check for status-dot within statusIndicator
+    const statusDot = statusIndicator.querySelector('.status-dot');
+    if (!statusDot) {
+        console.error('[ISweep-Popup] FATAL: Missing .status-dot element inside statusIndicator');
+        return;
+    }
 
     // Load state from Chrome storage
     let { isweep_enabled, userId, backendURL, videosDetected, actionsApplied, isweepPrefs } = await chrome.storage.local.get([
