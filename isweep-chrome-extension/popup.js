@@ -199,35 +199,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Listen for updates from background script or other parts of extension
+    // Updates popup UI immediately when storage changes
     chrome.storage.onChanged.addListener((changes, areaName) => {
         if (areaName !== 'local') return;
 
-        // Handle isweepPrefs changes
+        // Handle isweepPrefs changes (user_id, backendUrl, filter config)
         if (changes.isweepPrefs) {
             const updated = changes.isweepPrefs.newValue;
             if (updated) {
                 isweepPrefs = updated;
+                // Update all preference-related UI elements
                 if (userIdInput) userIdInput.value = isweepPrefs.user_id || 'user123';
                 if (backendUrlInput) backendUrlInput.value = isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
+                // Clear any validation errors when prefs change externally
+                showBackendUrlError('');
                 console.log('[ISweep-Popup] Updated from isweepPrefs:', isweepPrefs);
             }
         }
 
-        // Handle isweep_enabled changes
+        // Handle isweep_enabled changes (toggle state)
+        // This updates: status dot (active/inactive), status text, and toggle button label
         if (changes.isweep_enabled) {
             isweep_enabled = Boolean(changes.isweep_enabled.newValue);
             updateUI(isweep_enabled);
-            console.log('[ISweep-Popup] Updated enabled from isweep_enabled:', isweep_enabled);
+            console.log('[ISweep-Popup] Updated enabled state from isweep_enabled:', isweep_enabled);
         }
 
-        // Handle videosDetected changes
+        // Handle videosDetected changes (stats counter)
         if (changes.videosDetected && videosDetectedSpan) {
             videosDetected = changes.videosDetected.newValue;
             videosDetectedSpan.textContent = videosDetected || 0;
             console.log('[ISweep-Popup] Updated videosDetected:', videosDetected);
         }
 
-        // Handle actionsApplied changes
+        // Handle actionsApplied changes (stats counter)
         if (changes.actionsApplied && actionsAppliedSpan) {
             actionsApplied = changes.actionsApplied.newValue;
             actionsAppliedSpan.textContent = actionsApplied || 0;
