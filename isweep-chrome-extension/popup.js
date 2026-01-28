@@ -94,9 +94,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Ensure enabled is boolean
-    isweepPrefs.enabled = Boolean(isweepPrefs.enabled);
-    updateUI(isweepPrefs.enabled);
-    console.log('[ISweep-Popup] Initial enabled state:', isweepPrefs.enabled);
+    isweep_enabled = Boolean(isweep_enabled);
+    updateUI(isweep_enabled);
+    console.log('[ISweep-Popup] Initial enabled state:', isweep_enabled);
 
     // Validation function for backend URL
     const isValidBackendUrl = (url) => {
