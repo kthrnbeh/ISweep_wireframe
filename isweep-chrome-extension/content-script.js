@@ -261,7 +261,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 unmuteTimerId = null;
             }
             isMuted = false;
-            lastMutedPhrase = null;
+            lastMutedTerm = null;
             muteUntil = 0;
         }
         
@@ -420,7 +420,7 @@ window.__isweepApplyDecision = function(decision) {
         return;
     }
 
-    const { action, duration_seconds, reason, matched_term } = decision;
+    const { action, duration_seconds, reason, matched_term, matched_category } = decision;
     const langPrefs = getLangPrefs();
     
     // For mute actions, always use word-based timing heuristic
