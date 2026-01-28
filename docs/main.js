@@ -70,15 +70,22 @@ document.addEventListener("DOMContentLoaded", () => {
 const themeBtn = document.getElementById("themeBtn");
 
 if (themeBtn) {
-  // Load saved theme
+  // Load saved theme and apply it
   const savedTheme = localStorage.getItem("isweep-theme") || "light";
   if (savedTheme === "dark") {
-    document.body.classList.add("dark");
+    document.documentElement.classList.add("dark");
+    themeBtn.textContent = "Light Mode";
+  } else {
+    document.documentElement.classList.remove("dark");
+    themeBtn.textContent = "Dark Mode";
   }
 
+  // Toggle theme on button click
   themeBtn.addEventListener("click", () => {
-    const isDark = document.body.classList.toggle("dark");
-    localStorage.setItem("isweep-theme", isDark ? "dark" : "light");
+    const isDark = document.documentElement.classList.toggle("dark");
+    const newTheme = isDark ? "dark" : "light";
+    localStorage.setItem("isweep-theme", newTheme);
+    themeBtn.textContent = isDark ? "Light Mode" : "Dark Mode";
   });
 }
 
