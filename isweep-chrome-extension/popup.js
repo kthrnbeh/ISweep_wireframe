@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusText = document.getElementById('statusText');
     const userIdInput = document.getElementById('userIdInput');
     const backendUrlInput = document.getElementById('backendUrl');
+    const backendUrlError = document.getElementById('backendUrlError');
     const clearStatsBtn = document.getElementById('clearStats');
     const videosDetectedSpan = document.getElementById('videosDetected');
     const actionsAppliedSpan = document.getElementById('actionsApplied');
