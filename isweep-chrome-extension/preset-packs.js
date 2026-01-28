@@ -22,7 +22,15 @@ export const PRESET_PACKS = {
                 "blowjob",
                 "handjob",
                 "cum",
-                "ejaculation"
+                "ejaculation",
+                "nutsack",
+                "testicles",
+                "scrotum",
+                "anus",
+                "arse",
+                "boobs",
+                "breasts",
+                "nipples"
             ]
         },
         mild_language: {
