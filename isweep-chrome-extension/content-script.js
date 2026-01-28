@@ -61,6 +61,27 @@ function normalizeText(text) {
 }
 
 /**
+ * Estimate a natural mute duration for a matched term.
+ * Uses word/character length as a lightweight proxy for spoken duration.
+ */
+function computeMuteDuration(term, baseDurationSeconds) {
+    const base = Number.isFinite(Number(baseDurationSeconds)) ? Number(baseDurationSeconds) : 0.5;
+    const normalized = normalizeText(term || '');
+    if (!normalized) {
+        return base;
+    }
+
+    const words = normalized.split(' ').filter(Boolean);
+    const wordCount = Math.max(1, words.length);
+    const charCount = normalized.replace(/\s+/g, '').length;
+
+    // Heuristic: longer words/phrases get slightly longer mute.
+    const factor = Math.min(1.8, Math.max(0.7, 0.6 + (0.08 * charCount) + (0.15 * (wordCount - 1))));
+    const duration = base * factor;
+    return Math.min(1.0, Math.max(0.2, duration));
+}
+
+/**
  * Fetch preferences from backend for the current user
  */
 async function fetchPreferencesFromBackend() {
