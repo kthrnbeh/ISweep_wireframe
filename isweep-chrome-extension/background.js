@@ -2,6 +2,11 @@
 /**
  * Service Worker for ISweep Chrome Extension
  * Handles background tasks and state management
+ * Storage structure:
+ *   - isweep_enabled: boolean (master toggle)
+ *   - isweepPrefs: object { user_id, backendUrl, blocked_words, duration_seconds, action }
+ *   - videosDetected: number (stats)
+ *   - actionsApplied: number (stats)
  */
 
 // Helper function to update icon based on enabled state
@@ -26,11 +31,16 @@ function updateIcon(enabled) {
 chrome.runtime.onInstalled.addListener(() => {
     console.log('[ISweep] Extension installed');
     
-    // Set default values - start with ISweep OFF
+    // Set default values on first install
     chrome.storage.local.set({
-        isEnabled: false,
-        userId: 'user123',
-        backendURL: 'http://127.0.0.1:8001',
+        isweep_enabled: false,
+        isweepPrefs: {
+            user_id: 'user123',
+            backendUrl: 'http://127.0.0.1:8001',
+            blocked_words: [],
+            duration_seconds: 3,
+            action: 'mute'
+        },
         videosDetected: 0,
         actionsApplied: 0
     });
@@ -52,19 +62,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     
     if (request.action === 'updateStats') {
+        // Coerce stats to numbers and clamp to >= 0
+        const videosDetected = Math.max(0, parseInt(request.videosDetected || 0, 10)) || 0;
+        const actionsApplied = Math.max(0, parseInt(request.actionsApplied || 0, 10)) || 0;
+        
         chrome.storage.local.set({
-            videosDetected: request.videosDetected,
-            actionsApplied: request.actionsApplied
+            videosDetected,
+            actionsApplied
         });
+        
+        console.log('[ISweep] Stats updated:', { videosDetected, actionsApplied });
         sendResponse({ success: true });
     }
 });
 
-// Listen for storage changes to update icon when ISweep is toggled
+// Listen for storage changes to update icon when isweep_enabled changes
 chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'local' && changes.isEnabled) {
-        const newValue = changes.isEnabled.newValue;
-        console.log('[ISweep] isEnabled changed to:', newValue);
+    if (areaName === 'local' && changes.isweep_enabled) {
+        const newValue = Boolean(changes.isweep_enabled.newValue);
+        console.log('[ISweep] isweep_enabled changed to:', newValue);
         updateIcon(newValue);
     }
 });
