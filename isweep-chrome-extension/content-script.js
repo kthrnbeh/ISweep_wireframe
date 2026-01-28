@@ -888,11 +888,38 @@ function handleVideoPlaying(videoElement, index) {
 }
 
 // Update extension stats
+// Track previous stats to send only increments
+let lastReportedVideosDetected = 0;
+let lastReportedActionsApplied = 0;
+
+// Update extension stats by incrementing existing totals
+// This prevents multiple tabs from overwriting each other's stats
 function updateStats() {
-    chrome.storage.local.set({
-        videosDetected: detectedVideos,
-        actionsApplied: appliedActions
-    });
+    // Calculate increments since last update
+    const videosIncrement = Math.max(0, detectedVideos - lastReportedVideosDetected);
+    const actionsIncrement = Math.max(0, appliedActions - lastReportedActionsApplied);
+    
+    if (videosIncrement > 0 || actionsIncrement > 0) {
+        chrome.storage.local.get(['videosDetected', 'actionsApplied'], (result) => {
+            const currentVideosDetected = parseInt(result.videosDetected || 0, 10) || 0;
+            const currentActionsApplied = parseInt(result.actionsApplied || 0, 10) || 0;
+            
+            // Increment existing totals rather than overwriting
+            const newVideosDetected = currentVideosDetected + videosIncrement;
+            const newActionsApplied = currentActionsApplied + actionsIncrement;
+            
+            chrome.storage.local.set({
+                videosDetected: newVideosDetected,
+                actionsApplied: newActionsApplied
+            });
+            
+            // Update local tracking for next increment
+            lastReportedVideosDetected = detectedVideos;
+            lastReportedActionsApplied = appliedActions;
+            
+            csLog(`[ISweep] Stats incremented: +${videosIncrement} videos, +${actionsIncrement} actions → totals: ${newVideosDetected}, ${newActionsApplied}`);
+        });
+    }
 }
 
 // Observer for dynamically added videos

@@ -61,19 +61,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({ success: true });
     }
     
-    if (request.action === 'updateStats') {
-        // Coerce stats to numbers and clamp to >= 0
-        const videosDetected = Math.max(0, parseInt(request.videosDetected || 0, 10)) || 0;
-        const actionsApplied = Math.max(0, parseInt(request.actionsApplied || 0, 10)) || 0;
-        
-        chrome.storage.local.set({
-            videosDetected,
-            actionsApplied
-        });
-        
-        console.log('[ISweep] Stats updated:', { videosDetected, actionsApplied });
-        sendResponse({ success: true });
-    }
+    // Note: stats are now handled directly by content-script.js via chrome.storage.local.get/set
+    // No longer needed to handle updateStats in background; each tab sends only its increments
 });
 
 // Listen for storage changes to update icon when isweep_enabled changes
