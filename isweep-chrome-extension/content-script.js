@@ -426,8 +426,9 @@ window.__isweepApplyDecision = function(decision) {
                 holdMuteSource = 'youtube_dom';
                 lastMutedPhrase = matched_term;
                 appliedActions++;
-                // Safety cap in case captions stop updating
-                const maxHoldMs = 3000;
+                // Safety cap based on word duration: scale to 2-4 seconds based on word length
+                const wordDurationForCap = computeMuteDuration(matched_term, 1.0) * 1000;
+                const maxHoldMs = Math.min(4000, Math.max(2000, wordDurationForCap * 1.5));
                 muteUntil = now + maxHoldMs;
                 if (holdMuteTimerId !== null) {
                     clearTimeout(holdMuteTimerId);
@@ -437,7 +438,7 @@ window.__isweepApplyDecision = function(decision) {
                         clearHoldMute('hold cap reached');
                     }
                 }, maxHoldMs);
-                csLog(`[ISweep] HOLD-MUTED: term "${matched_term}" (until caption clears)`);
+                csLog(`[ISweep] HOLD-MUTED: term "${matched_term}" (until caption clears, cap=${(maxHoldMs/1000).toFixed(1)}s)`);
                 return;
             }
             
