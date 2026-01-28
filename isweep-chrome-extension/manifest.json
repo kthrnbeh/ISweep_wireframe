@@ -6,11 +6,12 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "storage",
-    "webRequest"
+    "storage"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "*://*.youtube.com/*",
+    "*://youtube.com/*",
+    "*://youtu.be/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -26,12 +27,6 @@
   },
   "options_page": "options.html",
   "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content-script.js"],
-      "all_frames": false,
-      "run_at": "document_idle"
-    },
     {
       "matches": [
         "*://*.youtube.com/*",
