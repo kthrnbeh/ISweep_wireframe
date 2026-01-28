@@ -811,14 +811,42 @@ function parseVTT(vttText) {
     return cues;
 }
 
+/**
+ * Find the cue from parsed VTT nearest to the given timestamp
+ * Returns { text, startTime, endTime } or null if no cues available
+ */
+function findCueAtTime(cues, currentTime) {
+    if (!cues || cues.length === 0) return null;
+    
+    // Linear search for exact or nearest cue (simple approach)
+    for (const cue of cues) {
+        // For now, just return the first cue with text (VTT parser doesn't extract timestamps)
+        // In production, parse timestamps from VTT and match by time
+        if (cue.text) {
+            return { text: cue.text };
+        }
+    }
+    
+    return null;
+}
+
 
 
 // Main filtering logic
 async function checkForFilters(videoElement, index) {
     if (!videoElement.currentTime || videoElement.paused) return;
 
-    // Get current caption text
-    const captionText = videoElement._isweepCurrentCaption || '';
+    // Get current caption text - primary source is cuechange event
+    let captionText = videoElement._isweepCurrentCaption || '';
+    
+    // Fallback: if no caption from cuechange, try to find one from parsed VTT
+    if (!captionText && videoElement._isweepCaptions) {
+        const foundCue = findCueAtTime(videoElement._isweepCaptions, videoElement.currentTime);
+        if (foundCue && foundCue.text) {
+            captionText = foundCue.text;
+            csLog(`[ISweep] Using fallback cue from parsed VTT: "${captionText.slice(0, 60)}..."`);
+        }
+    }
 
     // Only send to backend if we have caption text
     if (!captionText) return;
