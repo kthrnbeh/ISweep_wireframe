@@ -861,8 +861,7 @@ function monitorSpeechFallback() {
     }
 
     // Don't use speech fallback on YouTube (captions are handled separately by youtube-handler)
-    const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
-    if (isYT) {
+    if (isYouTubeHost()) {
         stopSpeechFallback();
         return;
     }
@@ -896,19 +895,13 @@ initializeFromStorage().then(() => {
     // Speech fallback monitor (single interval)
     setInterval(monitorSpeechFallback, 1000);
 
-    // Initialize YouTube handler if on YouTube
-    const isYT = typeof window.isYouTubePage === 'function' && window.isYouTubePage();
-    if (isYT) {
-        csLog('[ISweep] YouTube detected - initializing YouTube handlers');
-        if (typeof window.initYouTubeOnVideoChange === 'function') {
-            window.initYouTubeOnVideoChange();
-        }
-        if (typeof window.initYouTubeHandler === 'function') {
-            setTimeout(window.initYouTubeHandler, 1000);
-        }
+    // Note: YouTube handler initializes independently via manifest.json injection
+    // No cross-script communication needed; each script handles its own page type
+    if (isYouTubeHost()) {
+        csLog('[ISweep] YouTube detected - youtube-handler will initialize independently');
     }
 
-    csLog('[ISweep] Caption extraction enabled' + (isYT ? ' + YouTube support' : ''));
+    csLog('[ISweep] Caption extraction enabled' + (isYouTubeHost() ? ' + YouTube support' : ''));
 }).catch((err) => {
     csLog('[ISweep] Critical initialization error:', err);
 });
