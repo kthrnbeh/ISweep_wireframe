@@ -78,12 +78,23 @@ function clearHoldMute(reason) {
     holdMuteActive = false;
     holdMuteTerm = null;
     holdMuteSource = null;
-    if (isMuted) {
-        const videoElement = getActiveVideo();
-        if (videoElement) videoElement.muted = false;
+    
+    // Add grace period before unmuting to handle rapid-fire bad words
+    const gracePeriodMs = 300;
+    if (unmuteTimerId !== null) {
+        clearTimeout(unmuteTimerId);
     }
-    isMuted = false;
-    csLog('[ISweep] Hold-mute cleared', reason || '');
+    unmuteTimerId = setTimeout(() => {
+        if (!holdMuteActive && isMuted) {
+            const videoElement = getActiveVideo();
+            if (videoElement) videoElement.muted = false;
+            isMuted = false;
+            unmuteTimerId = null;
+            csLog('[ISweep] Unmuted after grace period');
+        }
+    }, gracePeriodMs);
+    
+    csLog('[ISweep] Hold-mute cleared, grace period active', reason || '');
 }
 
 /**
@@ -419,6 +430,13 @@ window.__isweepApplyDecision = function(decision) {
             if (hold_until_caption_clear && matched_term) {
                 const videoElement = getActiveVideo();
                 if (!videoElement) return;
+                
+                // Cancel any pending unmute grace period
+                if (unmuteTimerId !== null) {
+                    clearTimeout(unmuteTimerId);
+                    unmuteTimerId = null;
+                }
+                
                 videoElement.muted = true;
                 isMuted = true;
                 holdMuteActive = true;
