@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const DEFAULT_DURATION = {
-        language: 4,
+        language: 0.5,
         violence: 10,
         sexual: 30
     };

@@ -44,7 +44,7 @@ let lastSpeechErrorTs = 0; // Track speech fallback errors for cooldown
 let prefsByCategory = {
     language: {
         blocked_words: [],
-        duration_seconds: 3,
+        duration_seconds: 0.5,
         action: 'mute'
     }
 };
@@ -94,7 +94,7 @@ async function fetchPreferencesFromBackend() {
 
             nextPrefs[category] = {
                 blocked_words: blockedWords,
-                duration_seconds: Number(pref.duration_seconds ?? 3),
+                duration_seconds: Number(pref.duration_seconds ?? 0.5),
                 action: pref.action || 'mute'
             };
         });
@@ -104,7 +104,7 @@ async function fetchPreferencesFromBackend() {
             ...prefsByCategory,
             ...nextPrefs,
         };
-        prefsByCategory.language = prefsByCategory.language || { blocked_words: [], duration_seconds: 3, action: 'mute' };
+        prefsByCategory.language = prefsByCategory.language || { blocked_words: [], duration_seconds: 0.5, action: 'mute' };
 
         // Cache the unified prefsByCategory structure to localStorage
         await chrome.storage.local.set({ cachedPrefsByCategory: prefsByCategory });
@@ -157,7 +157,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.prefs) {
             prefsByCategory.language = {
                 blocked_words: message.prefs.blocked_words || [],
-                duration_seconds: message.prefs.duration_seconds || 3,
+                duration_seconds: message.prefs.duration_seconds || 0.5,
                 action: message.prefs.action || 'mute'
             };
             userId = message.prefs.user_id || userId;
@@ -219,7 +219,7 @@ function getActiveVideo() {
  * Returns { matched: true, word: "..." } or { matched: false }
  */
 function getLangPrefs() {
-    return prefsByCategory.language || { blocked_words: [], duration_seconds: 3, action: 'mute' };
+    return prefsByCategory.language || { blocked_words: [], duration_seconds: 0.5, action: 'mute' };
 }
 
 /**
@@ -250,7 +250,7 @@ function checkAllCategoriesForBlockedWords(text) {
                     category, 
                     word: blockedWord,
                     action: prefs.action || 'mute',
-                    duration_seconds: prefs.duration_seconds || 3
+                    duration_seconds: prefs.duration_seconds || 0.5
                 };
             }
         }
@@ -341,12 +341,13 @@ window.__isweepApplyDecision = function(decision) {
 
     const { action, duration_seconds, reason, matched_term } = decision;
     const langPrefs = getLangPrefs();
-    // Use backend duration if finite number, else prefs duration if finite, else 3
+    // Use backend duration if finite number, else prefs duration if finite, else fallback
     const backendDuration = Number(duration_seconds);
     const prefsDuration = Number(langPrefs.duration_seconds);
+    const fallbackDuration = action === 'mute' ? 0.5 : 3;
     const durationSeconds = Number.isFinite(backendDuration) ? backendDuration 
                           : Number.isFinite(prefsDuration) ? prefsDuration 
-                          : 3;
+                          : fallbackDuration;
     const duration = Math.max(0, durationSeconds);
     const durationMs = duration * 1000;
 
@@ -356,17 +357,10 @@ window.__isweepApplyDecision = function(decision) {
         case 'mute':
             const now = Date.now();
             
-            // If already muted with same term, ignore duplicate
-            if (isMuted && lastMutedPhrase === matched_term) {
-                csLog(`[ISweep] Already muted for term "${matched_term}", ignoring duplicate`);
+            // If already muted, don't extend the mute window
+            if (isMuted) {
+                csLog(`[ISweep] Already muted, skipping new mute for term "${matched_term}"`);
                 return;
-            }
-            
-            // If already muted with different term, allow but clear old timer first
-            if (isMuted && unmuteTimerId !== null) {
-                csLog(`[ISweep] Switching mute from term "${lastMutedPhrase}" to "${matched_term}", clearing old timer`);
-                clearTimeout(unmuteTimerId);
-                unmuteTimerId = null;
             }
             
             // Apply new mute
@@ -432,7 +426,7 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source }) {
         // Apply action immediately using category-specific settings
         window.__isweepApplyDecision({
             action: blockedCheck.action || 'mute',
-            duration_seconds: blockedCheck.duration_seconds || 3,
+            duration_seconds: blockedCheck.duration_seconds || 0.5,
             reason: `Matched blocked word in "${blockedCheck.category}": "${blockedCheck.word}"`,
             matched_term: blockedCheck.word,
             matched_category: blockedCheck.category
