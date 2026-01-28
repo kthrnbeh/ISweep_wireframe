@@ -40,8 +40,15 @@
                     type="text" 
                     id="backendUrl" 
                     placeholder="http://127.0.0.1:8001"
-                    value="http://127.0.0.1:8001"
                 >
+                <div id="backendUrlError" 
+                     style="
+                       color: #ef4444;
+                       font-size: 0.85rem;
+                       margin-top: 0.25rem;
+                       display: none;
+                     ">
+                </div>
             </section>
 
             <!-- Toggle Button -->
@@ -73,6 +80,6 @@
         </footer>
     </div>
 
-    <script src="popup.js"></script>
+    <script src="popup.js" defer></script>
 </body>
 </html>
