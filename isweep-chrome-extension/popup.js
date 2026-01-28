@@ -187,9 +187,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Clear stats (guarded)
     if (clearStatsBtn) {
         clearStatsBtn.addEventListener('click', async () => {
-            isweepPrefs.videosDetected = 0;
-            isweepPrefs.actionsApplied = 0;
-            await chrome.storage.local.set({ isweepPrefs });
+            videosDetected = 0;
+            actionsApplied = 0;
+            await chrome.storage.local.set({
+                videosDetected,
+                actionsApplied
+            });
             if (videosDetectedSpan) videosDetectedSpan.textContent = '0';
             if (actionsAppliedSpan) actionsAppliedSpan.textContent = '0';
         });
