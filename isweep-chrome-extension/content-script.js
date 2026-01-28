@@ -386,7 +386,7 @@ window.__isweepApplyDecision = function(decision) {
         return;
     }
 
-    const { action, duration_seconds, reason, matched_term, caption_end_seconds, timestamp_seconds } = decision;
+    const { action, duration_seconds, reason, matched_term, caption_end_seconds, timestamp_seconds, hold_until_caption_clear } = decision;
     const langPrefs = getLangPrefs();
     // Use backend duration if finite number, else prefs duration if finite, else fallback
     const backendDuration = Number(duration_seconds);
@@ -415,6 +415,31 @@ window.__isweepApplyDecision = function(decision) {
     switch (action) {
         case 'mute':
             const now = Date.now();
+
+            if (hold_until_caption_clear && matched_term) {
+                const videoElement = getActiveVideo();
+                if (!videoElement) return;
+                videoElement.muted = true;
+                isMuted = true;
+                holdMuteActive = true;
+                holdMuteTerm = matched_term;
+                holdMuteSource = 'youtube_dom';
+                lastMutedPhrase = matched_term;
+                appliedActions++;
+                // Safety cap in case captions stop updating
+                const maxHoldMs = 3000;
+                muteUntil = now + maxHoldMs;
+                if (holdMuteTimerId !== null) {
+                    clearTimeout(holdMuteTimerId);
+                }
+                holdMuteTimerId = setTimeout(() => {
+                    if (holdMuteActive) {
+                        clearHoldMute('hold cap reached');
+                    }
+                }, maxHoldMs);
+                csLog(`[ISweep] HOLD-MUTED: term "${matched_term}" (until caption clears)`);
+                return;
+            }
             
             // If already muted, only extend if this mute would last longer
             if (isMuted) {
