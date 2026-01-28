@@ -390,9 +390,28 @@ window.__isweepApplyDecision = function(decision) {
         case 'mute':
             const now = Date.now();
             
-            // If already muted, don't extend the mute window
+            // If already muted, only extend if this mute would last longer
             if (isMuted) {
-                csLog(`[ISweep] Already muted, skipping new mute for term "${matched_term}"`);
+                const now = Date.now();
+                const proposedUntil = now + durationMs;
+                if (proposedUntil > muteUntil) {
+                    csLog(`[ISweep] Extending mute for term "${matched_term}"`);
+                    muteUntil = proposedUntil;
+                    if (unmuteTimerId !== null) {
+                        clearTimeout(unmuteTimerId);
+                        unmuteTimerId = null;
+                    }
+                    unmuteTimerId = setTimeout(() => {
+                        if (Date.now() >= muteUntil) {
+                            videoElement.muted = false;
+                            isMuted = false;
+                            unmuteTimerId = null;
+                            csLog('[ISweep] UNMUTED after extended duration');
+                        }
+                    }, muteUntil - now);
+                } else {
+                    csLog(`[ISweep] Already muted, keeping existing duration for term "${matched_term}"`);
+                }
                 return;
             }
             
