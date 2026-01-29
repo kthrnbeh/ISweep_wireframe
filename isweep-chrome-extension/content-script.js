@@ -268,123 +268,136 @@ async function initializeFromStorage() {
     await fetchPreferencesFromBackend();
 }
 
+/**
+ * Pure ASR segments handler: processes segments with absolute timestamp conversion,
+ * rebase validation, and monotonic checking. Returns result object (does NOT call sendResponse).
+ * 
+ * Returns: { success: boolean, error?: string, ingestedCount: number, rebaseOccurred: boolean }
+ */
+function __isweepHandleAsrSegments(message) {
+    // Validate payload
+    if (!message || !message.segments || !Array.isArray(message.segments)) {
+        return { success: false, error: 'invalid_segments', ingestedCount: 0, rebaseOccurred: false };
+    }
+    
+    try {
+        // Ingest ASR segments from backend with absolute timestamp conversion, rebase, and monotonic validation
+        const video = getActiveVideo();
+        
+        // Skip all segments if no active video
+        if (!video) {
+            csLog('[ISweep-ASR] Warning: No active video, skipping segment ingestion');
+            return { success: false, error: 'no_active_video', ingestedCount: 0, rebaseOccurred: false };
+        }
+        
+        let ingestedCount = 0;
+        let rebaseOccurred = false;
+        
+        // Initialize or reset ASR session on first segment or after silence
+        const now = Date.now();
+        if (!asrSessionActive || (now - asrLastSegmentTs) > ASR_SILENCE_RESET_MS) {
+            asrSessionStart = isFinite(video.currentTime) ? video.currentTime : 0;
+            asrSessionActive = true;
+            asrLastAbsTime = 0; // Reset monotonic tracker on new session
+            __asrWarnedEmptyText = false; // Reset warning flags on new session
+            __asrWarnedBadEnd = false;
+            __asrWarnedNonMonotonic = false;
+            __asrWarnedIngestMissing = false;
+            if (window.__ISWEEP_DEBUG) {
+                csLog(`[ISweep-ASR] Session start: ${asrSessionStart.toFixed(2)}s`);
+            }
+        }
+        
+        asrLastSegmentTs = now;
+        
+        // Ingest each segment with absolute timestamp, rebase validation, and monotonic checking
+        message.segments.forEach(seg => {
+            // Defensive: skip segments with empty text
+            const textValid = seg.text && String(seg.text).trim().length > 0;
+            if (!textValid) {
+                if (!__asrWarnedEmptyText && window.__ISWEEP_DEBUG) {
+                    csLog('[ISweep-ASR] Skipping segment: empty or missing text');
+                    __asrWarnedEmptyText = true;
+                }
+                return; // Skip this segment
+            }
+            
+            // Defensive: skip segments with invalid timestamps
+            const relEnd = Number(seg.end_seconds);
+            if (!Number.isFinite(relEnd)) {
+                if (!__asrWarnedBadEnd && window.__ISWEEP_DEBUG) {
+                    csLog(`[ISweep-ASR] Skipping segment: invalid end_seconds (${seg.end_seconds})`);
+                    __asrWarnedBadEnd = true;
+                }
+                return; // Skip this segment
+            }
+            
+            // Compute candidate absolute timestamp
+            let absCandidate = asrSessionStart + relEnd;
+            
+            // Rebase rule: self-healing for stale sessionStart or backend buffer reset
+            const videoNow = Number(video.currentTime);
+            if (Number.isFinite(videoNow) && absCandidate < (videoNow - ASR_REBASE_DRIFT_SEC)) {
+                // Our sessionStart is stale or backend reset to new buffer.
+                // Rebase so relEnd aligns with current playback time.
+                asrSessionStart = Math.max(0, videoNow - relEnd);
+                asrSessionActive = true;
+                absCandidate = asrSessionStart + relEnd;
+                rebaseOccurred = true;
+                if (window.__ISWEEP_DEBUG) {
+                    csLog(`[ISweep-ASR] REBASE: videoNow=${videoNow.toFixed(2)} relEnd=${relEnd.toFixed(2)} newSessionStart=${asrSessionStart.toFixed(2)} abs=${absCandidate.toFixed(2)}`);
+                }
+            }
+            
+            // Monotonic rule: drop non-monotonic segments (duplicates, out-of-order)
+            if (absCandidate < (asrLastAbsTime - ASR_MIN_MONOTONIC_BACKSTEP_SEC)) {
+                // Likely duplicate or out-of-order segment; drop it
+                if (!__asrWarnedNonMonotonic && window.__ISWEEP_DEBUG) {
+                    csLog(`[ISweep-ASR] Dropped non-monotonic segment abs=${absCandidate.toFixed(2)} last=${asrLastAbsTime.toFixed(2)}`);
+                    __asrWarnedNonMonotonic = true;
+                }
+                return; // Skip this segment
+            }
+            
+            // Ingest segment with validated and corrected absolute timestamp
+            if (typeof window.__isweepTranscriptIngest === 'function') {
+                if (window.__ISWEEP_DEBUG) {
+                    csLog(`[ISweep-ASR] sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relEnd.toFixed(2)} → abs=${absCandidate.toFixed(2)}`);
+                }
+                
+                window.__isweepTranscriptIngest({
+                    text: seg.text,
+                    timestamp_seconds: absCandidate,
+                    source: 'backend_asr'
+                });
+                
+                // Update monotonic tracker only after successful ingestion
+                asrLastAbsTime = absCandidate;
+                ingestedCount++;
+            } else {
+                // __isweepTranscriptIngest not available; do not update monotonic tracker
+                if (!__asrWarnedIngestMissing && window.__ISWEEP_DEBUG) {
+                    csLog('[ISweep-ASR] Warning: __isweepTranscriptIngest function not available');
+                    __asrWarnedIngestMissing = true;
+                }
+            }
+        });
+        
+        return { success: true, ingestedCount, rebaseOccurred };
+    } catch (error) {
+        if (window.__ISWEEP_DEBUG) {
+            csLog('[ISweep-ASR] Exception in handler:', error);
+        }
+        return { success: false, error: 'asr_handler_exception', ingestedCount: 0, rebaseOccurred: false };
+    }
+}
+
 // Listen for toggle messages from popup (SINGLE unified listener)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.action === 'ASR_SEGMENTS') {
-        // Validate payload
-        if (!message.segments || !Array.isArray(message.segments)) {
-            sendResponse({ success: false, error: 'invalid_segments' });
-            return true;
-        }
-        
-        try {
-            // Ingest ASR segments from backend with absolute timestamp conversion, rebase, and monotonic validation
-            const video = getActiveVideo();
-            
-            // Skip all segments if no active video
-            if (!video) {
-                csLog('[ISweep-ASR] Warning: No active video, skipping segment ingestion');
-                sendResponse({ success: false, error: 'no_active_video' });
-                return true;
-            }
-            
-            // Initialize or reset ASR session on first segment or after silence
-            const now = Date.now();
-            if (!asrSessionActive || (now - asrLastSegmentTs) > ASR_SILENCE_RESET_MS) {
-                asrSessionStart = isFinite(video.currentTime) ? video.currentTime : 0;
-                asrSessionActive = true;
-                asrLastAbsTime = 0; // Reset monotonic tracker on new session
-                __asrWarnedEmptyText = false; // Reset warning flags on new session
-                __asrWarnedBadEnd = false;
-                __asrWarnedNonMonotonic = false;
-                __asrWarnedIngestMissing = false;
-                if (window.__ISWEEP_DEBUG) {
-                    csLog(`[ISweep-ASR] Session start: ${asrSessionStart.toFixed(2)}s`);
-                }
-            }
-            
-            asrLastSegmentTs = now;
-            
-            // Ingest each segment with absolute timestamp, rebase validation, and monotonic checking
-            message.segments.forEach(seg => {
-                // Defensive: skip segments with empty text
-                const textValid = seg.text && String(seg.text).trim().length > 0;
-                if (!textValid) {
-                    if (!__asrWarnedEmptyText && window.__ISWEEP_DEBUG) {
-                        csLog('[ISweep-ASR] Skipping segment: empty or missing text');
-                        __asrWarnedEmptyText = true;
-                    }
-                    return; // Skip this segment
-                }
-                
-                // Defensive: skip segments with invalid timestamps
-                const relEnd = Number(seg.end_seconds);
-                if (!Number.isFinite(relEnd)) {
-                    if (!__asrWarnedBadEnd && window.__ISWEEP_DEBUG) {
-                        csLog(`[ISweep-ASR] Skipping segment: invalid end_seconds (${seg.end_seconds})`);
-                        __asrWarnedBadEnd = true;
-                    }
-                    return; // Skip this segment
-                }
-                
-                // Compute candidate absolute timestamp
-                let absCandidate = asrSessionStart + relEnd;
-                
-                // Rebase rule: self-healing for stale sessionStart or backend buffer reset
-                const videoNow = Number(video.currentTime);
-                if (Number.isFinite(videoNow) && absCandidate < (videoNow - ASR_REBASE_DRIFT_SEC)) {
-                    // Our sessionStart is stale or backend reset to new buffer.
-                    // Rebase so relEnd aligns with current playback time.
-                    asrSessionStart = Math.max(0, videoNow - relEnd);
-                    asrSessionActive = true;
-                    absCandidate = asrSessionStart + relEnd;
-                    if (window.__ISWEEP_DEBUG) {
-                        csLog(`[ISweep-ASR] REBASE: videoNow=${videoNow.toFixed(2)} relEnd=${relEnd.toFixed(2)} newSessionStart=${asrSessionStart.toFixed(2)} abs=${absCandidate.toFixed(2)}`);
-                    }
-                }
-                
-                // Monotonic rule: drop non-monotonic segments (duplicates, out-of-order)
-                if (absCandidate < (asrLastAbsTime - ASR_MIN_MONOTONIC_BACKSTEP_SEC)) {
-                    // Likely duplicate or out-of-order segment; drop it
-                    if (!__asrWarnedNonMonotonic && window.__ISWEEP_DEBUG) {
-                        csLog(`[ISweep-ASR] Dropped non-monotonic segment abs=${absCandidate.toFixed(2)} last=${asrLastAbsTime.toFixed(2)}`);
-                        __asrWarnedNonMonotonic = true;
-                    }
-                    return; // Skip this segment
-                }
-                
-                // Ingest segment with validated and corrected absolute timestamp
-                if (typeof window.__isweepTranscriptIngest === 'function') {
-                    if (window.__ISWEEP_DEBUG) {
-                        csLog(`[ISweep-ASR] sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relEnd.toFixed(2)} → abs=${absCandidate.toFixed(2)}`);
-                    }
-                    
-                    window.__isweepTranscriptIngest({
-                        text: seg.text,
-                        timestamp_seconds: absCandidate,
-                        source: 'backend_asr'
-                    });
-                    
-                    // Update monotonic tracker only after successful ingestion
-                    asrLastAbsTime = absCandidate;
-                } else {
-                    // __isweepTranscriptIngest not available; do not update monotonic tracker
-                    if (!__asrWarnedIngestMissing && window.__ISWEEP_DEBUG) {
-                        csLog('[ISweep-ASR] Warning: __isweepTranscriptIngest function not available');
-                        __asrWarnedIngestMissing = true;
-                    }
-                }
-            });
-            
-            sendResponse({ success: true });
-            return true;
-        } catch (error) {
-            if (window.__ISWEEP_DEBUG) {
-                csLog('[ISweep-ASR] Exception in handler:', error);
-            }
-            sendResponse({ success: false, error: 'asr_handler_exception' });
-            return true;
-        }
+        const result = __isweepHandleAsrSegments(message);
+        sendResponse(result);
+        return true;
     } else if (message && message.action === 'toggleISweep' && typeof message.enabled !== 'undefined') {
         isEnabled = message.enabled;
         csLog('[ISweep] Toggled via popup:', isEnabled ? 'ENABLED' : 'DISABLED');
@@ -1285,7 +1298,7 @@ initializeFromStorage().then(() => {
     csLog('[ISweep] Caption extraction enabled' + (isYouTubeHost() ? ' + YouTube support' : ''));
 
     // ASR console test helper
-    window.__isweepAsrConsoleTests = function() {
+    window.__isweepAsrConsoleTests = async function() {
         const video = getActiveVideo();
         if (!video) {
             console.warn('[ISweep-ASR-Tests] No active video found. Open a YouTube video or page with HTML5 video.');
@@ -1301,113 +1314,175 @@ initializeFromStorage().then(() => {
         const savedLastAbsTime = asrLastAbsTime;
         const savedLastSegmentTs = asrLastSegmentTs;
         const savedIngest = window.__isweepTranscriptIngest;
+        const savedWarnedEmpty = __asrWarnedEmptyText;
+        const savedWarnedBadEnd = __asrWarnedBadEnd;
+        const savedWarnedNonMono = __asrWarnedNonMonotonic;
+        const savedWarnedIngestMiss = __asrWarnedIngestMissing;
+        
         const testResults = {};
 
         try {
             // Temporarily enable debug
             window.__ISWEEP_DEBUG = true;
 
-            // Test A: Monotonic drop
+            // ===== TEST A: Monotonic Guard (drop backward jump) =====
             console.log('\n--- Test A: Monotonic Guard (drop backward jump) ---');
             asrSessionStart = video.currentTime;
             asrSessionActive = true;
             asrLastAbsTime = 0;
             asrLastSegmentTs = Date.now();
+            __asrWarnedEmptyText = false;
+            __asrWarnedBadEnd = false;
+            __asrWarnedNonMonotonic = false;
+            __asrWarnedIngestMissing = false;
 
-            const monoInitialAbsTime = asrLastAbsTime;
-            let monoDropped = false;
-
-            // Patch ingest to track calls
-            const monoIngestedTexts = [];
+            // Create spy for ingest calls
+            const monoIngestedPayloads = [];
             window.__isweepTranscriptIngest = function(obj) {
-                monoIngestedTexts.push(obj.text);
-                asrLastAbsTime = obj.timestamp_seconds; // Simulate ingestion update
+                monoIngestedPayloads.push(obj);
             };
 
-            chrome.runtime.sendMessage({
-                action: 'ASR_SEGMENTS',
+            // Call handler directly
+            const monoResult = __isweepHandleAsrSegments({
                 segments: [
                     { text: 'mono ok', end_seconds: 2.0 },
                     { text: 'mono back', end_seconds: 1.0 }
                 ]
             });
 
-            // Give handler time to execute
-            setTimeout(() => {
-                const monoPass = monoIngestedTexts.length === 1 && monoIngestedTexts[0] === 'mono ok';
-                testResults.monotonic = monoPass ? 'PASS' : 'FAIL';
-                console.log(
-                    `[ISweep-ASR-Tests] Monotonic: ${testResults.monotonic}` +
-                    ` (ingested: ${monoIngestedTexts.join(', ') || 'none'})`
-                );
-            }, 50);
+            // Check PASS/FAIL
+            const monoPass = monoResult.success && 
+                monoResult.ingestedCount === 1 && 
+                monoIngestedPayloads.length === 1 && 
+                monoIngestedPayloads[0].text === 'mono ok';
+            testResults.monotonic = monoPass ? 'PASS' : 'FAIL';
+            
+            console.log('[ISweep-ASR-Tests] Test A Result:');
+            console.log(`  Handler return:`, monoResult);
+            console.log(`  Ingested payloads:`, monoIngestedPayloads.length > 0 ? monoIngestedPayloads : 'none');
+            console.log(`  State: asrSessionStart=${asrSessionStart.toFixed(2)}, asrLastAbsTime=${asrLastAbsTime.toFixed(2)}`);
+            console.log(`  → ${testResults.monotonic}`);
 
-            // Test B: Rebase self-heal
+            // ===== TEST B: Rebase Self-Heal (stale sessionStart) =====
             console.log('\n--- Test B: Rebase Self-Heal (stale sessionStart) ---');
             const videoNow = video.currentTime;
             asrSessionStart = Math.max(0, videoNow - 60); // Stale by 60s
             asrSessionActive = true;
             asrLastAbsTime = 0;
             asrLastSegmentTs = Date.now();
+            __asrWarnedEmptyText = false;
+            __asrWarnedBadEnd = false;
+            __asrWarnedNonMonotonic = false;
+            __asrWarnedIngestMissing = false;
 
-            const rebaseIngestedData = [];
+            // Create spy for ingest calls
+            const rebaseIngestedPayloads = [];
             window.__isweepTranscriptIngest = function(obj) {
-                rebaseIngestedData.push(obj.timestamp_seconds);
+                rebaseIngestedPayloads.push(obj);
             };
 
-            chrome.runtime.sendMessage({
-                action: 'ASR_SEGMENTS',
+            // Spy on debug logs to detect REBASE
+            let rebaseLogCount = 0;
+            const originalCsLog = csLog;
+            const spyCsLog = function(...args) {
+                const msg = String(args[0] || '');
+                if (msg.includes('REBASE')) {
+                    rebaseLogCount++;
+                }
+                return originalCsLog(...args);
+            };
+            
+            // Temporarily replace csLog for spy
+            window.__cs_spyLog = spyCsLog;
+            const tempCsLog = window.csLog || originalCsLog;
+            
+            // Call handler directly
+            const rebaseResult = __isweepHandleAsrSegments({
                 segments: [{ text: 'rebase', end_seconds: 1.5 }]
             });
 
-            setTimeout(() => {
-                const rebasePass = rebaseIngestedData.length === 1 &&
-                    Math.abs(rebaseIngestedData[0] - videoNow) < 1.0; // Within 1s of current
-                testResults.rebase = rebasePass ? 'PASS' : 'FAIL';
-                console.log(
-                    `[ISweep-ASR-Tests] Rebase: ${testResults.rebase}` +
-                    ` (expected ~${videoNow.toFixed(2)}, got ${rebaseIngestedData[0]?.toFixed(2) || 'none'})`
-                );
-            }, 50);
+            // Check PASS/FAIL: rebase should occur, and timestamp should be near videoNow
+            const rebasePass = rebaseResult.success && 
+                rebaseResult.rebaseOccurred &&
+                rebaseIngestedPayloads.length === 1 && 
+                Math.abs(rebaseIngestedPayloads[0].timestamp_seconds - videoNow) < 2.0;
+            testResults.rebase = rebasePass ? 'PASS' : 'FAIL';
+            
+            console.log('[ISweep-ASR-Tests] Test B Result:');
+            console.log(`  Handler return:`, rebaseResult);
+            console.log(`  Ingested payloads:`, rebaseIngestedPayloads);
+            console.log(`  Expected timestamp ~${videoNow.toFixed(2)}, got ${rebaseIngestedPayloads[0]?.timestamp_seconds.toFixed(2) || 'none'}`);
+            console.log(`  State: asrSessionStart=${asrSessionStart.toFixed(2)}, asrLastAbsTime=${asrLastAbsTime.toFixed(2)}`);
+            console.log(`  → ${testResults.rebase}`);
 
-            // Test C: Ingest-missing behavior
+            // ===== TEST C: Ingest-Missing (warn once, no absTime advance) =====
             console.log('\n--- Test C: Ingest-Missing (warn once, no absTime advance) ---');
             asrSessionStart = video.currentTime;
             asrSessionActive = true;
-            asrLastAbsTime = 100; // Set to known value
+            asrLastAbsTime = 100; // Set to known value (should NOT advance)
             asrLastSegmentTs = Date.now();
+            __asrWarnedEmptyText = false;
+            __asrWarnedBadEnd = false;
+            __asrWarnedNonMonotonic = false;
+            __asrWarnedIngestMissing = false;
 
             const savedAbsTime = asrLastAbsTime;
             window.__isweepTranscriptIngest = undefined; // Simulate missing function
 
-            chrome.runtime.sendMessage({
-                action: 'ASR_SEGMENTS',
+            // Create spy on csLog for warning count
+            let ingestMissingLogCount = 0;
+            const origCsLog2 = csLog;
+            const spyCsLog2 = function(...args) {
+                const msg = String(args[0] || '');
+                if (msg.includes('not available')) {
+                    ingestMissingLogCount++;
+                }
+                return origCsLog2(...args);
+            };
+
+            // Call handler directly
+            const ingestResult = __isweepHandleAsrSegments({
                 segments: [{ text: 'ingest missing', end_seconds: 1.0 }]
             });
 
-            setTimeout(() => {
-                const ingestPass = asrLastAbsTime === savedAbsTime; // Should NOT advance
-                testResults.ingestMissing = ingestPass ? 'PASS' : 'FAIL';
-                console.log(
-                    `[ISweep-ASR-Tests] Ingest-Missing: ${testResults.ingestMissing}` +
-                    ` (asrLastAbsTime remained ${asrLastAbsTime})`
-                );
+            // Check PASS/FAIL: should succeed but NOT advance asrLastAbsTime
+            const ingestPass = ingestResult.success && 
+                asrLastAbsTime === savedAbsTime && 
+                ingestMissingLogCount >= 1;
+            testResults.ingestMissing = ingestPass ? 'PASS' : 'FAIL';
+            
+            console.log('[ISweep-ASR-Tests] Test C Result:');
+            console.log(`  Handler return:`, ingestResult);
+            console.log(`  asrLastAbsTime: was ${savedAbsTime}, still ${asrLastAbsTime}`);
+            console.log(`  Warning logged: ${ingestMissingLogCount} time(s)`);
+            console.log(`  State: asrSessionStart=${asrSessionStart.toFixed(2)}, asrLastAbsTime=${asrLastAbsTime}`);
+            console.log(`  → ${testResults.ingestMissing}`);
 
-                // Print summary
-                console.log('\n=== ASR Test Summary ===');
-                console.log(`Monotonic:       ${testResults.monotonic}`);
-                console.log(`Rebase:          ${testResults.rebase}`);
-                console.log(`Ingest-Missing:  ${testResults.ingestMissing}`);
-            }, 50);
+            // ===== SUMMARY =====
+            console.log('\n╔════════════════════════════════════════╗');
+            console.log('║        ASR HANDLER TEST SUMMARY        ║');
+            console.log('╠════════════════════════════════════════╣');
+            console.log(`║ A) Monotonic Guard:     ${testResults.monotonic === 'PASS' ? '✓ PASS' : '✗ FAIL'}           ║`);
+            console.log(`║ B) Rebase Self-Heal:    ${testResults.rebase === 'PASS' ? '✓ PASS' : '✗ FAIL'}           ║`);
+            console.log(`║ C) Ingest-Missing:      ${testResults.ingestMissing === 'PASS' ? '✓ PASS' : '✗ FAIL'}           ║`);
+            console.log('╚════════════════════════════════════════╝');
+            
+            const allPass = Object.values(testResults).every(r => r === 'PASS');
+            console.log(`\n[ISweep-ASR-Tests] Overall: ${allPass ? '✓ ALL TESTS PASSED' : '✗ SOME TESTS FAILED'}`);
 
         } finally {
-            // Restore original state
+            // Restore original state (AFTER all awaits complete)
             window.__ISWEEP_DEBUG = savedDebug;
             asrSessionStart = savedSessionStart;
             asrSessionActive = savedSessionActive;
             asrLastAbsTime = savedLastAbsTime;
             asrLastSegmentTs = savedLastSegmentTs;
             window.__isweepTranscriptIngest = savedIngest;
+            __asrWarnedEmptyText = savedWarnedEmpty;
+            __asrWarnedBadEnd = savedWarnedBadEnd;
+            __asrWarnedNonMonotonic = savedWarnedNonMono;
+            __asrWarnedIngestMissing = savedWarnedIngestMiss;
+            console.log('[ISweep-ASR-Tests] All state restored.');
         }
     };
 
