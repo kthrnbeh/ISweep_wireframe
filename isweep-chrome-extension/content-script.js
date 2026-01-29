@@ -348,6 +348,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             isMuted = false;
             lastMutedTerm = null;
             muteUntil = 0;
+            
+            // Reset ASR session state
+            asrSessionStart = 0;
+            asrSessionActive = false;
+            asrLastSegmentTs = 0;
         }
         
         sendResponse({ success: true });
@@ -381,6 +386,11 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
             isMuted = false;
             lastMutedTerm = null;
             muteUntil = 0;
+            
+            // Reset ASR session state
+            asrSessionStart = 0;
+            asrSessionActive = false;
+            asrLastSegmentTs = 0;
         }
     }
     
