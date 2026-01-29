@@ -33,7 +33,7 @@
         "*://youtube.com/*",
         "*://youtu.be/*"
       ],
-      "js": ["youtube-handler.js"],
+      "js": ["content-script.js", "youtube-handler.js"],
       "all_frames": false,
       "run_at": "document_idle"
     },
