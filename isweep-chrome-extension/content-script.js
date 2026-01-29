@@ -41,6 +41,12 @@ let speechActive = false;
 let speechVideoRef = null;
 let speechUnsupportedLogged = false;
 let lastSpeechErrorTs = 0; // Track speech fallback errors for cooldown
+
+// ASR session timing (for absolute video timestamp conversion)
+let asrSessionStart = null; // Video time when ASR session started
+let asrLastSegmentTime = 0; // Timestamp of last segment (for session reset detection)
+const ASR_SESSION_TIMEOUT_MS = 35000; // Reset session if no segments for 35s
+
 // In-memory preferences organized by category
 let prefsByCategory = {
     language: {
@@ -257,13 +263,36 @@ async function initializeFromStorage() {
 // Listen for toggle messages from popup (SINGLE unified listener)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.action === 'ASR_SEGMENTS') {
-        // Ingest ASR segments from backend
+        // Ingest ASR segments from backend with timestamp correction
         if (message.segments && Array.isArray(message.segments)) {
+            const now = Date.now();
+            const video = getActiveVideo();
+            
+            // Initialize or reset ASR session start time
+            if (!asrSessionStart || (now - asrLastSegmentTime) > ASR_SESSION_TIMEOUT_MS) {
+                // New session or session timed out - capture current video time
+                if (video && !video.paused) {
+                    asrSessionStart = video.currentTime;
+                    csLog(`[ASR] Session start captured: ${asrSessionStart.toFixed(2)}s`);
+                } else {
+                    asrSessionStart = 0;
+                    csLog('[ASR] Warning: No active video, using sessionStart=0');
+                }
+            }
+            
+            asrLastSegmentTime = now;
+            
             message.segments.forEach(seg => {
                 if (seg.text && typeof window.__isweepTranscriptIngest === 'function') {
+                    // Convert relative timestamp to absolute video time
+                    const relativeTime = seg.end_seconds || seg.start_seconds || 0;
+                    const absoluteTime = asrSessionStart + relativeTime;
+                    
+                    csLog(`[ASR] sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relativeTime.toFixed(2)} → abs=${absoluteTime.toFixed(2)}`);
+                    
                     window.__isweepTranscriptIngest({
                         text: seg.text,
-                        timestamp_seconds: seg.end_seconds || seg.start_seconds || 0,
+                        timestamp_seconds: absoluteTime,
                         source: 'backend_asr'
                     });
                 }
