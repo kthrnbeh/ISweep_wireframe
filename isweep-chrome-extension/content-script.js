@@ -325,7 +325,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 let absCandidate = asrSessionStart + relEnd;
                 
                 // Rebase rule: self-healing for stale sessionStart or backend buffer reset
-                const videoNow = video.currentTime;
+                const videoNow = Number(video.currentTime);
                 if (Number.isFinite(videoNow) && absCandidate < (videoNow - ASR_REBASE_DRIFT_SEC)) {
                     // Our sessionStart is stale or backend reset to new buffer.
                     // Rebase so relEnd aligns with current playback time.
