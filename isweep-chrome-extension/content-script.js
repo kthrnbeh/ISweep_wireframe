@@ -53,6 +53,7 @@ const ASR_MIN_MONOTONIC_BACKSTEP_SEC = 0.25; // Allow tiny ordering jitter, not 
 let __asrWarnedEmptyText = false; // Track if we've logged empty text warning
 let __asrWarnedBadEnd = false; // Track if we've logged invalid timestamp warning
 let __asrWarnedNonMonotonic = false; // Track if we've logged non-monotonic segment warning
+let __asrWarnedIngestMissing = false; // Track if we've logged missing ingest function warning
 
 // In-memory preferences organized by category
 let prefsByCategory = {
@@ -290,6 +291,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 __asrWarnedEmptyText = false; // Reset warning flags on new session
                 __asrWarnedBadEnd = false;
                 __asrWarnedNonMonotonic = false;
+                __asrWarnedIngestMissing = false;
                 if (window.__ISWEEP_DEBUG) {
                     csLog(`[ISweep-ASR] Session start: ${asrSessionStart.toFixed(2)}s`);
                 }
@@ -345,9 +347,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     return; // Skip this segment
                 }
                 
-                // Update monotonic tracker
-                asrLastAbsTime = absCandidate;
-                
                 // Ingest segment with validated and corrected absolute timestamp
                 if (typeof window.__isweepTranscriptIngest === 'function') {
                     if (window.__ISWEEP_DEBUG) {
@@ -359,6 +358,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         timestamp_seconds: absCandidate,
                         source: 'backend_asr'
                     });
+                    
+                    // Update monotonic tracker only after successful ingestion
+                    asrLastAbsTime = absCandidate;
+                } else {
+                    // __isweepTranscriptIngest not available; do not update monotonic tracker
+                    if (!__asrWarnedIngestMissing && window.__ISWEEP_DEBUG) {
+                        csLog('[ISweep-ASR] Warning: __isweepTranscriptIngest function not available');
+                        __asrWarnedIngestMissing = true;
+                    }
                 }
             });
         }
