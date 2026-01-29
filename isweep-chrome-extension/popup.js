@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // Guard: Check for all required elements
     const toggleButton = document.getElementById('toggleButton');
+    const asrToggle = document.getElementById('asrToggle');
     const statusIndicator = document.getElementById('statusIndicator');
     const statusText = document.getElementById('statusText');
     const userIdInput = document.getElementById('userIdInput');
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Validate all required elements exist
     const requiredElements = {
         toggleButton,
+        asrToggle,
         statusIndicator,
         statusText,
         userIdInput,
@@ -40,16 +42,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Load state from Chrome storage
-    // isweepPrefs: stores user_id, backendUrl, and filter config
-    // isweep_enabled, videosDetected, actionsApplied: separate top-level keys
-    let { isweepPrefs, isweep_enabled, videosDetected, actionsApplied } = await chrome.storage.local.get([
+    let { isweepPrefs, isweep_enabled, isweep_asr_enabled, videosDetected, actionsApplied } = await chrome.storage.local.get([
         'isweepPrefs',
         'isweep_enabled',
+        'isweep_asr_enabled',
         'videosDetected',
         'actionsApplied'
     ]);
 
-    console.log('[ISweep-Popup] Loaded state from storage:', { isweepPrefs, isweep_enabled, videosDetected, actionsApplied });
+    console.log('[ISweep-Popup] Loaded state from storage:', { isweepPrefs, isweep_enabled, isweep_asr_enabled, videosDetected, actionsApplied });
 
     // Initialize isweepPrefs with defaults if not set
     isweepPrefs = isweepPrefs || {
@@ -62,12 +63,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize other state with defaults
     isweep_enabled = Boolean(isweep_enabled);
+    isweep_asr_enabled = Boolean(isweep_asr_enabled);
     videosDetected = videosDetected || 0;
     actionsApplied = actionsApplied || 0;
 
     // Set initial values in UI
     userIdInput.value = isweepPrefs.user_id || 'user123';
     backendUrlInput.value = isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
+    asrToggle.checked = isweep_asr_enabled;
     videosDetectedSpan.textContent = videosDetected;
     actionsAppliedSpan.textContent = actionsApplied;
 
@@ -155,6 +158,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // ASR toggle handler
+    if (asrToggle) {
+        asrToggle.addEventListener('change', async () => {
+            isweep_asr_enabled = asrToggle.checked;
+            await chrome.storage.local.set({ isweep_asr_enabled });
+            console.log('[ISweep-Popup] ASR toggled to:', isweep_asr_enabled);
+        });
+    }
+
     // Save user ID on input change (guarded)
     if (userIdInput) {
         userIdInput.addEventListener('change', async () => {
@@ -199,40 +211,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Listen for updates from background script or other parts of extension
-    // Updates popup UI immediately when storage changes
     chrome.storage.onChanged.addListener((changes, areaName) => {
         if (areaName !== 'local') return;
 
-        // Handle isweepPrefs changes (user_id, backendUrl, filter config)
+        // Handle isweepPrefs changes
         if (changes.isweepPrefs) {
             const updated = changes.isweepPrefs.newValue;
             if (updated) {
                 isweepPrefs = updated;
-                // Update all preference-related UI elements
                 if (userIdInput) userIdInput.value = isweepPrefs.user_id || 'user123';
                 if (backendUrlInput) backendUrlInput.value = isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
-                // Clear any validation errors when prefs change externally
                 showBackendUrlError('');
                 console.log('[ISweep-Popup] Updated from isweepPrefs:', isweepPrefs);
             }
         }
 
-        // Handle isweep_enabled changes (toggle state)
-        // This updates: status dot (active/inactive), status text, and toggle button label
+        // Handle isweep_enabled changes
         if (changes.isweep_enabled) {
             isweep_enabled = Boolean(changes.isweep_enabled.newValue);
             updateUI(isweep_enabled);
             console.log('[ISweep-Popup] Updated enabled state from isweep_enabled:', isweep_enabled);
         }
 
-        // Handle videosDetected changes (stats counter)
+        // Handle isweep_asr_enabled changes
+        if (changes.isweep_asr_enabled) {
+            isweep_asr_enabled = Boolean(changes.isweep_asr_enabled.newValue);
+            asrToggle.checked = isweep_asr_enabled;
+            console.log('[ISweep-Popup] Updated ASR state from isweep_asr_enabled:', isweep_asr_enabled);
+        }
+
+        // Handle videosDetected changes
         if (changes.videosDetected && videosDetectedSpan) {
             videosDetected = changes.videosDetected.newValue;
             videosDetectedSpan.textContent = videosDetected || 0;
             console.log('[ISweep-Popup] Updated videosDetected:', videosDetected);
         }
 
-        // Handle actionsApplied changes (stats counter)
+        // Handle actionsApplied changes
         if (changes.actionsApplied && actionsAppliedSpan) {
             actionsApplied = changes.actionsApplied.newValue;
             actionsAppliedSpan.textContent = actionsApplied || 0;
