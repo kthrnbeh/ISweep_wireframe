@@ -410,6 +410,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             asrSessionStart = 0;
             asrSessionActive = false;
             asrLastSegmentTs = 0;
+            asrLastAbsTime = 0;
         }
         
         sendResponse({ success: true });
