@@ -1328,7 +1328,8 @@ initializeFromStorage().then(() => {
 
             // ===== TEST A: Monotonic Guard (drop backward jump) =====
             console.log('\n--- Test A: Monotonic Guard (drop backward jump) ---');
-            asrSessionStart = video.currentTime;
+            const videoNowA = Number(video.currentTime);
+            asrSessionStart = Number.isFinite(videoNowA) ? videoNowA : 0;
             asrSessionActive = true;
             asrLastAbsTime = 0;
             asrLastSegmentTs = Date.now();
@@ -1366,8 +1367,9 @@ initializeFromStorage().then(() => {
 
             // ===== TEST B: Rebase Self-Heal (stale sessionStart) =====
             console.log('\n--- Test B: Rebase Self-Heal (stale sessionStart) ---');
-            const videoNow = video.currentTime;
-            asrSessionStart = Math.max(0, videoNow - 60); // Stale by 60s
+            const videoNow = Number(video.currentTime);
+            const videoNowSafe = Number.isFinite(videoNow) ? videoNow : 0;
+            asrSessionStart = Math.max(0, videoNowSafe - 60); // Stale by 60s
             asrSessionActive = true;
             asrLastAbsTime = 0;
             asrLastSegmentTs = Date.now();
@@ -1418,7 +1420,8 @@ initializeFromStorage().then(() => {
 
             // ===== TEST C: Ingest-Missing (warn once, no absTime advance) =====
             console.log('\n--- Test C: Ingest-Missing (warn once, no absTime advance) ---');
-            asrSessionStart = video.currentTime;
+            const videoNowC = Number(video.currentTime);
+            asrSessionStart = Number.isFinite(videoNowC) ? videoNowC : 0;
             asrSessionActive = true;
             asrLastAbsTime = 100; // Set to known value (should NOT advance)
             asrLastSegmentTs = Date.now();
