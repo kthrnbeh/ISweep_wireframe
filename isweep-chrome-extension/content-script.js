@@ -43,9 +43,10 @@ let speechUnsupportedLogged = false;
 let lastSpeechErrorTs = 0; // Track speech fallback errors for cooldown
 
 // ASR session timing (for absolute video timestamp conversion)
-let asrSessionStart = null; // Video time when ASR session started
-let asrLastSegmentTime = 0; // Timestamp of last segment (for session reset detection)
-const ASR_SESSION_TIMEOUT_MS = 35000; // Reset session if no segments for 35s
+let asrSessionStart = 0; // Video time when ASR session started
+let asrSessionActive = false; // Whether ASR session is active
+let asrLastSegmentTs = 0; // Date.now() when last segment arrived
+const ASR_SILENCE_RESET_MS = 35000; // Reset session if no segments for 35s
 
 // In-memory preferences organized by category
 let prefsByCategory = {
@@ -263,36 +264,42 @@ async function initializeFromStorage() {
 // Listen for toggle messages from popup (SINGLE unified listener)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.action === 'ASR_SEGMENTS') {
-        // Ingest ASR segments from backend with timestamp correction
+        // Ingest ASR segments from backend with absolute timestamp conversion
         if (message.segments && Array.isArray(message.segments)) {
-            const now = Date.now();
             const video = getActiveVideo();
             
-            // Initialize or reset ASR session start time
-            if (!asrSessionStart || (now - asrLastSegmentTime) > ASR_SESSION_TIMEOUT_MS) {
-                // New session or session timed out - capture current video time
-                if (video && !video.paused) {
-                    asrSessionStart = video.currentTime;
-                    csLog(`[ASR] Session start captured: ${asrSessionStart.toFixed(2)}s`);
-                } else {
-                    asrSessionStart = 0;
-                    csLog('[ASR] Warning: No active video, using sessionStart=0');
+            // Skip if no active video
+            if (!video) {
+                csLog('[ISweep-ASR] Warning: No active video, skipping segment ingestion');
+                sendResponse({ success: false });
+                return true;
+            }
+            
+            // Initialize or reset ASR session on first segment or after silence
+            const now = Date.now();
+            if (!asrSessionActive || (now - asrLastSegmentTs) > ASR_SILENCE_RESET_MS) {
+                asrSessionStart = isFinite(video.currentTime) ? video.currentTime : 0;
+                asrSessionActive = true;
+                if (window.__ISWEEP_DEBUG) {
+                    csLog(`[ISweep-ASR] Session start: ${asrSessionStart.toFixed(2)}s`);
                 }
             }
             
-            asrLastSegmentTime = now;
+            asrLastSegmentTs = now;
             
+            // Ingest each segment with absolute timestamp
             message.segments.forEach(seg => {
                 if (seg.text && typeof window.__isweepTranscriptIngest === 'function') {
-                    // Convert relative timestamp to absolute video time
-                    const relativeTime = seg.end_seconds || seg.start_seconds || 0;
-                    const absoluteTime = asrSessionStart + relativeTime;
+                    const relativeTime = Number(seg.end_seconds) || 0;
+                    const absTime = asrSessionStart + relativeTime;
                     
-                    csLog(`[ASR] sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relativeTime.toFixed(2)} → abs=${absoluteTime.toFixed(2)}`);
+                    if (window.__ISWEEP_DEBUG) {
+                        csLog(`[ISweep-ASR] sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relativeTime.toFixed(2)} → abs=${absTime.toFixed(2)}`);
+                    }
                     
                     window.__isweepTranscriptIngest({
                         text: seg.text,
-                        timestamp_seconds: absoluteTime,
+                        timestamp_seconds: absTime,
                         source: 'backend_asr'
                     });
                 }
