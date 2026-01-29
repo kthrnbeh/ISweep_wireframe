@@ -46,9 +46,13 @@ let lastSpeechErrorTs = 0; // Track speech fallback errors for cooldown
 let asrSessionStart = 0; // Video time when ASR session started
 let asrSessionActive = false; // Whether ASR session is active
 let asrLastSegmentTs = 0; // Date.now() when last segment arrived
+let asrLastAbsTime = 0; // Last absolute timestamp we ingested (for monotonic validation)
 const ASR_SILENCE_RESET_MS = 35000; // Reset session if no segments for 35s
+const ASR_REBASE_DRIFT_SEC = 5; // Tolerance for timestamp rebase (self-healing)
+const ASR_MIN_MONOTONIC_BACKSTEP_SEC = 0.25; // Allow tiny ordering jitter, not big resets
 let __asrWarnedEmptyText = false; // Track if we've logged empty text warning
 let __asrWarnedBadEnd = false; // Track if we've logged invalid timestamp warning
+let __asrWarnedNonMonotonic = false; // Track if we've logged non-monotonic segment warning
 
 // In-memory preferences organized by category
 let prefsByCategory = {
@@ -266,11 +270,11 @@ async function initializeFromStorage() {
 // Listen for toggle messages from popup (SINGLE unified listener)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message && message.action === 'ASR_SEGMENTS') {
-        // Ingest ASR segments from backend with absolute timestamp conversion
+        // Ingest ASR segments from backend with absolute timestamp conversion, rebase, and monotonic validation
         if (message.segments && Array.isArray(message.segments)) {
             const video = getActiveVideo();
             
-            // Skip if no active video
+            // Skip all segments if no active video
             if (!video) {
                 csLog('[ISweep-ASR] Warning: No active video, skipping segment ingestion');
                 sendResponse({ success: false });
@@ -282,8 +286,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (!asrSessionActive || (now - asrLastSegmentTs) > ASR_SILENCE_RESET_MS) {
                 asrSessionStart = isFinite(video.currentTime) ? video.currentTime : 0;
                 asrSessionActive = true;
+                asrLastAbsTime = 0; // Reset monotonic tracker on new session
                 __asrWarnedEmptyText = false; // Reset warning flags on new session
                 __asrWarnedBadEnd = false;
+                __asrWarnedNonMonotonic = false;
                 if (window.__ISWEEP_DEBUG) {
                     csLog(`[ISweep-ASR] Session start: ${asrSessionStart.toFixed(2)}s`);
                 }
@@ -291,7 +297,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             
             asrLastSegmentTs = now;
             
-            // Ingest each segment with absolute timestamp and validation
+            // Ingest each segment with absolute timestamp, rebase validation, and monotonic checking
             message.segments.forEach(seg => {
                 // Defensive: skip segments with empty text
                 const textValid = seg.text && String(seg.text).trim().length > 0;
@@ -313,18 +319,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     return; // Skip this segment
                 }
                 
-                // Ingest segment with validated data
-                if (typeof window.__isweepTranscriptIngest === 'function') {
-                    const relativeTime = relEnd;
-                    const absTime = asrSessionStart + relativeTime;
-                    
+                // Compute candidate absolute timestamp
+                let absCandidate = asrSessionStart + relEnd;
+                
+                // Rebase rule: self-healing for stale sessionStart or backend buffer reset
+                const videoNow = video.currentTime;
+                if (Number.isFinite(videoNow) && absCandidate < (videoNow - ASR_REBASE_DRIFT_SEC)) {
+                    // Our sessionStart is stale or backend reset to new buffer.
+                    // Rebase so relEnd aligns with current playback time.
+                    asrSessionStart = Math.max(0, videoNow - relEnd);
+                    asrSessionActive = true;
+                    absCandidate = asrSessionStart + relEnd;
                     if (window.__ISWEEP_DEBUG) {
-                        csLog(`[ISweep-ASR] sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relativeTime.toFixed(2)} → abs=${absTime.toFixed(2)}`);
+                        csLog(`[ISweep-ASR] REBASE: videoNow=${videoNow.toFixed(2)} relEnd=${relEnd.toFixed(2)} newSessionStart=${asrSessionStart.toFixed(2)} abs=${absCandidate.toFixed(2)}`);
+                    }
+                }
+                
+                // Monotonic rule: drop non-monotonic segments (duplicates, out-of-order)
+                if (absCandidate < (asrLastAbsTime - ASR_MIN_MONOTONIC_BACKSTEP_SEC)) {
+                    // Likely duplicate or out-of-order segment; drop it
+                    if (!__asrWarnedNonMonotonic && window.__ISWEEP_DEBUG) {
+                        csLog(`[ISweep-ASR] Dropped non-monotonic segment abs=${absCandidate.toFixed(2)} last=${asrLastAbsTime.toFixed(2)}`);
+                        __asrWarnedNonMonotonic = true;
+                    }
+                    return; // Skip this segment
+                }
+                
+                // Update monotonic tracker
+                asrLastAbsTime = absCandidate;
+                
+                // Ingest segment with validated and corrected absolute timestamp
+                if (typeof window.__isweepTranscriptIngest === 'function') {
+                    if (window.__ISWEEP_DEBUG) {
+                        csLog(`[ISweep-ASR] sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relEnd.toFixed(2)} → abs=${absCandidate.toFixed(2)}`);
                     }
                     
                     window.__isweepTranscriptIngest({
                         text: seg.text,
-                        timestamp_seconds: absTime,
+                        timestamp_seconds: absCandidate,
                         source: 'backend_asr'
                     });
                 }
@@ -416,6 +448,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
             asrSessionStart = 0;
             asrSessionActive = false;
             asrLastSegmentTs = 0;
+            asrLastAbsTime = 0;
         }
     }
     
