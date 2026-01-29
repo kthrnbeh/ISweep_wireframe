@@ -30,7 +30,6 @@ let userId = 'user123';
 let backendURL = 'http://127.0.0.1:8001';
 let detectedVideos = 0;
 let appliedActions = 0;
-let lastCaptionEmitTs = Date.now();
 let isMuted = false; // Safe mute state
 let unmuteTimerId = null; // Track scheduled unmute timer
 let muteUntil = 0; // Track when mute should end to prevent over-muting
@@ -408,7 +407,7 @@ function startSpeechFallback(videoElement) {
         if (!last || !last[0]) return;
         const transcript = (last[0].transcript || '').trim();
         if (!transcript) return;
-        window.__isweepEmitText({
+        window.__isweepTranscriptIngest({
             text: transcript,
             timestamp_seconds: speechVideoRef ? speechVideoRef.currentTime : 0,
             source: 'speech_fallback'
@@ -451,6 +450,61 @@ function stopSpeechFallback() {
     speechVideoRef = null;
     speechActive = false;
 }
+
+// ===== TRANSCRIPT ENGINE =====
+// Unified transcript ingestion module that normalizes and deduplicates input from multiple sources
+let lastTranscriptTs = Date.now(); // Shared timestamp used by speech fallback logic
+let lastIngestedText = null; // Track last ingested text for deduplication
+let lastIngestTs = 0; // Track last ingestion timestamp for deduplication
+const DEDUPE_WINDOW_MS = 1200; // Drop repeats within 1200ms
+
+/**
+ * Standardized transcript input from multiple sources (HTML5 captions, SpeechRecognition, etc.)
+ * Normalizes text, deduplicates repeats, updates shared lastTranscriptTs, and calls __isweepEmitText
+ * 
+ * @param {Object} params - Transcript parameters
+ * @param {string} params.text - Raw transcript text
+ * @param {number} params.timestamp_seconds - Video timestamp in seconds
+ * @param {string} params.source - Source identifier (e.g., 'html5_dom', 'speech_fallback', 'youtube')
+ */
+window.__isweepTranscriptIngest = function({ text, timestamp_seconds, source }) {
+    if (!text || !text.trim()) {
+        csLog(`[ISweep-TE] Dropped empty text from ${source}`);
+        return;
+    }
+    
+    // Normalize text for deduplication
+    const normalized = normalizeText(text);
+    if (!normalized) {
+        csLog(`[ISweep-TE] Dropped text with no normalized content from ${source}`);
+        return;
+    }
+    
+    // Deduplicate: drop same normalized text within 1200ms window
+    const now = Date.now();
+    if (lastIngestedText === normalized && (now - lastIngestTs) < DEDUPE_WINDOW_MS) {
+        csLog(`[ISweep-TE] Deduped repeat text from ${source}: "${text.substring(0, 30)}..." (within ${DEDUPE_WINDOW_MS}ms)`);
+        return;
+    }
+    
+    // Update deduplication tracking
+    lastIngestedText = normalized;
+    lastIngestTs = now;
+    
+    // Update shared transcript timestamp (used by speech fallback logic)
+    lastTranscriptTs = now;
+    
+    csLog(`[ISweep-TE] Ingested from ${source}: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+    
+    // Pass to existing emit handler
+    window.__isweepEmitText({
+        text,
+        timestamp_seconds,
+        source
+    });
+};
+
+// ===== END TRANSCRIPT ENGINE =====
 
 window.__isweepApplyDecision = function(decision) {
     const videoElement = getActiveVideo();
@@ -574,7 +628,7 @@ window.__isweepApplyDecision = function(decision) {
 window.__isweepEmitText = async function({ text, timestamp_seconds, source, caption_start_seconds, caption_end_seconds }) {
     if (!isEnabled) return;
 
-    lastCaptionEmitTs = Date.now();
+    // Note: lastTranscriptTs now updated by __isweepTranscriptIngest (TranscriptEngine)
     if (speechActive) {
         stopSpeechFallback();
     }
@@ -866,12 +920,10 @@ async function checkForFilters(videoElement, index) {
         .replace(/\s+/g, " ")
         .trim();
 
-    await window.__isweepEmitText({
+    window.__isweepTranscriptIngest({
         text: cleanCaption,
         timestamp_seconds: videoElement.currentTime,
-        source: 'html5_dom',
-        caption_start_seconds: videoElement._isweepCurrentCaptionStart,
-        caption_end_seconds: videoElement._isweepCurrentCaptionEnd
+        source: 'html5_dom'
     });
 }
 
@@ -966,8 +1018,8 @@ function monitorSpeechFallback() {
     }
 
     const now = Date.now();
-    // Only start speech fallback if no captions for 5+ seconds
-    if ((now - lastCaptionEmitTs) >= 5000) {
+    // Only start speech fallback if no transcripts for 5+ seconds (uses shared lastTranscriptTs from TranscriptEngine)
+    if ((now - lastTranscriptTs) >= 5000) {
         startSpeechFallback(video);
     } else if (speechActive) {
         stopSpeechFallback();
