@@ -198,12 +198,14 @@ async function fetchPreferencesFromBackend() {
 // Initialize from storage on load
 async function initializeFromStorage() {
     const result = await chrome.storage.local.get(['isweep_enabled', 'isweepPrefs', 'cachedPrefsByCategory', 'userId', 'backendURL']);
-    isEnabled = result.isweep_enabled === true; // default to false if not explicitly set
+    
+    // Set enabled state
+    isEnabled = Boolean(result.isweep_enabled);
     
     // Use isweepPrefs as primary source, fallback to individual keys for backward compatibility
     if (result.isweepPrefs) {
-        userId = result.isweepPrefs.user_id || result.userId || 'user123';
-        backendURL = result.isweepPrefs.backendUrl || result.backendURL || 'http://127.0.0.1:8001';
+        userId = result.isweepPrefs.user_id || 'user123';
+        backendURL = result.isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
         
         // Set blocked_words from isweepPrefs
         if (result.isweepPrefs.blocked_words && Array.isArray(result.isweepPrefs.blocked_words)) {
@@ -211,13 +213,13 @@ async function initializeFromStorage() {
         }
         
         // Set other language category settings from isweepPrefs if available
-        if (result.isweepPrefs.duration_seconds) {
+        if (result.isweepPrefs.duration_seconds !== undefined) {
             prefsByCategory.language.duration_seconds = result.isweepPrefs.duration_seconds;
         }
         if (result.isweepPrefs.action) {
             prefsByCategory.language.action = result.isweepPrefs.action;
         }
-        if (result.isweepPrefs.caption_offset_ms) {
+        if (result.isweepPrefs.caption_offset_ms !== undefined) {
             prefsByCategory.language.caption_offset_ms = result.isweepPrefs.caption_offset_ms;
         }
         
@@ -236,7 +238,7 @@ async function initializeFromStorage() {
         csLog('[ISweep] LOADED settings from legacy keys (backward compatibility)');
     }
     
-    csLog('[ISweep] LOADED enabled state from storage:', isEnabled);
+    csLog('[ISweep] LOADED enabled state:', isEnabled);
     csLog('[ISweep] LOADED userId:', userId);
     csLog('[ISweep] LOADED backendURL:', backendURL);
     csLog(`[ISweep] LOADED language blocked_words count: ${(prefsByCategory.language?.blocked_words || []).length}`);
@@ -303,21 +305,77 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Listen for storage changes from other tabs/windows
 chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'local') {
-        if (changes.isweep_enabled && typeof changes.isweep_enabled.newValue !== 'undefined') {
-            isEnabled = Boolean(changes.isweep_enabled.newValue);
-            csLog('[ISweep] isweep_enabled changed via storage:', isEnabled);
-            updateStatusIcon(isEnabled);
+    if (areaName !== 'local') return;
+    
+    // Handle isweep_enabled changes
+    if (changes.isweep_enabled && typeof changes.isweep_enabled.newValue !== 'undefined') {
+        isEnabled = Boolean(changes.isweep_enabled.newValue);
+        csLog('[ISweep] isweep_enabled changed via storage:', isEnabled);
+        updateStatusIcon(isEnabled);
+        
+        // If disabled, cleanup
+        if (!isEnabled) {
+            stopSpeechFallback();
+            document.querySelectorAll('video').forEach(v => {
+                if (v._isweepMutedByUs) {
+                    v.muted = false;
+                    v._isweepMutedByUs = false;
+                }
+            });
+            if (unmuteTimerId !== null) {
+                clearTimeout(unmuteTimerId);
+                unmuteTimerId = null;
+            }
+            isMuted = false;
+            lastMutedTerm = null;
+            muteUntil = 0;
         }
+    }
+    
+    // Handle isweepPrefs changes (new primary source)
+    if (changes.isweepPrefs && changes.isweepPrefs.newValue) {
+        const prefs = changes.isweepPrefs.newValue;
+        
+        // Update userId and backendURL
+        if (prefs.user_id) {
+            userId = prefs.user_id;
+            csLog('[ISweep] userId updated via isweepPrefs:', userId);
+        }
+        if (prefs.backendUrl) {
+            backendURL = prefs.backendUrl;
+            csLog('[ISweep] backendURL updated via isweepPrefs:', backendURL);
+        }
+        
+        // Update language preferences
+        if (prefs.blocked_words && Array.isArray(prefs.blocked_words)) {
+            prefsByCategory.language.blocked_words = prefs.blocked_words;
+        }
+        if (prefs.duration_seconds !== undefined) {
+            prefsByCategory.language.duration_seconds = prefs.duration_seconds;
+        }
+        if (prefs.action) {
+            prefsByCategory.language.action = prefs.action;
+        }
+        if (prefs.caption_offset_ms !== undefined) {
+            prefsByCategory.language.caption_offset_ms = prefs.caption_offset_ms;
+        }
+        
+        csLog('[ISweep] Preferences updated via isweepPrefs storage change');
+    }
+    
+    // Backward compatibility: handle legacy individual keys if isweepPrefs not present
+    if (!changes.isweepPrefs) {
         if (changes.userId && typeof changes.userId.newValue === 'string') {
             userId = changes.userId.newValue;
+            csLog('[ISweep] userId updated via legacy key:', userId);
         }
         if (changes.backendURL && typeof changes.backendURL.newValue === 'string') {
             backendURL = changes.backendURL.newValue;
+            csLog('[ISweep] backendURL updated via legacy key:', backendURL);
         }
         if (changes.cachedPrefsByCategory && changes.cachedPrefsByCategory.newValue) {
             prefsByCategory = changes.cachedPrefsByCategory.newValue;
-            csLog('[ISweep] Preferences updated via storage:', Object.keys(prefsByCategory));
+            csLog('[ISweep] Preferences updated via cachedPrefsByCategory:', Object.keys(prefsByCategory));
         }
     }
 });
