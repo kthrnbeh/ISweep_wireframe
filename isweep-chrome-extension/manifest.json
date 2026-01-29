@@ -6,12 +6,15 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "tabCapture",
+    "offscreen"
   ],
   "host_permissions": [
     "*://*.youtube.com/*",
     "*://youtube.com/*",
-    "*://youtu.be/*"
+    "*://youtu.be/*",
+    "http://127.0.0.1:8001/*"
   ],
   "action": {
     "default_popup": "popup.html",
