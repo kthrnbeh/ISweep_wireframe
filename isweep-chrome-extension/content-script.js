@@ -273,6 +273,18 @@ async function initializeFromStorage() {
  * rebase validation, and monotonic checking. Returns result object (does NOT call sendResponse).
  * 
  * Returns: { success: boolean, error?: string, ingestedCount: number, rebaseOccurred: boolean }
+ * 
+ * INVARIANTS:
+ * - Monotonic Guarantee: asrLastAbsTime is never decreased. Segments with timestamps
+ *   earlier than (asrLastAbsTime - ASR_MIN_MONOTONIC_BACKSTEP_SEC) are dropped as duplicates/out-of-order.
+ * 
+ * - Rebase Contract: When a segment's computed absolute time is earlier than
+ *   (videoNow - ASR_REBASE_DRIFT_SEC), the handler self-heals by rebasing asrSessionStart.
+ *   This corrects for stale session or backend buffer resets. rebaseOccurred flag signals this.
+ * 
+ * - asrLastAbsTime Updates: asrLastAbsTime is ONLY updated after a segment is successfully
+ *   ingested via __isweepTranscriptIngest. If __isweepTranscriptIngest is unavailable,
+ *   asrLastAbsTime does not advance and the warning flag __asrWarnedIngestMissing is set once.
  */
 function __isweepHandleAsrSegments(message) {
     // Validate payload
@@ -1297,6 +1309,18 @@ initializeFromStorage().then(() => {
 
     csLog('[ISweep] Caption extraction enabled' + (isYouTubeHost() ? ' + YouTube support' : ''));
 
+    /**
+     * ASR console test helper: validates handler behavior under edge cases.
+     * 
+     * INVARIANTS:
+     * - Test Finiteness Discipline: Tests MUST mirror handler's finiteness rules.
+     *   All uses of video.currentTime are wrapped: Number(video.currentTime) with
+     *   Number.isFinite() check, falling back to 0 for NaN/undefined.
+     * 
+     * - Spy Isolation: All spies (ingest payloads, csLog) MUST record only and never
+     *   mutate ASR state (asrLastAbsTime, asrSessionStart, asrSessionActive, warning flags).
+     *   The real handler updates state; spies only capture behavior for assertions.
+     */
     // ASR console test helper
     window.__isweepAsrConsoleTests = async function() {
         const video = getActiveVideo();
