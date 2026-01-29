@@ -1,16 +1,18 @@
 // background.js
 /**
  * Service Worker for ISweep Chrome Extension
- * Handles background tasks and state management
+ * Handles: background tasks, state management, offscreen document lifecycle, ASR control
  * Storage structure:
  *   - isweep_enabled: boolean (master toggle)
+ *   - isweep_asr_enabled: boolean (backend transcription toggle)
  *   - isweepPrefs: object { user_id, backendUrl, blocked_words, duration_seconds, action }
- *   - videosDetected: number (stats)
- *   - actionsApplied: number (stats)
+ *   - videosDetected, actionsApplied: stats
  */
 
+let offscreenDocumentId = null;
+let activeAsrTabId = null;
+
 // Helper function to update icon based on enabled state
-// Note: Using same icon for both states since no on/off variants exist
 function updateIcon(enabled) {
     const icons = {
         16: 'icons/icon-16.png',
@@ -27,6 +29,82 @@ function updateIcon(enabled) {
     });
 }
 
+/**
+ * Create offscreen document if it doesn't already exist
+ * MV3 requirement: Service worker cannot run long-lived MediaRecorder
+ */
+async function ensureOffscreenDocument() {
+    try {
+        const existingContexts = await chrome.runtime.getContexts({
+            contextTypes: ['OFFSCREEN_DOCUMENT']
+        });
+
+        if (existingContexts.length > 0) {
+            console.log('[ISweep] Offscreen document already exists');
+            return;
+        }
+
+        await chrome.offscreen.createDocument({
+            url: 'offscreen.html',
+            reasons: ['USER_MEDIA'],
+            justification: 'Audio capture for tab transcription (ASR)'
+        });
+
+        console.log('[ISweep] Offscreen document created');
+    } catch (error) {
+        console.error('[ISweep] Failed to create offscreen document:', error.message || error);
+    }
+}
+
+/**
+ * Start audio capture for active tab (ASR mode)
+ */
+async function startAsr(tabId, backendUrl, userId) {
+    try {
+        await ensureOffscreenDocument();
+
+        activeAsrTabId = tabId;
+
+        const message = {
+            action: 'START_ASR',
+            tabId,
+            backendUrl,
+            userId
+        };
+
+        chrome.runtime.sendMessage(message, (response) => {
+            if (chrome.runtime.lastError) {
+                console.warn('[ISweep-BG] Error sending START_ASR:', chrome.runtime.lastError);
+            } else {
+                console.log('[ISweep-BG] START_ASR response:', response);
+            }
+        });
+    } catch (error) {
+        console.error('[ISweep-BG] Failed to start ASR:', error.message || error);
+    }
+}
+
+/**
+ * Stop audio capture for current tab
+ */
+async function stopAsr() {
+    try {
+        const message = { action: 'STOP_ASR' };
+
+        chrome.runtime.sendMessage(message, (response) => {
+            if (chrome.runtime.lastError) {
+                console.warn('[ISweep-BG] Error sending STOP_ASR:', chrome.runtime.lastError);
+            } else {
+                console.log('[ISweep-BG] STOP_ASR response:', response);
+            }
+        });
+
+        activeAsrTabId = null;
+    } catch (error) {
+        console.error('[ISweep-BG] Failed to stop ASR:', error.message || error);
+    }
+}
+
 // Initialize extension on install
 chrome.runtime.onInstalled.addListener(() => {
     console.log('[ISweep] Extension installed');
@@ -34,6 +112,7 @@ chrome.runtime.onInstalled.addListener(() => {
     // Set default values on first install
     chrome.storage.local.set({
         isweep_enabled: false,
+        isweep_asr_enabled: false,
         isweepPrefs: {
             user_id: 'user123',
             backendUrl: 'http://127.0.0.1:8001',
@@ -45,7 +124,6 @@ chrome.runtime.onInstalled.addListener(() => {
         actionsApplied: 0
     });
     
-    // Set default icon to OFF
     updateIcon(false);
 });
 
@@ -54,24 +132,80 @@ chrome.action.onClicked.addListener((tab) => {
     console.log('[ISweep] Icon clicked on tab:', tab.id);
 });
 
-// Handle messages from content scripts
+// Handle messages from popup and content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'logEvent') {
         console.log('[ISweep]', request.message);
         sendResponse({ success: true });
+    } else if (request.action === 'startAsr') {
+        // Popup requests ASR start
+        const { backendUrl, userId } = request;
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length > 0) {
+                startAsr(tabs[0].id, backendUrl, userId);
+                sendResponse({ success: true });
+            } else {
+                sendResponse({ success: false, error: 'No active tab' });
+            }
+        });
+        return true; // Keep channel open for async
+    } else if (request.action === 'stopAsr') {
+        // Popup requests ASR stop
+        stopAsr();
+        sendResponse({ success: true });
     }
-    
-    // Note: stats are now handled directly by content-script.js via chrome.storage.local.get/set
-    // No longer needed to handle updateStats in background; each tab sends only its increments
 });
 
-// Listen for storage changes to update icon when isweep_enabled changes
-chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'local' && changes.isweep_enabled) {
+// Listen for storage changes to update icon and manage ASR
+chrome.storage.onChanged.addListener(async (changes, areaName) => {
+    if (areaName !== 'local') return;
+
+    if (changes.isweep_enabled) {
         const newValue = Boolean(changes.isweep_enabled.newValue);
         console.log('[ISweep] isweep_enabled changed to:', newValue);
         updateIcon(newValue);
+
+        // If disabled, always stop ASR
+        if (!newValue && activeAsrTabId) {
+            await stopAsr();
+        }
+    }
+
+    if (changes.isweep_asr_enabled) {
+        const asrEnabled = Boolean(changes.isweep_asr_enabled.newValue);
+        console.log('[ISweep] isweep_asr_enabled changed to:', asrEnabled);
+
+        // Get current config
+        const { isweepPrefs, isweep_enabled } = await chrome.storage.local.get([
+            'isweepPrefs',
+            'isweep_enabled'
+        ]);
+
+        if (asrEnabled && isweep_enabled && isweepPrefs) {
+            // Start ASR for active tab
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                if (tabs.length > 0) {
+                    startAsr(
+                        tabs[0].id,
+                        isweepPrefs.backendUrl,
+                        isweepPrefs.user_id
+                    );
+                }
+            });
+        } else if (!asrEnabled && activeAsrTabId) {
+            // Stop ASR
+            stopAsr();
+        }
+    }
+});
+
+// Clean up on tab close
+chrome.tabs.onRemoved.addListener((tabId) => {
+    if (tabId === activeAsrTabId) {
+        console.log('[ISweep] Active ASR tab closed, stopping ASR');
+        stopAsr();
     }
 });
 
 console.log('[ISweep] Background service worker loaded');
+
