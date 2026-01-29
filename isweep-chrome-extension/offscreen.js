@@ -8,6 +8,7 @@
     'use strict';
 
     const CHUNK_INTERVAL_MS = 1000; // 1 second chunks
+    const METRICS_INTERVAL_MS = 5000; // Report metrics every 5 seconds
     let mediaRecorder = null;
     let stream = null;
     let sessionActive = false;
@@ -16,8 +17,55 @@
     let backendUrl = null;
     let userId = null;
 
+    // Latency monitoring
+    let sendTimings = []; // [{ sendTime, rttTime }, ...]
+    let currentChunkStartTime = null;
+    let lastSeq = 0;
+
     function asrLog(...args) {
         console.log('[ISweep-ASR]', ...args);
+    }
+
+    /**
+     * Update ASR status in storage
+     */
+    async function updateAsrStatus(status) {
+        try {
+            await chrome.storage.local.set({ isweep_asr_status: status });
+            asrLog('ASR status updated:', status);
+        } catch (e) {
+            asrLog('Failed to update ASR status:', e);
+        }
+    }
+
+    /**
+     * Calculate and post rolling average metrics
+     */
+    async function reportMetrics() {
+        if (sendTimings.length === 0) return;
+
+        const avgSendMs = Math.round(
+            sendTimings.reduce((sum, t) => sum + t.sendTime, 0) / sendTimings.length
+        );
+        const avgRttMs = Math.round(
+            sendTimings.reduce((sum, t) => sum + t.rttTime, 0) / sendTimings.length
+        );
+
+        const metrics = {
+            avg_send_ms: avgSendMs,
+            avg_rtt_ms: avgRttMs,
+            last_seq: lastSeq,
+            updated_at: new Date().toISOString()
+        };
+
+        try {
+            await chrome.storage.local.set({ isweep_asr_metrics: metrics });
+            asrLog(`Metrics: send=${avgSendMs}ms, rtt=${avgRttMs}ms, last_seq=${lastSeq}`);
+            // Keep rolling average of last 10 measurements
+            sendTimings = sendTimings.slice(-10);
+        } catch (e) {
+            asrLog('Failed to report metrics:', e);
+        }
     }
 
     /**
