@@ -1337,7 +1337,7 @@ initializeFromStorage().then(() => {
             __asrWarnedNonMonotonic = false;
             __asrWarnedIngestMissing = false;
 
-            // Create spy for ingest calls
+            // Spy: record only, do not mutate ASR state
             const monoIngestedPayloads = [];
             window.__isweepTranscriptIngest = function(obj) {
                 monoIngestedPayloads.push(obj);
@@ -1376,7 +1376,7 @@ initializeFromStorage().then(() => {
             __asrWarnedNonMonotonic = false;
             __asrWarnedIngestMissing = false;
 
-            // Create spy for ingest calls
+            // Spy: record only, do not mutate ASR state
             const rebaseIngestedPayloads = [];
             window.__isweepTranscriptIngest = function(obj) {
                 rebaseIngestedPayloads.push(obj);
