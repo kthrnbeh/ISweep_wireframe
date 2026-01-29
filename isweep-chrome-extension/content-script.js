@@ -565,6 +565,20 @@ window.__isweepTranscriptIngest = function({ text, timestamp_seconds, source }) 
 
 // ===== END TRANSCRIPT ENGINE =====
 
+/**
+ * Debug helper: self-test the ISweep pipeline
+ * Usage: window.__isweepSelfTest() in console
+ */
+window.__isweepSelfTest = function() {
+    console.log('[ISweep] SelfTest starting');
+    console.log('enabled=', isEnabled);
+    console.log('hasTranscriptIngest=', typeof window.__isweepTranscriptIngest);
+    console.log('hasEmitText=', typeof window.__isweepEmitText);
+    const v = document.querySelector('video');
+    console.log('hasVideo=', !!v, 'paused=', v?.paused, 't=', v?.currentTime);
+    window.__isweepTranscriptIngest?.({ text: 'self test bitch', timestamp_seconds: v?.currentTime || 0, source: 'manual_test' });
+};
+
 window.__isweepApplyDecision = function(decision) {
     const videoElement = getActiveVideo();
     if (!videoElement) {
