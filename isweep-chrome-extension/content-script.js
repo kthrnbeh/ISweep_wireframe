@@ -47,8 +47,8 @@ let asrSessionStart = 0; // Video time when ASR session started
 let asrSessionActive = false; // Whether ASR session is active
 let asrLastSegmentTs = 0; // Date.now() when last segment arrived
 const ASR_SILENCE_RESET_MS = 35000; // Reset session if no segments for 35s
-let asrLoggedEmptyText = false; // Track if we've logged empty text warning
-let asrLoggedInvalidTimestamp = false; // Track if we've logged invalid timestamp warning
+let __asrWarnedEmptyText = false; // Track if we've logged empty text warning
+let __asrWarnedBadEnd = false; // Track if we've logged invalid timestamp warning
 
 // In-memory preferences organized by category
 let prefsByCategory = {
@@ -282,8 +282,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (!asrSessionActive || (now - asrLastSegmentTs) > ASR_SILENCE_RESET_MS) {
                 asrSessionStart = isFinite(video.currentTime) ? video.currentTime : 0;
                 asrSessionActive = true;
-                asrLoggedEmptyText = false; // Reset warning flags on new session
-                asrLoggedInvalidTimestamp = false;
+                __asrWarnedEmptyText = false; // Reset warning flags on new session
+                __asrWarnedBadEnd = false;
                 if (window.__ISWEEP_DEBUG) {
                     csLog(`[ISweep-ASR] Session start: ${asrSessionStart.toFixed(2)}s`);
                 }
@@ -296,26 +296,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 // Defensive: skip segments with empty text
                 const textValid = seg.text && String(seg.text).trim().length > 0;
                 if (!textValid) {
-                    if (!asrLoggedEmptyText && window.__ISWEEP_DEBUG) {
+                    if (!__asrWarnedEmptyText && window.__ISWEEP_DEBUG) {
                         csLog('[ISweep-ASR] Skipping segment: empty or missing text');
-                        asrLoggedEmptyText = true;
+                        __asrWarnedEmptyText = true;
                     }
                     return; // Skip this segment
                 }
                 
                 // Defensive: skip segments with invalid timestamps
-                const endSecsValid = Number.isFinite(Number(seg.end_seconds));
-                if (!endSecsValid) {
-                    if (!asrLoggedInvalidTimestamp && window.__ISWEEP_DEBUG) {
+                const relEnd = Number(seg.end_seconds);
+                if (!Number.isFinite(relEnd)) {
+                    if (!__asrWarnedBadEnd && window.__ISWEEP_DEBUG) {
                         csLog(`[ISweep-ASR] Skipping segment: invalid end_seconds (${seg.end_seconds})`);
-                        asrLoggedInvalidTimestamp = true;
+                        __asrWarnedBadEnd = true;
                     }
                     return; // Skip this segment
                 }
                 
                 // Ingest segment with validated data
                 if (typeof window.__isweepTranscriptIngest === 'function') {
-                    const relativeTime = Number(seg.end_seconds);
+                    const relativeTime = relEnd;
                     const absTime = asrSessionStart + relativeTime;
                     
                     if (window.__ISWEEP_DEBUG) {
