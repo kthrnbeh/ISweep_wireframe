@@ -7,8 +7,11 @@
 (() => {
     'use strict';
 
-    const CHUNK_INTERVAL_MS = 1000; // 1 second chunks
+    const CHUNK_INTERVAL_MS = 1000; // 1 second chunks (baseline)
     const METRICS_INTERVAL_MS = 5000; // Report metrics every 5 seconds
+    const SILENCE_TIMEOUT_MS = 30000; // Auto-stop after 30s of no segments
+    const ADAPTIVE_CHUNK_THRESHOLD_MS = 500; // Switch to 2s chunks if RTT > 500ms
+    
     let mediaRecorder = null;
     let stream = null;
     let sessionActive = false;
@@ -16,6 +19,9 @@
     let tabId = null;
     let backendUrl = null;
     let userId = null;
+    let currentChunkInterval = CHUNK_INTERVAL_MS;
+    let silenceTimer = null;
+    let lastSegmentTime = Date.now();
 
     // Latency monitoring
     let sendTimings = []; // [{ sendTime, rttTime }, ...]
@@ -88,6 +94,8 @@
         backendUrl = backendUrlParam;
         userId = userIdParam;
         sequenceNumber = 0;
+        currentChunkInterval = CHUNK_INTERVAL_MS;
+        lastSegmentTime = Date.now();
         asrStatus = 'starting';
         await updateAsrStatus(asrStatus);
 
@@ -158,6 +166,16 @@
                         const result = await response.json();
 
                         if (result.segments && result.segments.length > 0) {
+                            // Reset silence timer on successful segment delivery
+                            lastSegmentTime = Date.now();
+                            if (silenceTimer) {
+                                clearTimeout(silenceTimer);
+                            }
+                            silenceTimer = setTimeout(() => {
+                                asrLog('Silence timeout - stopping ASR');
+                                stopAudioCapture();
+                            }, SILENCE_TIMEOUT_MS);
+
                             chrome.runtime.sendMessage({
                                 action: 'ASR_SEGMENTS',
                                 tabId: tabId,
@@ -167,6 +185,18 @@
                             });
 
                             asrLog(`Streamed seq ${sequenceNumber}: ${result.segments.length} segments, send=${sendTimeMs}ms, rtt=${rttMs}ms`);
+                        }
+
+                        // Adaptive chunk sizing: increase interval if RTT consistently high
+                        if (rttMs > ADAPTIVE_CHUNK_THRESHOLD_MS && currentChunkInterval === CHUNK_INTERVAL_MS) {
+                            const recentHighLatency = sendTimings.slice(-3).every(t => t.rttTime > ADAPTIVE_CHUNK_THRESHOLD_MS);
+                            if (recentHighLatency && mediaRecorder && sessionActive) {
+                                currentChunkInterval = 2000;
+                                asrLog('High latency detected - switching to 2s chunks');
+                                // Restart with new interval
+                                mediaRecorder.stop();
+                                mediaRecorder.start(currentChunkInterval);
+                            }
                         }
                     } catch (error) {
                         asrLog('Error posting chunk to backend:', error.message || error);
@@ -230,6 +260,12 @@
         if (metricsInterval) {
             clearInterval(metricsInterval);
             metricsInterval = null;
+        }
+
+        // Clear silence timer
+        if (silenceTimer) {
+            clearTimeout(silenceTimer);
+            silenceTimer = null;
         }
 
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {

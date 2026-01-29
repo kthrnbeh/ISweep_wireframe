@@ -137,10 +137,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                 asrStatusText.style.color = '#666';
             }
             
-            // Update metrics if available
+            // Update metrics if available with color coding
             if (metrics && asrSendMs && asrRttMs) {
-                asrSendMs.textContent = metrics.avg_send_ms != null ? `${metrics.avg_send_ms}ms` : '—';
-                asrRttMs.textContent = metrics.avg_rtt_ms != null ? `${metrics.avg_rtt_ms}ms` : '—';
+                const sendLatency = metrics.avg_send_ms;
+                const rttLatency = metrics.avg_rtt_ms;
+                
+                // Display with color coding
+                asrSendMs.textContent = sendLatency != null ? `${sendLatency}ms` : '—';
+                asrRttMs.textContent = rttLatency != null ? `${rttLatency}ms` : '—';
+                
+                // Color coding for send latency: green (<100ms), yellow (100-300ms), red (>300ms)
+                if (sendLatency != null) {
+                    if (sendLatency < 100) {
+                        asrSendMs.style.color = '#10b981'; // green
+                    } else if (sendLatency < 300) {
+                        asrSendMs.style.color = '#f59e0b'; // yellow
+                    } else {
+                        asrSendMs.style.color = '#ef4444'; // red
+                    }
+                }
+                
+                // Color coding for RTT: green (<200ms), yellow (200-500ms), red (>500ms)
+                if (rttLatency != null) {
+                    if (rttLatency < 200) {
+                        asrRttMs.style.color = '#10b981'; // green
+                    } else if (rttLatency < 500) {
+                        asrRttMs.style.color = '#f59e0b'; // yellow
+                    } else {
+                        asrRttMs.style.color = '#ef4444'; // red
+                    }
+                }
             }
         } else {
             asrStatusSection.style.display = 'none';
