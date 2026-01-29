@@ -1283,6 +1283,134 @@ initializeFromStorage().then(() => {
     }
 
     csLog('[ISweep] Caption extraction enabled' + (isYouTubeHost() ? ' + YouTube support' : ''));
+
+    // ASR console test helper
+    window.__isweepAsrConsoleTests = function() {
+        const video = getActiveVideo();
+        if (!video) {
+            console.warn('[ISweep-ASR-Tests] No active video found. Open a YouTube video or page with HTML5 video.');
+            return;
+        }
+
+        console.log('[ISweep-ASR-Tests] Starting ASR handler tests...');
+
+        // Save original state and debug setting
+        const savedDebug = window.__ISWEEP_DEBUG;
+        const savedSessionStart = asrSessionStart;
+        const savedSessionActive = asrSessionActive;
+        const savedLastAbsTime = asrLastAbsTime;
+        const savedLastSegmentTs = asrLastSegmentTs;
+        const savedIngest = window.__isweepTranscriptIngest;
+        const testResults = {};
+
+        try {
+            // Temporarily enable debug
+            window.__ISWEEP_DEBUG = true;
+
+            // Test A: Monotonic drop
+            console.log('\n--- Test A: Monotonic Guard (drop backward jump) ---');
+            asrSessionStart = video.currentTime;
+            asrSessionActive = true;
+            asrLastAbsTime = 0;
+            asrLastSegmentTs = Date.now();
+
+            const monoInitialAbsTime = asrLastAbsTime;
+            let monoDropped = false;
+
+            // Patch ingest to track calls
+            const monoIngestedTexts = [];
+            window.__isweepTranscriptIngest = function(obj) {
+                monoIngestedTexts.push(obj.text);
+                asrLastAbsTime = obj.timestamp_seconds; // Simulate ingestion update
+            };
+
+            chrome.runtime.sendMessage({
+                action: 'ASR_SEGMENTS',
+                segments: [
+                    { text: 'mono ok', end_seconds: 2.0 },
+                    { text: 'mono back', end_seconds: 1.0 }
+                ]
+            });
+
+            // Give handler time to execute
+            setTimeout(() => {
+                const monoPass = monoIngestedTexts.length === 1 && monoIngestedTexts[0] === 'mono ok';
+                testResults.monotonic = monoPass ? 'PASS' : 'FAIL';
+                console.log(
+                    `[ISweep-ASR-Tests] Monotonic: ${testResults.monotonic}` +
+                    ` (ingested: ${monoIngestedTexts.join(', ') || 'none'})`
+                );
+            }, 50);
+
+            // Test B: Rebase self-heal
+            console.log('\n--- Test B: Rebase Self-Heal (stale sessionStart) ---');
+            const videoNow = video.currentTime;
+            asrSessionStart = Math.max(0, videoNow - 60); // Stale by 60s
+            asrSessionActive = true;
+            asrLastAbsTime = 0;
+            asrLastSegmentTs = Date.now();
+
+            const rebaseIngestedData = [];
+            window.__isweepTranscriptIngest = function(obj) {
+                rebaseIngestedData.push(obj.timestamp_seconds);
+            };
+
+            chrome.runtime.sendMessage({
+                action: 'ASR_SEGMENTS',
+                segments: [{ text: 'rebase', end_seconds: 1.5 }]
+            });
+
+            setTimeout(() => {
+                const rebasePass = rebaseIngestedData.length === 1 &&
+                    Math.abs(rebaseIngestedData[0] - videoNow) < 1.0; // Within 1s of current
+                testResults.rebase = rebasePass ? 'PASS' : 'FAIL';
+                console.log(
+                    `[ISweep-ASR-Tests] Rebase: ${testResults.rebase}` +
+                    ` (expected ~${videoNow.toFixed(2)}, got ${rebaseIngestedData[0]?.toFixed(2) || 'none'})`
+                );
+            }, 50);
+
+            // Test C: Ingest-missing behavior
+            console.log('\n--- Test C: Ingest-Missing (warn once, no absTime advance) ---');
+            asrSessionStart = video.currentTime;
+            asrSessionActive = true;
+            asrLastAbsTime = 100; // Set to known value
+            asrLastSegmentTs = Date.now();
+
+            const savedAbsTime = asrLastAbsTime;
+            window.__isweepTranscriptIngest = undefined; // Simulate missing function
+
+            chrome.runtime.sendMessage({
+                action: 'ASR_SEGMENTS',
+                segments: [{ text: 'ingest missing', end_seconds: 1.0 }]
+            });
+
+            setTimeout(() => {
+                const ingestPass = asrLastAbsTime === savedAbsTime; // Should NOT advance
+                testResults.ingestMissing = ingestPass ? 'PASS' : 'FAIL';
+                console.log(
+                    `[ISweep-ASR-Tests] Ingest-Missing: ${testResults.ingestMissing}` +
+                    ` (asrLastAbsTime remained ${asrLastAbsTime})`
+                );
+
+                // Print summary
+                console.log('\n=== ASR Test Summary ===');
+                console.log(`Monotonic:       ${testResults.monotonic}`);
+                console.log(`Rebase:          ${testResults.rebase}`);
+                console.log(`Ingest-Missing:  ${testResults.ingestMissing}`);
+            }, 50);
+
+        } finally {
+            // Restore original state
+            window.__ISWEEP_DEBUG = savedDebug;
+            asrSessionStart = savedSessionStart;
+            asrSessionActive = savedSessionActive;
+            asrLastAbsTime = savedLastAbsTime;
+            asrLastSegmentTs = savedLastSegmentTs;
+            window.__isweepTranscriptIngest = savedIngest;
+        }
+    };
+
 }).catch((err) => {
     csLog('[ISweep] Critical initialization error:', err);
 });
