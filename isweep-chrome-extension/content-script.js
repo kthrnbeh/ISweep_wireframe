@@ -523,7 +523,7 @@ const DEDUPE_WINDOW_MS = 1200; // Drop repeats within 1200ms
  * @param {Object} params - Transcript parameters
  * @param {string} params.text - Raw transcript text
  * @param {number} params.timestamp_seconds - Video timestamp in seconds
- * @param {string} params.source - Source identifier (e.g., 'html5_dom', 'speech_fallback', 'youtube')
+ * @param {string} params.source - Source identifier (e.g., 'html5_dom', 'speech_fallback', 'youtube_dom')
  */
 window.__isweepTranscriptIngest = function({ text, timestamp_seconds, source }) {
     if (!text || !text.trim()) {
