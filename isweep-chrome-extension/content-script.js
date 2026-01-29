@@ -283,7 +283,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Skip all segments if no active video
         if (!video) {
             csLog('[ISweep-ASR] Warning: No active video, skipping segment ingestion');
-            sendResponse({ success: false });
+            sendResponse({ success: false, error: 'no_active_video' });
             return true;
         }
         
