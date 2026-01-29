@@ -1309,6 +1309,7 @@ initializeFromStorage().then(() => {
 
         // Save original state and debug setting
         const savedDebug = window.__ISWEEP_DEBUG;
+        const savedCsLog = csLog;
         const savedSessionStart = asrSessionStart;
         const savedSessionActive = asrSessionActive;
         const savedLastAbsTime = asrLastAbsTime;
@@ -1383,23 +1384,21 @@ initializeFromStorage().then(() => {
 
             // Spy on debug logs to detect REBASE
             let rebaseLogCount = 0;
-            const originalCsLog = csLog;
-            const spyCsLog = function(...args) {
+            csLog = function(...args) {
                 const msg = String(args[0] || '');
                 if (msg.includes('REBASE')) {
                     rebaseLogCount++;
                 }
-                return originalCsLog(...args);
+                return savedCsLog(...args);
             };
-            
-            // Temporarily replace csLog for spy
-            window.__cs_spyLog = spyCsLog;
-            const tempCsLog = window.csLog || originalCsLog;
             
             // Call handler directly
             const rebaseResult = __isweepHandleAsrSegments({
                 segments: [{ text: 'rebase', end_seconds: 1.5 }]
             });
+
+            // Restore csLog immediately after test
+            csLog = savedCsLog;
 
             // Check PASS/FAIL: rebase should occur, and timestamp should be near videoNow
             const rebasePass = rebaseResult.success && 
@@ -1413,6 +1412,8 @@ initializeFromStorage().then(() => {
             console.log(`  Ingested payloads:`, rebaseIngestedPayloads);
             console.log(`  Expected timestamp ~${videoNow.toFixed(2)}, got ${rebaseIngestedPayloads[0]?.timestamp_seconds.toFixed(2) || 'none'}`);
             console.log(`  State: asrSessionStart=${asrSessionStart.toFixed(2)}, asrLastAbsTime=${asrLastAbsTime.toFixed(2)}`);
+            console.log(`  rebaseLogCount=${rebaseLogCount}`);
+            console.log(`  rebaseOccurred=${rebaseResult.rebaseOccurred}`);
             console.log(`  → ${testResults.rebase}`);
 
             // ===== TEST C: Ingest-Missing (warn once, no absTime advance) =====
@@ -1431,19 +1432,21 @@ initializeFromStorage().then(() => {
 
             // Create spy on csLog for warning count
             let ingestMissingLogCount = 0;
-            const origCsLog2 = csLog;
-            const spyCsLog2 = function(...args) {
+            csLog = function(...args) {
                 const msg = String(args[0] || '');
                 if (msg.includes('not available')) {
                     ingestMissingLogCount++;
                 }
-                return origCsLog2(...args);
+                return savedCsLog(...args);
             };
 
             // Call handler directly
             const ingestResult = __isweepHandleAsrSegments({
                 segments: [{ text: 'ingest missing', end_seconds: 1.0 }]
             });
+
+            // Restore csLog immediately after test
+            csLog = savedCsLog;
 
             // Check PASS/FAIL: should succeed but NOT advance asrLastAbsTime
             const ingestPass = ingestResult.success && 
@@ -1456,6 +1459,8 @@ initializeFromStorage().then(() => {
             console.log(`  asrLastAbsTime: was ${savedAbsTime}, still ${asrLastAbsTime}`);
             console.log(`  Warning logged: ${ingestMissingLogCount} time(s)`);
             console.log(`  State: asrSessionStart=${asrSessionStart.toFixed(2)}, asrLastAbsTime=${asrLastAbsTime}`);
+            console.log(`  ingestMissingLogCount=${ingestMissingLogCount}`);
+            console.log(`  __asrWarnedIngestMissing=${__asrWarnedIngestMissing}`);
             console.log(`  → ${testResults.ingestMissing}`);
 
             // ===== SUMMARY =====
@@ -1472,6 +1477,7 @@ initializeFromStorage().then(() => {
 
         } finally {
             // Restore original state (AFTER all awaits complete)
+            csLog = savedCsLog;
             window.__ISWEEP_DEBUG = savedDebug;
             asrSessionStart = savedSessionStart;
             asrSessionActive = savedSessionActive;
