@@ -10,19 +10,19 @@
  */
 
 // Helper function to update icon based on enabled state
+// Note: Using same icon for both states since no on/off variants exist
 function updateIcon(enabled) {
-    const iconSet = enabled ? 'on' : 'off';
     const icons = {
-        16: `icons/icon-16-${iconSet}.png`,
-        48: `icons/icon-48-${iconSet}.png`,
-        128: `icons/icon-128-${iconSet}.png`
+        16: 'icons/icon-16.png',
+        48: 'icons/icon-48.png',
+        128: 'icons/icon-128.png'
     };
     
     chrome.action.setIcon({ path: icons }, () => {
         if (chrome.runtime.lastError) {
             console.warn('[ISweep] Failed to set icon:', chrome.runtime.lastError);
         } else {
-            console.log(`[ISweep] Icon updated to ${iconSet.toUpperCase()}`);
+            console.log(`[ISweep] Icon updated (enabled: ${enabled})`);
         }
     });
 }
