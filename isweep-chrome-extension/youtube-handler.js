@@ -28,6 +28,7 @@
     let lastCaptionText = '';
     let ytCaptionObserver = null;
     let transcriptIngestWarningLogged = false; // Track if we've warned about missing __isweepTranscriptIngest
+    let noCaptionsWarningLogged = false; // Track if we've warned about missing captions
 
     let isEnabled = false;
 
@@ -232,6 +233,20 @@
         }
 
         monitorYouTubeCaptions();
+        
+        // Startup diagnostic: check for captions after 5 seconds if enabled
+        setTimeout(() => {
+            if (isEnabled && !noCaptionsWarningLogged) {
+                const video = getYouTubeVideoElement();
+                if (video && !video.paused) {
+                    const segments = getCaptionSegments();
+                    if (segments.length === 0) {
+                        noCaptionsWarningLogged = true;
+                        console.warn('[ISweep-YT] No captions detected. Turn on YouTube captions (CC) or enable Backend Transcription mode.');
+                    }
+                }
+            }
+        }, 5000);
     }
 
     // Expose for potential future extensions or debugging
