@@ -665,12 +665,34 @@ window.__isweepSelfTest = function() {
     window.__isweepTranscriptIngest?.({ text: 'self test bitch', timestamp_seconds: v?.currentTime || 0, source: 'manual_test' });
 };
 
-window.__isweepApplyDecision = function(decision) {
-    const videoElement = getActiveVideo();
-    if (!videoElement) {
-        csLog('[ISweep] No active video to apply decision');
+/**
+ * Debug helper: Simulate ASR segment for testing
+ * Usage: window.__isweepDebugSimulateAsr("test text", 1.5)
+ */
+window.__isweepDebugSimulateAsr = function(text, endSeconds) {
+    const video = getActiveVideo();
+    
+    // Safe guard: require active video
+    if (!video) {
+        csLog('[ISweep-ASR-Debug] No active video, aborting simulation');
         return;
     }
+    
+    // Initialize or update session state
+    if (!asrSessionActive) {
+        asrSessionStart = isFinite(video.currentTime) ? video.currentTime : 0;
+        asrSessionActive = true;
+        csLog(`[ISweep-ASR-Debug] Session initialized: ${asrSessionStart.toFixed(2)}s`);
+    }
+    
+    // Compute absolute time
+    const relativeTime = Number(endSeconds) || 0;
+    const absTime = asrSessionStart + relativeTime;
+    
+    csLog(`[ISweep-ASR-Debug] Simulating: text="${text}" sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relativeTime.toFixed(2)} → abs=${absTime.toFixed(2)}`);
+    
+    // Ingest through same path
+    if (typeof window.__isweepTranscriptIngest === 'function') {\n        window.__isweepTranscriptIngest({\n            text: text,\n            timestamp_seconds: absTime,\n            source: 'backend_asr'\n        });\n    } else {\n        csLog('[ISweep-ASR-Debug] ERROR: __isweepTranscriptIngest not available');\n    }\n};\n\nwindow.__isweepApplyDecision = function(decision) {\n    const videoElement = getActiveVideo();\n    if (!videoElement) {\n        csLog('[ISweep] No active video to apply decision');\n        return;\n    }
 
     const { action, duration_seconds, reason, matched_term, matched_category } = decision;
     const langPrefs = getLangPrefs();
