@@ -256,7 +256,22 @@ async function initializeFromStorage() {
 
 // Listen for toggle messages from popup (SINGLE unified listener)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message && message.action === 'toggleISweep' && typeof message.enabled !== 'undefined') {
+    if (message && message.action === 'ASR_SEGMENTS') {
+        // Ingest ASR segments from backend
+        if (message.segments && Array.isArray(message.segments)) {
+            message.segments.forEach(seg => {
+                if (seg.text && typeof window.__isweepTranscriptIngest === 'function') {
+                    window.__isweepTranscriptIngest({
+                        text: seg.text,
+                        timestamp_seconds: seg.end_seconds || seg.start_seconds || 0,
+                        source: 'backend_asr'
+                    });
+                }
+            });
+        }
+        sendResponse({ success: true });
+        return true;
+    } else if (message && message.action === 'toggleISweep' && typeof message.enabled !== 'undefined') {
         isEnabled = message.enabled;
         csLog('[ISweep] Toggled via popup:', isEnabled ? 'ENABLED' : 'DISABLED');
         

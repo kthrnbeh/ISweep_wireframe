@@ -22,6 +22,10 @@
     let currentChunkStartTime = null;
     let lastSeq = 0;
 
+    // ASR Status: "idle" | "starting" | "streaming" | "error" | "stopped"
+    let asrStatus = 'idle';
+    let metricsInterval = null;
+
     function asrLog(...args) {
         console.log('[ISweep-ASR]', ...args);
     }
@@ -84,6 +88,8 @@
         backendUrl = backendUrlParam;
         userId = userIdParam;
         sequenceNumber = 0;
+        asrStatus = 'starting';
+        await updateAsrStatus(asrStatus);
 
         try {
             asrLog(`Starting audio capture for tab ${tabId} -> ${backendUrl}`);
@@ -127,6 +133,12 @@
             // Start recording
             mediaRecorder.start(CHUNK_INTERVAL_MS);
             sessionActive = true;
+            asrStatus = 'streaming';
+            await updateAsrStatus(asrStatus);
+
+            // Start metrics reporting interval
+            if (metricsInterval) clearInterval(metricsInterval);
+            metricsInterval = setInterval(reportMetrics, METRICS_INTERVAL_MS);
 
             // Timer to periodically request data and stream
             streamAudioChunks();
@@ -134,6 +146,8 @@
             asrLog('Audio capture started, streaming chunks every', CHUNK_INTERVAL_MS, 'ms');
         } catch (error) {
             asrLog('ERROR starting audio capture:', error.message || error);
+            asrStatus = 'error';
+            await updateAsrStatus(asrStatus);
             stopAudioCapture();
         }
     }
@@ -199,6 +213,10 @@
                         const sendTimeMs = fetchStartTime - sendStartTime;
                         const rttMs = fetchEndTime - fetchStartTime;
 
+                        // Track latency metrics
+                        sendTimings.push({ sendTime: sendTimeMs, rttTime: rttMs });
+                        lastSeq = sequenceNumber;
+
                         if (!response.ok) {
                             asrLog(`Backend error: ${response.status}`);
                             await updateAsrStatus('Error');
@@ -215,7 +233,7 @@
                         if (result.segments && result.segments.length > 0) {
                             // Forward segments to background script
                             chrome.runtime.sendMessage({
-                                action: 'ASR_SEGMENTS_READY',
+                                action: 'ASR_SEGMENTS',
                                 tabId: tabId,
                                 segments: result.segments
                             }).catch(err => {
@@ -250,11 +268,19 @@
     /**
      * Stop audio capture and cleanup
      */
-    function stopAudioCapture() {
+    async function stopAudioCapture() {
         asrLog('Stopping audio capture');
 
         sessionActive = false;
         sequenceNumber = 0;
+        asrStatus = 'stopped';
+        await updateAsrStatus(asrStatus);
+
+        // Clear metrics interval
+        if (metricsInterval) {
+            clearInterval(metricsInterval);
+            metricsInterval = null;
+        }
 
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             try {

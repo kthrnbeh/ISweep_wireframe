@@ -137,6 +137,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'logEvent') {
         console.log('[ISweep]', request.message);
         sendResponse({ success: true });
+    } else if (request.action === 'ASR_SEGMENTS') {
+        // Forward ASR segments from offscreen to content script
+        const { tabId, segments } = request;
+        if (tabId && segments && segments.length > 0) {
+            chrome.tabs.sendMessage(tabId, {
+                action: 'ASR_SEGMENTS',
+                segments: segments
+            }).catch(err => {
+                console.warn('[ISweep-BG] Failed to send ASR segments to tab:', err.message);
+            });
+        }
+        sendResponse({ success: true });
     } else if (request.action === 'startAsr') {
         // Popup requests ASR start
         const { backendUrl, userId } = request;

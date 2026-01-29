@@ -12,6 +12,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const videosDetectedSpan = document.getElementById('videosDetected');
     const actionsAppliedSpan = document.getElementById('actionsApplied');
 
+    // ASR status elements
+    const asrStatusSection = document.getElementById('asrStatusSection');
+    const asrStatusText = document.getElementById('asrStatusText');
+    const asrSendMs = document.getElementById('asrSendMs');
+    const asrRttMs = document.getElementById('asrRttMs');
+
     // Validate all required elements exist
     const requiredElements = {
         toggleButton,
@@ -42,12 +48,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Load state from Chrome storage
-    let { isweepPrefs, isweep_enabled, isweep_asr_enabled, videosDetected, actionsApplied } = await chrome.storage.local.get([
+    let { isweepPrefs, isweep_enabled, isweep_asr_enabled, videosDetected, actionsApplied, isweep_asr_status, isweep_asr_metrics } = await chrome.storage.local.get([
         'isweepPrefs',
         'isweep_enabled',
         'isweep_asr_enabled',
         'videosDetected',
-        'actionsApplied'
+        'actionsApplied',
+        'isweep_asr_status',
+        'isweep_asr_metrics'
     ]);
 
     console.log('[ISweep-Popup] Loaded state from storage:', { isweepPrefs, isweep_enabled, isweep_asr_enabled, videosDetected, actionsApplied });
@@ -100,6 +108,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     isweep_enabled = Boolean(isweep_enabled);
     updateUI(isweep_enabled);
     console.log('[ISweep-Popup] Initial enabled state:', isweep_enabled);
+
+    // Update ASR status display
+    const updateAsrStatus = (status, metrics) => {
+        if (!asrStatusSection || !asrStatusText) return;
+
+        if (asrToggle && asrToggle.checked && status) {
+            asrStatusSection.style.display = 'block';
+            
+            // Map status to display text
+            const statusMap = {
+                'idle': 'Off',
+                'starting': 'Connecting...',
+                'streaming': 'Streaming',
+                'error': 'Error',
+                'stopped': 'Stopped'
+            };
+            
+            const displayStatus = statusMap[status] || status;
+            asrStatusText.textContent = displayStatus;
+            
+            // Update color based on status
+            if (status === 'streaming') {
+                asrStatusText.style.color = '#10b981';
+            } else if (status === 'error') {
+                asrStatusText.style.color = '#ef4444';
+            } else {
+                asrStatusText.style.color = '#666';
+            }
+            
+            // Update metrics if available
+            if (metrics && asrSendMs && asrRttMs) {
+                asrSendMs.textContent = metrics.avg_send_ms != null ? `${metrics.avg_send_ms}ms` : '—';
+                asrRttMs.textContent = metrics.avg_rtt_ms != null ? `${metrics.avg_rtt_ms}ms` : '—';
+            }
+        } else {
+            asrStatusSection.style.display = 'none';
+        }
+    };
+
+    // Initial ASR status update
+    updateAsrStatus(isweep_asr_status, isweep_asr_metrics);
 
     // Validation function for backend URL
     const isValidBackendUrl = (url) => {
@@ -238,6 +287,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             isweep_asr_enabled = Boolean(changes.isweep_asr_enabled.newValue);
             asrToggle.checked = isweep_asr_enabled;
             console.log('[ISweep-Popup] Updated ASR state from isweep_asr_enabled:', isweep_asr_enabled);
+            updateAsrStatus(isweep_asr_status, isweep_asr_metrics);
+        }
+
+        // Handle isweep_asr_status changes
+        if (changes.isweep_asr_status) {
+            isweep_asr_status = changes.isweep_asr_status.newValue;
+            updateAsrStatus(isweep_asr_status, isweep_asr_metrics);
+            console.log('[ISweep-Popup] Updated ASR status:', isweep_asr_status);
+        }
+
+        // Handle isweep_asr_metrics changes
+        if (changes.isweep_asr_metrics) {
+            isweep_asr_metrics = changes.isweep_asr_metrics.newValue;
+            updateAsrStatus(isweep_asr_status, isweep_asr_metrics);
+            console.log('[ISweep-Popup] Updated ASR metrics:', isweep_asr_metrics);
         }
 
         // Handle videosDetected changes
