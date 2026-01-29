@@ -139,12 +139,12 @@
     }
 
     /**
-     * Stream audio chunks to backend at regular intervals
+     * Stream audio chunks to backend at regular intervals with latency tracking
      */
     async function streamAudioChunks() {
         const streamInterval = setInterval(async () => {
             if (!sessionActive || !mediaRecorder) {
-                clearInterval(streamInterval);
+                if (!sessionActive) clearInterval(streamInterval);
                 return;
             }
 
@@ -155,14 +155,96 @@
                 // Small delay to allow ondataavailable to fire
                 await new Promise(resolve => setTimeout(resolve, 100));
 
-                // Post to backend via message relay (background will handle batch if needed)
-                // For now, just log intent
-                asrLog(`Chunk ${sequenceNumber} ready for streaming`);
+                // Get pending chunks from buffer (implemented via ondataavailable)
+                // For this simplified implementation, create a blob from current recording
+                const blob = await new Promise((resolve, reject) => {
+                    // Create a temporary stream snapshot
+                    const handler = async (event) => {
+                        if (event.data.size > 0) {
+                            mediaRecorder.removeEventListener('dataavailable', handler);
+                            resolve(event.data);
+                        }
+                    };
+                    mediaRecorder.addEventListener('dataavailable', handler);
+                    try {
+                        mediaRecorder.requestData();
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+
+                const sendStartTime = Date.now();
+                const reader = new FileReader();
+
+                reader.onload = async () => {
+                    const base64Data = reader.result.split(',')[1];
+                    const fetchStartTime = Date.now();
+
+                    try {
+                        await updateAsrStatus('Streaming');
+
+                        const response = await fetch(`${backendUrl}/asr/stream`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user_id: userId,
+                                tab_id: tabId,
+                                seq: sequenceNumber,
+                                mime_type: 'audio/webm;codecs=opus',
+                                audio_b64: base64Data
+                            })
+                        });
+
+                        const fetchEndTime = Date.now();
+                        const sendTimeMs = fetchStartTime - sendStartTime;
+                        const rttMs = fetchEndTime - fetchStartTime;
+
+                        if (!response.ok) {
+                            asrLog(`Backend error: ${response.status}`);
+                            await updateAsrStatus('Error');
+                            return;
+                        }
+
+                        // Track latency
+                        sendTimings.push({ sendTime: sendTimeMs, rttTime: rttMs });
+                        lastSeq = sequenceNumber;
+
+                        // Parse response
+                        const result = await response.json();
+
+                        if (result.segments && result.segments.length > 0) {
+                            // Forward segments to background script
+                            chrome.runtime.sendMessage({
+                                action: 'ASR_SEGMENTS_READY',
+                                tabId: tabId,
+                                segments: result.segments
+                            }).catch(err => {
+                                asrLog('Failed to send segments to background:', err.message);
+                            });
+
+                            asrLog(`Streamed seq ${sequenceNumber}: ${result.segments.length} segments, send=${sendTimeMs}ms, rtt=${rttMs}ms`);
+                        }
+
+                        await updateAsrStatus('Streaming');
+                    } catch (error) {
+                        asrLog('Error posting chunk to backend:', error.message || error);
+                        await updateAsrStatus('Error');
+                    }
+                };
+
+                reader.onerror = () => {
+                    asrLog('Error reading chunk as base64');
+                };
+
+                reader.readAsDataURL(blob);
                 sequenceNumber++;
             } catch (error) {
-                asrLog('Error requesting audio data:', error.message || error);
+                asrLog('Error in stream interval:', error.message || error);
             }
         }, CHUNK_INTERVAL_MS + 100);
+
+        // Start metrics reporting timer
+        metricsTimer = setInterval(reportMetrics, METRICS_INTERVAL_MS);
     }
 
     /**
