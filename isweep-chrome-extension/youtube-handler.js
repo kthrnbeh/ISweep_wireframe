@@ -27,6 +27,7 @@
     let youtubePlayer = null;
     let lastCaptionText = '';
     let ytCaptionObserver = null;
+    let transcriptIngestWarningLogged = false; // Track if we've warned about missing __isweepTranscriptIngest
 
     let isEnabled = false;
 
@@ -181,14 +182,18 @@
                 .replace(/\s+/g, ' ')
                 .trim();
 
-            if (typeof window.__isweepEmitText === 'function') {
-                await window.__isweepEmitText({
+            if (typeof window.__isweepTranscriptIngest === 'function') {
+                window.__isweepTranscriptIngest({
                     text: cleanCaption,
                     timestamp_seconds,
                     source: 'youtube_dom'
                 });
             } else {
-                ytLog('[ISweep-YT] __isweepEmitText not available, skipping');
+                // Log warning only once to avoid spam
+                if (!transcriptIngestWarningLogged) {
+                    transcriptIngestWarningLogged = true;
+                    console.warn('[ISweep-YT] window.__isweepTranscriptIngest not available (content-script may not be loaded)');
+                }
             }
         } catch (error) {
             console.warn('[ISweep-YT] API error:', error.message || error);
