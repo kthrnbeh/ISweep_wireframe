@@ -113,79 +113,9 @@
                 audioBitsPerSecond: 128000 // 128 kbps
             });
 
-            // Collect chunks
-            const chunks = [];
-
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    chunks.push(event.data);
-                }
-            };
-
-            mediaRecorder.onstop = () => {
-                asrLog('MediaRecorder stopped');
-            };
-
-            mediaRecorder.onerror = (event) => {
-                asrLog('MediaRecorder error:', event.error);
-            };
-
-            // Start recording
-            mediaRecorder.start(CHUNK_INTERVAL_MS);
-            sessionActive = true;
-            asrStatus = 'streaming';
-            await updateAsrStatus(asrStatus);
-
-            // Start metrics reporting interval
-            if (metricsInterval) clearInterval(metricsInterval);
-            metricsInterval = setInterval(reportMetrics, METRICS_INTERVAL_MS);
-
-            // Timer to periodically request data and stream
-            streamAudioChunks();
-
-            asrLog('Audio capture started, streaming chunks every', CHUNK_INTERVAL_MS, 'ms');
-        } catch (error) {
-            asrLog('ERROR starting audio capture:', error.message || error);
-            asrStatus = 'error';
-            await updateAsrStatus(asrStatus);
-            stopAudioCapture();
-        }
-    }
-
-    /**
-     * Stream audio chunks to backend at regular intervals with latency tracking
-     */
-    async function streamAudioChunks() {
-        const streamInterval = setInterval(async () => {
-            if (!sessionActive || !mediaRecorder) {
-                if (!sessionActive) clearInterval(streamInterval);
-                return;
-            }
-
-            try {
-                // Request data from recorder (triggers ondataavailable)
-                mediaRecorder.requestData();
-
-                // Small delay to allow ondataavailable to fire
-                await new Promise(resolve => setTimeout(resolve, 100));
-
-                // Get pending chunks from buffer (implemented via ondataavailable)
-                // For this simplified implementation, create a blob from current recording
-                const blob = await new Promise((resolve, reject) => {
-                    // Create a temporary stream snapshot
-                    const handler = async (event) => {
-                        if (event.data.size > 0) {
-                            mediaRecorder.removeEventListener('dataavailable', handler);
-                            resolve(event.data);
-                        }
-                    };
-                    mediaRecorder.addEventListener('dataavailable', handler);
-                    try {
-                        mediaRecorder.requestData();
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
+            // Single handler: send each chunk as it becomes available
+            mediaRecorder.ondataavailable = async (event) => {
+                if (!sessionActive || event.data.size === 0) return;
 
                 const sendStartTime = Date.now();
                 const reader = new FileReader();
@@ -195,8 +125,6 @@
                     const fetchStartTime = Date.now();
 
                     try {
-                        await updateAsrStatus('Streaming');
-
                         const response = await fetch(`${backendUrl}/asr/stream`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -219,19 +147,17 @@
 
                         if (!response.ok) {
                             asrLog(`Backend error: ${response.status}`);
-                            await updateAsrStatus('Error');
+                            asrStatus = 'error';
+                            await updateAsrStatus(asrStatus);
+                            await chrome.storage.local.set({
+                                isweep_asr_fallback_reason: 'backend_error'
+                            });
                             return;
                         }
 
-                        // Track latency
-                        sendTimings.push({ sendTime: sendTimeMs, rttTime: rttMs });
-                        lastSeq = sequenceNumber;
-
-                        // Parse response
                         const result = await response.json();
 
                         if (result.segments && result.segments.length > 0) {
-                            // Forward segments to background script
                             chrome.runtime.sendMessage({
                                 action: 'ASR_SEGMENTS',
                                 tabId: tabId,
@@ -242,11 +168,13 @@
 
                             asrLog(`Streamed seq ${sequenceNumber}: ${result.segments.length} segments, send=${sendTimeMs}ms, rtt=${rttMs}ms`);
                         }
-
-                        await updateAsrStatus('Streaming');
                     } catch (error) {
                         asrLog('Error posting chunk to backend:', error.message || error);
-                        await updateAsrStatus('Error');
+                        asrStatus = 'error';
+                        await updateAsrStatus(asrStatus);
+                        await chrome.storage.local.set({
+                            isweep_asr_fallback_reason: 'network_error'
+                        });
                     }
                 };
 
@@ -254,16 +182,38 @@
                     asrLog('Error reading chunk as base64');
                 };
 
-                reader.readAsDataURL(blob);
+                reader.readAsDataURL(event.data);
                 sequenceNumber++;
-            } catch (error) {
-                asrLog('Error in stream interval:', error.message || error);
-            }
-        }, CHUNK_INTERVAL_MS + 100);
+            };
 
-        // Start metrics reporting timer
-        metricsTimer = setInterval(reportMetrics, METRICS_INTERVAL_MS);
+            mediaRecorder.onstop = () => {
+                asrLog('MediaRecorder stopped');
+            };
+
+            mediaRecorder.onerror = (event) => {
+                asrLog('MediaRecorder error:', event.error);
+            };
+
+            // Start recording - chunks emitted automatically every CHUNK_INTERVAL_MS
+            mediaRecorder.start(CHUNK_INTERVAL_MS);
+            sessionActive = true;
+            asrStatus = 'streaming';
+            await updateAsrStatus(asrStatus);
+
+            // Start metrics reporting interval
+            if (metricsInterval) clearInterval(metricsInterval);
+            metricsInterval = setInterval(reportMetrics, METRICS_INTERVAL_MS);
+
+            asrLog('Audio capture started, streaming chunks every', CHUNK_INTERVAL_MS, 'ms');
+        } catch (error) {
+            asrLog('ERROR starting audio capture:', error.message || error);
+            asrStatus = 'error';
+            await updateAsrStatus(asrStatus);
+            stopAudioCapture();
+        }
     }
+
+
 
     /**
      * Stop audio capture and cleanup
