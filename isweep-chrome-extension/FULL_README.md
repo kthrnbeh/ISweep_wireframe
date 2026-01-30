@@ -143,9 +143,9 @@ See [YOUTUBE_TESTING.md](YOUTUBE_TESTING.md)
 
 ### Backend Integration
 
-Settings automatically sync to backend when saved:
+Settings automatically sync to backend when configured:
 ```
-POST http://127.0.0.1:8001/preferences
+POST <BACKEND_URL>/preferences
 {
   "user_id": "user123",
   "category": "language",
@@ -191,7 +191,7 @@ POST http://127.0.0.1:8001/preferences
 
 ### Backend Connection
 
-ISweep backend must be running at configured URL (default: `http://127.0.0.1:8001`)
+ISweep backend is optional. If configured, it should be running at your chosen URL.
 
 **Endpoints used:**
 - `POST /event` — Send caption text, get decision
@@ -227,7 +227,7 @@ POST /event
 
 **Extension not working?**
 - Reload: `chrome://extensions/` → reload button
-- Check backend running: `http://127.0.0.1:8001/health`
+- If using a backend, check its health endpoint
 - Open DevTools (F12) → Console for errors
 
 **Actions not applying?**
@@ -251,8 +251,8 @@ POST /event
 ### Backend Errors
 
 **"Cannot connect to backend"?**
-- Start backend: `python -m app --port 8001 --no-reload`
-- Verify URL in popup (default: `http://127.0.0.1:8001`)
+- Start backend if you intend to use one
+- Verify the URL in the popup matches your backend
 - Check Network tab in DevTools
 
 ---

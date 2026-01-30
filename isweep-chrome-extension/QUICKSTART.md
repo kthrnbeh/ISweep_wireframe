@@ -22,18 +22,13 @@ You should see the ISweep extension appear in your extensions list and in the to
 
 ## 🚀 Usage
 
-### Step 1: Ensure Backend is Running
-Make sure the ISweep backend is running:
-```bash
-cd c:\ISweep_wireframe\isweep-backend
-python -m app --port 8001 --no-reload
-```
-Check: http://127.0.0.1:8001/docs should work
+### Step 1: Backend (Optional)
+If you want backend decisions, start your backend and note its base URL.
 
 ### Step 2: Configure Extension
 1. Click the **ISweep icon** in Chrome's top right
 2. Enter a **User ID** (e.g., `user123`)
-3. Verify **Backend URL** is `http://127.0.0.1:8001`
+3. If using a backend, set **Backend URL** to your backend base URL
 4. Click **Enable ISweep**
 
 ### Step 3: Test on a Video
@@ -128,7 +123,7 @@ Then open with `file://` protocol and test.
 - Check DevTools console for errors
 
 ### Backend connection fails?
-- Verify backend running: `http://127.0.0.1:8001/health`
+- Verify backend is running on your configured URL
 - Check Network tab in DevTools
 - Ensure correct URL in popup
 

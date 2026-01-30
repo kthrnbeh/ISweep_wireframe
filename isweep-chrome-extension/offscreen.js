@@ -81,7 +81,7 @@
     /**
      * Start audio capture from tab and stream to backend
      * @param {number} tabIdParam - Chrome tab ID to capture
-     * @param {string} backendUrlParam - Backend URL (e.g., http://127.0.0.1:8001)
+    * @param {string} backendUrlParam - Backend URL (configured by user)
      * @param {string} userIdParam - User ID for tracking
      */
     async function startAudioCapture(tabIdParam, backendUrlParam, userIdParam) {

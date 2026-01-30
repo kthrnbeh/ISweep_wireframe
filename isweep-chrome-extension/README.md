@@ -25,7 +25,7 @@ Browser extension that detects and controls video playback based on content filt
 
 1. Click the ISweep icon in the top right
 2. Enter your **User ID** (must match backend)
-3. Ensure **Backend URL** points to running backend (default: `http://127.0.0.1:8001`)
+3. If using a backend, set **Backend URL** to your backend base URL
 4. Click **Enable ISweep**
 5. The extension will now monitor all videos on the page
 
@@ -64,10 +64,10 @@ isweep-chrome-extension/
 
 ## Backend Integration
 
-The extension communicates with ISweep backend:
+The extension can communicate with an optional ISweep backend:
 
 ```
-Backend URL: http://127.0.0.1:8001
+Backend URL: <BACKEND_URL>
 Endpoint: POST /event
 
 Request:
@@ -103,7 +103,7 @@ Enable Chrome DevTools (F12) to see ISweep logs:
 - Try reloading the page
 
 ### Backend connection failing?
-- Verify backend is running on specified URL
+- Verify backend is running on the configured URL
 - Check backend URL in extension popup
 - Look for API errors in Console
 
