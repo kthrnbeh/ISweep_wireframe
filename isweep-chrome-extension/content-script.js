@@ -772,7 +772,23 @@ window.__isweepDebugSimulateAsr = function(text, endSeconds) {
     csLog(`[ISweep-ASR-Debug] Simulating: text="${text}" sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relativeTime.toFixed(2)} -> abs=${absTime.toFixed(2)}`);
     
     // Ingest through same path
-    if (typeof window.__isweepTranscriptIngest === 'function') {\n        window.__isweepTranscriptIngest({\n            text: text,\n            timestamp_seconds: absTime,\n            source: 'backend_asr'\n        });\n    } else {\n        csLog('[ISweep-ASR-Debug] ERROR: __isweepTranscriptIngest not available');\n    }\n};\n\nwindow.__isweepApplyDecision = function(decision) {\n    const videoElement = getActiveVideo();\n    if (!videoElement) {\n        csLog('[ISweep] No active video to apply decision');\n        return;\n    }
+    if (typeof window.__isweepTranscriptIngest === 'function') {
+        window.__isweepTranscriptIngest({
+            text: text,
+            timestamp_seconds: absTime,
+            source: 'backend_asr'
+        });
+    } else {
+        csLog('[ISweep-ASR-Debug] ERROR: __isweepTranscriptIngest not available');
+    }
+};
+
+window.__isweepApplyDecision = function(decision) {
+    const videoElement = getActiveVideo();
+    if (!videoElement) {
+        csLog('[ISweep] No active video to apply decision');
+        return;
+    }
 
     const { action, duration_seconds, reason, matched_term, matched_category } = decision;
     const langPrefs = getLangPrefs();
