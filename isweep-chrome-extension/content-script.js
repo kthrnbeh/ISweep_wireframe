@@ -1491,10 +1491,10 @@ initializeFromStorage().then(() => {
             console.log(`  → ${testResults.ingestMissing}`);
 
             // ===== SUMMARY =====
-            console.log('\n╔════════════════════════════════════════╗');
+            console.log('\n==============================');
             console.log('║        ASR HANDLER TEST SUMMARY        ║');
             console.log('╠════════════════════════════════════════╣');
-            console.log(`║ A) Monotonic Guard:     ${testResults.monotonic === 'PASS' ? '✓ PASS' : '✗ FAIL'}           ║`);
+            console.log(`A) Monotonic Guard: ${testResults.monotonic}`);
             console.log(`║ B) Rebase Self-Heal:    ${testResults.rebase === 'PASS' ? '✓ PASS' : '✗ FAIL'}           ║`);
             console.log(`║ C) Ingest-Missing:      ${testResults.ingestMissing === 'PASS' ? '✓ PASS' : '✗ FAIL'}           ║`);
             console.log('╚════════════════════════════════════════╝');
