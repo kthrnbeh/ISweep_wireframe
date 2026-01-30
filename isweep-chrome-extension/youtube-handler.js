@@ -190,10 +190,10 @@
                     source: 'youtube_dom'
                 });
             } else {
-                // Log warning only once to avoid spam
+                // Skip silently if content-script not ready (race condition)
                 if (!transcriptIngestWarningLogged) {
                     transcriptIngestWarningLogged = true;
-                    console.warn('[ISweep-YT] window.__isweepTranscriptIngest not available (content-script may not be loaded)');
+                    ytLog('[ISweep-YT] Transcript ingest not ready yet; skipping');
                 }
             }
         } catch (error) {

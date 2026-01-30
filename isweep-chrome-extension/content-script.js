@@ -27,7 +27,7 @@ window.__isweepContentLoaded = true;
 
 let isEnabled = false;
 let userId = 'user123';
-let backendURL = 'http://127.0.0.1:8001';
+let backendURL = '';
 let detectedVideos = 0;
 let appliedActions = 0;
 let isMuted = false; // Safe mute state
@@ -54,6 +54,7 @@ let __asrWarnedEmptyText = false; // Track if we've logged empty text warning
 let __asrWarnedBadEnd = false; // Track if we've logged invalid timestamp warning
 let __asrWarnedNonMonotonic = false; // Track if we've logged non-monotonic segment warning
 let __asrWarnedIngestMissing = false; // Track if we've logged missing ingest function warning
+let backendMissingLogged = false; // Track if we've logged missing backend configuration
 
 // In-memory preferences organized by category
 let prefsByCategory = {
@@ -80,6 +81,12 @@ function textIncludesTerm(normalizedText, term) {
     const normalizedTerm = normalizeText(term);
     if (!normalizedText || !normalizedTerm) return false;
     return normalizedText.includes(normalizedTerm);
+}
+
+function isBackendConfigured(url) {
+    if (!url || typeof url !== 'string') return false;
+    const trimmed = url.trim();
+    return trimmed.length > 0 && (trimmed.startsWith('http://') || trimmed.startsWith('https://'));
 }
 
 /**
@@ -154,6 +161,10 @@ function shouldApplyMute(term) {
  */
 async function fetchPreferencesFromBackend() {
     try {
+        if (!isBackendConfigured(backendURL)) {
+            csLog('[ISweep] Backend URL not configured; skipping preference fetch');
+            return false;
+        }
         const url = `${backendURL}/preferences/${userId}`;
         csLog('[ISweep] Fetching preferences from:', url);
         
@@ -219,7 +230,7 @@ async function initializeFromStorage() {
     // Use isweepPrefs as primary source, fallback to individual keys for backward compatibility
     if (result.isweepPrefs) {
         userId = result.isweepPrefs.user_id || 'user123';
-        backendURL = result.isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
+        backendURL = result.isweepPrefs.backendUrl || '';
         
         // Set blocked_words from isweepPrefs
         if (result.isweepPrefs.blocked_words && Array.isArray(result.isweepPrefs.blocked_words)) {
@@ -241,7 +252,7 @@ async function initializeFromStorage() {
     } else {
         // Fallback to individual keys for backward compatibility
         userId = result.userId || 'user123';
-        backendURL = result.backendURL || 'http://127.0.0.1:8001';
+        backendURL = result.backendURL || '';
         
         // Load cached preferences if available
         if (result.cachedPrefsByCategory) {
@@ -264,8 +275,12 @@ async function initializeFromStorage() {
     }
     
     // If enabled, fetch fresh preferences from backend (and update cache)
-    csLog('[ISweep] Extension is ENABLED, fetching fresh preferences from backend...');
-    await fetchPreferencesFromBackend();
+    if (isBackendConfigured(backendURL)) {
+        csLog('[ISweep] Extension is ENABLED, fetching fresh preferences from backend...');
+        await fetchPreferencesFromBackend();
+    } else {
+        csLog('[ISweep] Extension is ENABLED, but backend is not configured');
+    }
 }
 
 /**
@@ -932,6 +947,14 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source, capt
         return;
     }
 
+    if (!isBackendConfigured(backendURL)) {
+        if (!backendMissingLogged) {
+            backendMissingLogged = true;
+            console.warn('[ISweep] Backend not configured; running in local-only mode');
+        }
+        return;
+    }
+
     const payload = {
         user_id: userId,
         text: normalizedText, // Send normalized text to backend
@@ -965,7 +988,7 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source, capt
             window.__isweepApplyDecision(decision);
         }
     } catch (error) {
-        console.warn('[ISweep] API error:', error);
+        console.warn('[ISweep] Backend unavailable:', error);
     }
 };
 
