@@ -25,9 +25,11 @@ if (window.__isweepContentLoaded) {
 }
 window.__isweepContentLoaded = true;
 
+const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8001';
+
 let isEnabled = false;
 let userId = 'user123';
-let backendURL = '';
+let backendURL = DEFAULT_BACKEND_URL;
 let detectedVideos = 0;
 let appliedActions = 0;
 let isMuted = false; // Safe mute state
@@ -55,6 +57,7 @@ let __asrWarnedBadEnd = false; // Track if we've logged invalid timestamp warnin
 let __asrWarnedNonMonotonic = false; // Track if we've logged non-monotonic segment warning
 let __asrWarnedIngestMissing = false; // Track if we've logged missing ingest function warning
 let backendMissingLogged = false; // Track if we've logged missing backend configuration
+let lastBackendErrorLogTs = 0; // Rate-limit backend error logs
 
 // In-memory preferences organized by category
 let prefsByCategory = {
@@ -230,7 +233,7 @@ async function initializeFromStorage() {
     // Use isweepPrefs as primary source, fallback to individual keys for backward compatibility
     if (result.isweepPrefs) {
         userId = result.isweepPrefs.user_id || 'user123';
-        backendURL = result.isweepPrefs.backendUrl || '';
+        backendURL = result.isweepPrefs.backendUrl || DEFAULT_BACKEND_URL;
         
         // Set blocked_words from isweepPrefs
         if (result.isweepPrefs.blocked_words && Array.isArray(result.isweepPrefs.blocked_words)) {
@@ -252,7 +255,7 @@ async function initializeFromStorage() {
     } else {
         // Fallback to individual keys for backward compatibility
         userId = result.userId || 'user123';
-        backendURL = result.backendURL || '';
+        backendURL = result.backendURL || DEFAULT_BACKEND_URL;
         
         // Load cached preferences if available
         if (result.cachedPrefsByCategory) {
@@ -988,7 +991,11 @@ window.__isweepEmitText = async function({ text, timestamp_seconds, source, capt
             window.__isweepApplyDecision(decision);
         }
     } catch (error) {
-        console.warn('[ISweep] Backend unavailable:', error);
+        const now = Date.now();
+        if (now - lastBackendErrorLogTs >= 10000) {
+            lastBackendErrorLogTs = now;
+            console.warn('[ISweep] Backend unavailable (best-effort):', error);
+        }
     }
 };
 

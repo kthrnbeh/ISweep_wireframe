@@ -1,6 +1,7 @@
 import { PRESET_PACKS, getPackWords, mergeWords } from './preset-packs.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8001';
     const statusMessage = document.getElementById('statusMessage');
     const saveBtn = document.getElementById('saveButton');
     const resetBtn = document.getElementById('resetButton');
@@ -52,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function getBackendConfig() {
         const storage = await chrome.storage.local.get(['userId', 'backendURL', 'isweepPrefs']);
         const userId = storage.userId || storage.isweepPrefs?.user_id || 'user123';
-        const backendURL = storage.isweepPrefs?.backendUrl || storage.backendURL || '';
+        const backendURL = storage.isweepPrefs?.backendUrl || storage.backendURL || DEFAULT_BACKEND_URL;
         return { userId, backendURL };
     }
 
