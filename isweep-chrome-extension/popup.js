@@ -1,5 +1,6 @@
 // popup.js
 document.addEventListener('DOMContentLoaded', async () => {
+    const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8001';
     // Guard: Check for all required elements
     const toggleButton = document.getElementById('toggleButton');
     const asrToggle = document.getElementById('asrToggle');
@@ -63,7 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize isweepPrefs with defaults if not set
     isweepPrefs = isweepPrefs || {
         user_id: 'user123',
-        backendUrl: '',
+        backendUrl: DEFAULT_BACKEND_URL,
         blocked_words: [],
         duration_seconds: 3,
         action: 'mute'
@@ -77,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Set initial values in UI
     userIdInput.value = isweepPrefs.user_id || 'user123';
-    backendUrlInput.value = isweepPrefs.backendUrl || '';
+    backendUrlInput.value = isweepPrefs.backendUrl || DEFAULT_BACKEND_URL;
     asrToggle.checked = isweep_asr_enabled;
     videosDetectedSpan.textContent = videosDetected;
     actionsAppliedSpan.textContent = actionsApplied;
@@ -262,7 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!isValidBackendUrl(backendUrl)) {
                 showBackendUrlError('Invalid URL: must start with http:// or https://');
                 // Revert to saved value
-                backendUrlInput.value = isweepPrefs.backendUrl || '';
+                backendUrlInput.value = isweepPrefs.backendUrl || DEFAULT_BACKEND_URL;
                 return;
             }
 
@@ -297,7 +298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (updated) {
                 isweepPrefs = updated;
                 if (userIdInput) userIdInput.value = isweepPrefs.user_id || 'user123';
-                if (backendUrlInput) backendUrlInput.value = isweepPrefs.backendUrl || '';
+                if (backendUrlInput) backendUrlInput.value = isweepPrefs.backendUrl || DEFAULT_BACKEND_URL;
                 showBackendUrlError('');
                 console.log('[ISweep-Popup] Updated from isweepPrefs:', isweepPrefs);
             }

@@ -9,6 +9,8 @@
  *   - videosDetected, actionsApplied: stats
  */
 
+const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8001';
+
 let offscreenDocumentId = null;
 let activeAsrTabId = null;
 
@@ -119,7 +121,7 @@ chrome.runtime.onInstalled.addListener(() => {
         isweep_asr_enabled: false,
         isweepPrefs: {
             user_id: 'user123',
-            backendUrl: '',
+            backendUrl: DEFAULT_BACKEND_URL,
             blocked_words: [],
             duration_seconds: 3,
             action: 'mute'
