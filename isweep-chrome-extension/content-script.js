@@ -308,7 +308,7 @@ function __isweepHandleAsrSegments(message) {
         // Initialize or reset ASR session on first segment or after silence
         const now = Date.now();
         if (!asrSessionActive || (now - asrLastSegmentTs) > ASR_SILENCE_RESET_MS) {
-            asrSessionStart = isFinite(video.currentTime) ? video.currentTime : 0;
+            asrSessionStart = Number.isFinite(Number(video.currentTime)) ? video.currentTime : 0;
             asrSessionActive = true;
             asrLastAbsTime = 0; // Reset monotonic tracker on new session
             __asrWarnedEmptyText = false; // Reset warning flags on new session
@@ -760,7 +760,7 @@ window.__isweepDebugSimulateAsr = function(text, endSeconds) {
     
     // Initialize or update session state
     if (!asrSessionActive) {
-        asrSessionStart = isFinite(video.currentTime) ? video.currentTime : 0;
+        asrSessionStart = Number.isFinite(Number(video.currentTime)) ? video.currentTime : 0;
         asrSessionActive = true;
         csLog(`[ISweep-ASR-Debug] Session initialized: ${asrSessionStart.toFixed(2)}s`);
     }
