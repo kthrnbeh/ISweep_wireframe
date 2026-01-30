@@ -134,7 +134,7 @@ When captions contain your blocked words:
 - Reload page and try again
 
 ### Backend errors?
-- Verify backend is running: `http://127.0.0.1:8001/health`
+- Verify backend is running at your configured URL
 - Check Network tab in DevTools
 - Ensure User ID in popup matches (consistency)
 
@@ -160,7 +160,7 @@ Open DevTools (F12) and filter for `[ISweep-YT]`:
 
 ### Check Network Requests
 In DevTools Network tab:
-- Look for POST requests to `http://127.0.0.1:8001/event`
+- Look for POST requests to `<BACKEND_URL>/event`
 - Click on request → Preview tab
 - Should show caption text being sent
 
