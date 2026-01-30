@@ -261,9 +261,9 @@
             clearInterval(metricsInterval);
             metricsInterval = null;
         }
-[ISweep-ASR] Session start: 120.47s
-[ISweep-ASR] sessionStart=120.47 segEnd=0.82 → abs=121.29
-[ISweep-ASR] sessionStart=120.47 segEnd=1.54 → abs=122.01
+        // [ISweep-ASR] Session start: 120.47s
+        // [ISweep-ASR] sessionStart=120.47 segEnd=0.82 → abs=121.29
+        // [ISweep-ASR] sessionStart=120.47 segEnd=1.54 → abs=122.01
         // Clear silence timer
         if (silenceTimer) {
             clearTimeout(silenceTimer);
