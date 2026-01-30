@@ -43,6 +43,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('[ISweep-Options]', msg, data ?? '');
     }
 
+    function isBackendConfigured(url) {
+        if (!url || typeof url !== 'string') return false;
+        const trimmed = url.trim();
+        return trimmed.length > 0 && (trimmed.startsWith('http://') || trimmed.startsWith('https://'));
+    }
+
+    async function getBackendConfig() {
+        const storage = await chrome.storage.local.get(['userId', 'backendURL', 'isweepPrefs']);
+        const userId = storage.userId || storage.isweepPrefs?.user_id || 'user123';
+        const backendURL = storage.isweepPrefs?.backendUrl || storage.backendURL || '';
+        return { userId, backendURL };
+    }
+
     function slugify(name) {
         return (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     }
@@ -53,8 +66,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function fetchPreferencesFromBackend() {
         try {
-            const userId = (await chrome.storage.local.get(['userId'])).userId || 'user123';
-            const backendURL = (await chrome.storage.local.get(['backendURL'])).backendURL || 'http://127.0.0.1:8001';
+            const { userId, backendURL } = await getBackendConfig();
+
+            if (!isBackendConfigured(backendURL)) {
+                log('Backend not configured, using local storage');
+                return false;
+            }
 
             const res = await fetch(`${backendURL}/preferences/${userId}`);
             if (!res.ok) {
@@ -240,8 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function saveToBackend() {
-        const userId = (await chrome.storage.local.get(['userId'])).userId || 'user123';
-        const backendURL = (await chrome.storage.local.get(['backendURL'])).backendURL || 'http://127.0.0.1:8001';
+        const { userId, backendURL } = await getBackendConfig();
 
         const categories = ['language', 'violence', 'sexual'];
         const preferences = {};
@@ -267,6 +283,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         log('Bulk save payload:', payload);
 
         try {
+            await chrome.storage.local.set({ selectedPacks, actionByCategory, durationSecondsByCategory, customWordsByCategory });
+
+            if (!isBackendConfigured(backendURL)) {
+                const langWords = preferences.language.blocked_words;
+                updateSummary(langWords);
+                showStatus('Saved locally (backend not configured)', 'success');
+                log('Backend not configured; local-only save complete');
+                return { success: true, mode: 'local-only' };
+            }
+
             const res = await fetch(`${backendURL}/preferences/bulk`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -281,14 +307,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const result = await res.json();
             log('Bulk save response:', result);
 
-            await chrome.storage.local.set({ selectedPacks, actionByCategory, durationSecondsByCategory, customWordsByCategory });
-
             const langWords = preferences.language.blocked_words;
             updateSummary(langWords);
             showStatus(`Saved ${result.categories_saved?.length || 0} categories`, 'success');
+            return { success: true, mode: 'backend' };
         } catch (err) {
-            console.warn('[ISweep-Options] Failed to save to backend', err);
-            showStatus('Save failed', 'error');
+            const langWords = preferences.language.blocked_words;
+            updateSummary(langWords);
+            console.warn('[ISweep-Options] Backend unavailable; saved locally', err);
+            showStatus('Saved locally (backend unavailable)', 'success');
+            return { success: true, mode: 'local-only' };
         }
     }
 
