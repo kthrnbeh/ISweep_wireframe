@@ -374,7 +374,7 @@ function __isweepHandleAsrSegments(message) {
             // Ingest segment with validated and corrected absolute timestamp
             if (typeof window.__isweepTranscriptIngest === 'function') {
                 if (window.__ISWEEP_DEBUG) {
-                    csLog(`[ISweep-ASR] sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relEnd.toFixed(2)} → abs=${absCandidate.toFixed(2)}`);
+                    csLog(`[ISweep-ASR] sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relEnd.toFixed(2)} -> abs=${absCandidate.toFixed(2)}`);
                 }
                 
                 window.__isweepTranscriptIngest({
@@ -769,7 +769,7 @@ window.__isweepDebugSimulateAsr = function(text, endSeconds) {
     const relativeTime = Number(endSeconds) || 0;
     const absTime = asrSessionStart + relativeTime;
     
-    csLog(`[ISweep-ASR-Debug] Simulating: text="${text}" sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relativeTime.toFixed(2)} → abs=${absTime.toFixed(2)}`);
+    csLog(`[ISweep-ASR-Debug] Simulating: text="${text}" sessionStart=${asrSessionStart.toFixed(2)} segEnd=${relativeTime.toFixed(2)} -> abs=${absTime.toFixed(2)}`);
     
     // Ingest through same path
     if (typeof window.__isweepTranscriptIngest === 'function') {\n        window.__isweepTranscriptIngest({\n            text: text,\n            timestamp_seconds: absTime,\n            source: 'backend_asr'\n        });\n    } else {\n        csLog('[ISweep-ASR-Debug] ERROR: __isweepTranscriptIngest not available');\n    }\n};\n\nwindow.__isweepApplyDecision = function(decision) {\n    const videoElement = getActiveVideo();\n    if (!videoElement) {\n        csLog('[ISweep] No active video to apply decision');\n        return;\n    }
@@ -978,7 +978,7 @@ function createStatusPill() {
     pill.style.userSelect = 'none';
     pill.style.pointerEvents = 'none'; // Don't block clicks on video controls
     pill.innerHTML = `
-        <span style="margin-right:8px;">🧹</span>
+        <span style="margin-right:8px;">IS</span>
         <span id="isweep-status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ccc;"></span>
     `;
     document.body.appendChild(pill);
@@ -1230,7 +1230,7 @@ function updateStats() {
             lastReportedVideosDetected = detectedVideos;
             lastReportedActionsApplied = appliedActions;
             
-            csLog(`[ISweep] Stats incremented: +${videosIncrement} videos, +${actionsIncrement} actions → totals: ${newVideosDetected}, ${newActionsApplied}`);
+            csLog(`[ISweep] Stats incremented: +${videosIncrement} videos, +${actionsIncrement} actions -> totals: ${newVideosDetected}, ${newActionsApplied}`);
         });
     }
 }
@@ -1387,7 +1387,7 @@ initializeFromStorage().then(() => {
             console.log(`  Handler return:`, monoResult);
             console.log(`  Ingested payloads:`, monoIngestedPayloads.length > 0 ? monoIngestedPayloads : 'none');
             console.log(`  State: asrSessionStart=${asrSessionStart.toFixed(2)}, asrLastAbsTime=${asrLastAbsTime.toFixed(2)}`);
-            console.log(`  → ${testResults.monotonic}`);
+            console.log(`  -> ${testResults.monotonic}`);
 
             // ===== TEST B: Rebase Self-Heal (stale sessionStart) =====
             console.log('\n--- Test B: Rebase Self-Heal (stale sessionStart) ---');
@@ -1440,7 +1440,7 @@ initializeFromStorage().then(() => {
             console.log(`  State: asrSessionStart=${asrSessionStart.toFixed(2)}, asrLastAbsTime=${asrLastAbsTime.toFixed(2)}`);
             console.log(`  rebaseLogCount=${rebaseLogCount}`);
             console.log(`  rebaseOccurred=${rebaseResult.rebaseOccurred}`);
-            console.log(`  → ${testResults.rebase}`);
+            console.log(`  -> ${testResults.rebase}`);
 
             // ===== TEST C: Ingest-Missing (warn once, no absTime advance) =====
             console.log('\n--- Test C: Ingest-Missing (warn once, no absTime advance) ---');
@@ -1488,19 +1488,18 @@ initializeFromStorage().then(() => {
             console.log(`  State: asrSessionStart=${asrSessionStart.toFixed(2)}, asrLastAbsTime=${asrLastAbsTime}`);
             console.log(`  ingestMissingLogCount=${ingestMissingLogCount}`);
             console.log(`  __asrWarnedIngestMissing=${__asrWarnedIngestMissing}`);
-            console.log(`  → ${testResults.ingestMissing}`);
+            console.log(`  -> ${testResults.ingestMissing}`);
 
             // ===== SUMMARY =====
             console.log('\n==============================');
-            console.log('║        ASR HANDLER TEST SUMMARY        ║');
-            console.log('╠════════════════════════════════════════╣');
+            console.log('ASR HANDLER TEST SUMMARY');
+            console.log('------------------------------');
             console.log(`A) Monotonic Guard: ${testResults.monotonic}`);
-            console.log(`║ B) Rebase Self-Heal:    ${testResults.rebase === 'PASS' ? '✓ PASS' : '✗ FAIL'}           ║`);
-            console.log(`║ C) Ingest-Missing:      ${testResults.ingestMissing === 'PASS' ? '✓ PASS' : '✗ FAIL'}           ║`);
-            console.log('╚════════════════════════════════════════╝');
+            console.log(`B) Rebase Self-Heal: ${testResults.rebase}`);
+            console.log(`C) Ingest-Missing: ${testResults.ingestMissing}`);
             
             const allPass = Object.values(testResults).every(r => r === 'PASS');
-            console.log(`\n[ISweep-ASR-Tests] Overall: ${allPass ? '✓ ALL TESTS PASSED' : '✗ SOME TESTS FAILED'}`);
+            console.log(`\n[ISweep-ASR-Tests] Overall: ${allPass ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`);
 
         } finally {
             // Restore original state (AFTER all awaits complete)
