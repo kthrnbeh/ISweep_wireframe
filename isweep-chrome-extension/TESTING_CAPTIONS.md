@@ -135,7 +135,7 @@ Most modern video sites have captions:
 - Reload extension (`chrome://extensions/` → reload button)
 
 ### Backend connection failing?
-- Ensure backend is running: `http://127.0.0.1:8001/docs`
+- Ensure backend is running at your configured URL
 - Check Network tab in DevTools
 - Verify User ID in popup matches backend preferences
 
