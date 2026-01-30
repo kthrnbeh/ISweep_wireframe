@@ -206,8 +206,8 @@ Before reporting an issue, verify:
 - [ ] Captions are enabled (CC button shows as on)
 - [ ] ISweep extension is loaded (`chrome://extensions/`)
 - [ ] ISweep toggle shows "Active" (green)
-- [ ] Backend is running (`python -m app --port 8001 --no-reload`)
-- [ ] Backend URL is `http://127.0.0.1:8001` (exact)
+- [ ] Backend is running (if you use one)
+- [ ] Backend URL matches your configured backend
 - [ ] Blocked words are configured and saved
 - [ ] DevTools console shows `[ISweep-YT]` logs
 - [ ] Captions are actually being extracted (see "Extracted caption:" logs)
