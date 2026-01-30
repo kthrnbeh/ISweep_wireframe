@@ -61,6 +61,10 @@ async function ensureOffscreenDocument() {
  */
 async function startAsr(tabId, backendUrl, userId) {
     try {
+        if (!backendUrl || typeof backendUrl !== 'string' || backendUrl.trim().length === 0) {
+            console.warn('[ISweep-BG] Backend URL not configured; ASR will not start');
+            return;
+        }
         await ensureOffscreenDocument();
 
         activeAsrTabId = tabId;
@@ -115,7 +119,7 @@ chrome.runtime.onInstalled.addListener(() => {
         isweep_asr_enabled: false,
         isweepPrefs: {
             user_id: 'user123',
-            backendUrl: 'http://127.0.0.1:8001',
+            backendUrl: '',
             blocked_words: [],
             duration_seconds: 3,
             action: 'mute'

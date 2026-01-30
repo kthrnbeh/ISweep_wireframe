@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize isweepPrefs with defaults if not set
     isweepPrefs = isweepPrefs || {
         user_id: 'user123',
-        backendUrl: 'http://127.0.0.1:8001',
+        backendUrl: '',
         blocked_words: [],
         duration_seconds: 3,
         action: 'mute'
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Set initial values in UI
     userIdInput.value = isweepPrefs.user_id || 'user123';
-    backendUrlInput.value = isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
+    backendUrlInput.value = isweepPrefs.backendUrl || '';
     asrToggle.checked = isweep_asr_enabled;
     videosDetectedSpan.textContent = videosDetected;
     actionsAppliedSpan.textContent = actionsApplied;
@@ -178,8 +178,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Validation function for backend URL
     const isValidBackendUrl = (url) => {
-        if (!url || typeof url !== 'string') return false;
-        return url.startsWith('http://') || url.startsWith('https://');
+        if (!url || typeof url !== 'string') return true;
+        const trimmed = url.trim();
+        if (trimmed.length === 0) return true;
+        return trimmed.startsWith('http://') || trimmed.startsWith('https://');
     };
 
     // Display or clear error message
@@ -199,13 +201,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             isweep_enabled = !isweep_enabled;
             isweepPrefs.user_id = userIdInput.value.trim();
             const backendUrl = backendUrlInput.value.trim();
-            
-            // Validate backend URL before saving
+
+            // Validate backend URL before saving (optional)
             if (!isValidBackendUrl(backendUrl)) {
                 showBackendUrlError('Invalid URL: must start with http:// or https://');
                 return;
             }
-            
+
             showBackendUrlError('');
             isweepPrefs.backendUrl = backendUrl;
             
@@ -255,15 +257,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (backendUrlInput) {
         backendUrlInput.addEventListener('change', async () => {
             const backendUrl = backendUrlInput.value.trim();
-            
-            // Validate backend URL
+
+            // Validate backend URL (optional)
             if (!isValidBackendUrl(backendUrl)) {
                 showBackendUrlError('Invalid URL: must start with http:// or https://');
                 // Revert to saved value
-                backendUrlInput.value = isweepPrefs.backendUrl;
+                backendUrlInput.value = isweepPrefs.backendUrl || '';
                 return;
             }
-            
+
             showBackendUrlError('');
             isweepPrefs.backendUrl = backendUrl;
             await chrome.storage.local.set({ isweepPrefs });
@@ -295,7 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (updated) {
                 isweepPrefs = updated;
                 if (userIdInput) userIdInput.value = isweepPrefs.user_id || 'user123';
-                if (backendUrlInput) backendUrlInput.value = isweepPrefs.backendUrl || 'http://127.0.0.1:8001';
+                if (backendUrlInput) backendUrlInput.value = isweepPrefs.backendUrl || '';
                 showBackendUrlError('');
                 console.log('[ISweep-Popup] Updated from isweepPrefs:', isweepPrefs);
             }

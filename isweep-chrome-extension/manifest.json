@@ -11,10 +11,8 @@
     "offscreen"
   ],
   "host_permissions": [
-    "*://*.youtube.com/*",
-    "*://youtube.com/*",
-    "*://youtu.be/*",
-    "http://127.0.0.1:8001/*"
+    "http://*/*",
+    "https://*/*"
   ],
   "action": {
     "default_popup": "popup.html",
