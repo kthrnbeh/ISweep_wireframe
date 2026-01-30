@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const langWords = preferences.language.blocked_words;
             updateSummary(langWords);
-            showStatus(`✅ Saved ${result.categories_saved?.length || 0} categories`, 'success');
+            showStatus(`Saved ${result.categories_saved?.length || 0} categories`, 'success');
             log('[saveToBackend] ========== SAVE COMPLETED ==========');
             return { success: true, mode: 'backend' };
         } catch (err) {
