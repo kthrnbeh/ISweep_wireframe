@@ -402,7 +402,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!isBackendConfigured(backendURL)) {
                 const langWords = preferences.language.blocked_words;
                 updateSummary(langWords);
-                showStatus('Saved locally (backend not configured)', 'success');
+                showStatus('Saved locally. Backend not configured (optional).', 'success');
                 log('[saveToBackend] Backend not configured; local-only save complete');
                 return { success: true, mode: 'local-only' };
             }
@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const langWords = preferences.language.blocked_words;
             updateSummary(langWords);
             console.warn('[ISweep-Options] Backend unavailable; saved locally');
-            showStatus('Saved locally (backend unavailable)', 'success');
+            showStatus('Saved locally. Backend not reachable (optional).', 'success');
             return { success: true, mode: 'local-only' };
         }
     }
