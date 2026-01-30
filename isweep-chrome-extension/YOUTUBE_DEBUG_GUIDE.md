@@ -87,19 +87,13 @@ console.log('ISweep enabled?', localStorage.getItem('isweepEnabled'));
 ```
 
 **Fixes:**
-1. **Check backend URL:** Should be `http://127.0.0.1:8001`
+1. **Check backend URL:** Should match your configured backend URL
    - Click ISweep popup → Settings
    - Verify URL is correct
    - No trailing slash
 
 2. **Check backend is running:**
-   ```
-   In terminal:
-   python -m app --port 8001 --no-reload
-   ```
-   
-   Or test in browser: http://127.0.0.1:8001/health
-   (Should show JSON response, not error)
+   Start your backend if you intend to use one, then verify its health endpoint
 
 3. **Check preferences saved:**
    - Click ISweep popup → Preferences
@@ -143,16 +137,16 @@ The feedback overlay requires the parent to be positioned. YouTube usually has t
 If `[ISweep-YT]` logs appear but API calls fail:
 
 1. **Open DevTools → Network tab**
-2. **Filter for:** `event` or `127.0.0.1:8001`
+2. **Filter for:** `event` or your backend host
 3. **Play video and watch for requests**
 4. **Look for:**
-   - Request URL: `http://127.0.0.1:8001/event`
+   - Request URL: `<BACKEND_URL>/event`
    - Method: `POST`
    - Status: Should be `200` (not 400, 500, etc.)
 
 **If requests show 500 errors:**
 - Backend crashed
-- Start backend again: `python -m app --port 8001 --no-reload`
+- Restart your backend
 
 **If requests don't appear at all:**
 - Caption extraction may be failing
