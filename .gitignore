@@ -1,0 +1,13 @@
+# Python virtual environments
+_venv/
+.venv/
+**/.venv/
+isweep-backend/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Installed dependency artifacts (greenlet headers)
+**/site-packages/greenlet/
+**/Include/site/**/greenlet/
