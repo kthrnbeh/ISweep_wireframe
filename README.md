@@ -1,3 +1,25 @@
+### Backend Setup
+
+> **Expected structure (not in repo):**
+> isweep-backend/
+> ├── app/
+> │   ├── main.py
+> │   ├── models.py
+> │   ├── database.py
+> │   └── rules.py
+> └── requirements.txt
+
+**Install dependencies**
+
+```bash
+pip install -r requirements.txt
+```
+
+**Run backend**
+
+```bash
+python -m uvicorn app.main:app --port 8001 --reload
+```
 ## 🛠️ Setup Instructions
 
 ### Chrome Extension Setup
