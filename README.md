@@ -1,3 +1,13 @@
+### Marketing Website Setup
+
+You can use any static server to serve the site:
+
+```bash
+cd docs
+python -m http.server 8000
+```
+
+Or use the VS Code Live Server extension for instant preview.
 ### Backend Setup
 
 > **Expected structure (not in repo):**
