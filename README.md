@@ -1,3 +1,16 @@
+## 🛠️ Setup Instructions
+
+### Chrome Extension Setup
+
+1. **Install Extension**:
+	```bash
+	# Open Chrome and navigate to:
+	chrome://extensions/
+   
+	# Enable "Developer mode" (top right)
+	# Click "Load unpacked"
+	# Select the `isweep-chrome-extension` folder
+	```
 # ISweep_wireframe
 # ISweep - AI-Powered Content Filter
 
