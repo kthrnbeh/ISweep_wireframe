@@ -1,0 +1,11 @@
+Git hygiene / venv audit prompt
+
+Use it:
+
+before major refactors
+
+before PRs
+
+before tagging releases
+
+after dependency changes
