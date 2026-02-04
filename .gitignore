@@ -11,3 +11,45 @@ __pycache__/
 # Installed dependency artifacts (greenlet headers)
 **/site-packages/greenlet/
 **/Include/site/**/greenlet/
+# Additional Python ignores
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+dist/
+build/
+.env
+ENV/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+htmlcov/
+.coverage
+.tox/
+.mypy_cache/
+.pytest_cache/
+.vscode/
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+ehthumbs.db
+Icon?
+*.swp
+*.swo
+*.bak
+*.tmp
+*.log
+*.orig
+*.rej
+*.~
+*~
+*.lock
+*.pid
