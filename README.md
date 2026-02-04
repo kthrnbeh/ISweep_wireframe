@@ -1,3 +1,63 @@
+## 📚 Documentation & Guides
+
+- **Comprehensive Testing Guide** — Full testing procedures
+- **Where to Edit Guide** — Code organization reference
+- **Chrome Extension Quick Start** — Extension setup
+- **YouTube Testing Guide** — YouTube integration testing
+
+## ✨ Features
+
+### Chrome Extension
+✅ Real-time caption monitoring (YouTube + HTML5)
+✅ Customizable word filtering with preset packs
+✅ Multiple action modes: mute, skip, fast-forward
+✅ Per-category settings (Language, Violence, Sexual)
+✅ ASR (Automatic Speech Recognition) integration
+✅ Visual feedback overlay
+
+### Backend (Separate Repo)
+✅ FastAPI REST API
+✅ SQLite preference storage
+✅ Regex word matching with word boundaries
+✅ Category-based filtering rules
+
+### Marketing Website
+✅ Responsive design
+✅ Dark mode toggle
+✅ Plan selection system
+✅ Account management UI
+
+## 🧪 Quick Test
+
+1. Install the Chrome extension (see Setup)
+2. Go to any YouTube video with captions
+3. Enable captions (CC button)
+4. Open extension → Add a common word to Language filters
+5. Watch for muting when the word appears in captions
+
+## 🤝 Contributing
+
+This is a personal project/prototype. If you'd like to contribute:
+
+- Check the documentation in WHERE_TO_EDIT.md for code organization
+- Review COMPREHENSIVE_TESTING_GUIDE.md before making changes
+- Test thoroughly with YouTube videos
+
+## 📝 Known Issues
+
+- Backend Python code is not included in this repository (may be in separate repo)
+- Extension requires manual installation (not published to Chrome Web Store)
+- ASR features require backend connection
+
+## 📄 License
+[Add your license here]
+
+## 👤 Author
+Katherine Behunin (@kthrnbeh)
+
+## 🔗 Links
+- Repository: https://github.com/kthrnbeh/ISweep_wireframe
+- Documentation: See markdown files in root directory
 ### Marketing Website Setup
 
 You can use any static server to serve the site:
