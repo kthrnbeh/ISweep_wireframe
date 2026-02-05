@@ -15,6 +15,7 @@
     let mediaRecorder = null;
     let stream = null;
     let sessionActive = false;
+    let isRestarting = false; // Guard for adaptive restart final blob
     let sequenceNumber = 0;
     let tabId = null;
     let backendUrl = null;
@@ -145,10 +146,9 @@
             // Stable audio clock anchor
             audioContext = new AudioContext();
             try {
-                const srcNode = audioContext.createMediaStreamSource(stream);
-                srcNode.connect(audioContext.destination);
+                audioContext.createMediaStreamSource(stream);
             } catch (_) {
-                // connecting to destination may fail if permissions differ; ok to continue
+                // ignore if context wiring fails; clock still works
             }
             audioClockStartSec = audioContext.currentTime;
 
@@ -160,7 +160,13 @@
 
             // Single handler: send each chunk as it becomes available
             mediaRecorder.ondataavailable = async (event) => {
-                if (!sessionActive || event.data.size === 0) return;
+                if (!sessionActive || isRestarting || event.data.size === 0) return;
+
+                const seq = sequenceNumber; // capture current seq for this chunk
+                sequenceNumber += 1; // increment immediately
+
+                const chunkStartSeconds = accumulatedChunkSeconds;
+                accumulatedChunkSeconds += (currentChunkInterval / 1000); // advance immediately
 
                 const sendStartTime = Date.now();
                 const reader = new FileReader();
@@ -168,7 +174,6 @@
                 reader.onload = async () => {
                     const base64Data = reader.result.split(',')[1];
                     const fetchStartTime = Date.now();
-                    const chunkStartSeconds = accumulatedChunkSeconds;
 
                     try {
                         const response = await fetch(`${backendUrl}/asr/stream`, {
@@ -177,7 +182,7 @@
                             body: JSON.stringify({
                                 user_id: userId,
                                 tab_id: tabId,
-                                seq: sequenceNumber,
+                                seq,
                                 chunk_start_seconds: chunkStartSeconds,
                                 mime_type: 'audio/webm;codecs=opus',
                                 audio_b64: base64Data
@@ -190,7 +195,7 @@
 
                         // Track latency metrics
                         sendTimings.push({ sendTime: sendTimeMs, rttTime: rttMs });
-                        lastSeq = sequenceNumber;
+                        lastSeq = seq;
 
                         if (!response.ok) {
                             asrLog(`Backend error: ${response.status}`);
@@ -223,10 +228,8 @@
                                 asrLog('Failed to send segments to background:', err.message);
                             });
 
-                            asrLog(`Streamed seq ${sequenceNumber}: ${result.segments.length} segments, send=${sendTimeMs}ms, rtt=${rttMs}ms, chunkStart=${chunkStartSeconds.toFixed(2)}s`);
+                            asrLog(`Streamed seq ${seq}: ${result.segments.length} segments, send=${sendTimeMs}ms, rtt=${rttMs}ms, chunkStart=${chunkStartSeconds.toFixed(2)}s`);
                         }
-
-                        accumulatedChunkSeconds += (currentChunkInterval / 1000);
 
                         // Adaptive chunk sizing: increase interval if RTT consistently high
                         if (rttMs > ADAPTIVE_CHUNK_THRESHOLD_MS && currentChunkInterval === CHUNK_INTERVAL_MS) {
@@ -235,8 +238,8 @@
                                 currentChunkInterval = 2000;
                                 asrLog('High latency detected - switching to 2s chunks');
                                 // Restart with new interval
+                                isRestarting = true;
                                 mediaRecorder.stop();
-                                mediaRecorder.start(currentChunkInterval);
                             }
                         }
                     } catch (error) {
@@ -254,11 +257,19 @@
                 };
 
                 reader.readAsDataURL(event.data);
-                sequenceNumber++;
             };
 
             mediaRecorder.onstop = () => {
                 asrLog('MediaRecorder stopped');
+                if (isRestarting && sessionActive) {
+                    isRestarting = false;
+                    try {
+                        mediaRecorder.start(currentChunkInterval);
+                        asrLog('MediaRecorder restarted at interval', currentChunkInterval, 'ms');
+                    } catch (e) {
+                        asrLog('Failed to restart MediaRecorder:', e.message || e);
+                    }
+                }
             };
 
             mediaRecorder.onerror = (event) => {
