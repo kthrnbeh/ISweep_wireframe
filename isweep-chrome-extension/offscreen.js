@@ -163,10 +163,11 @@
                 if (!sessionActive || isRestarting || event.data.size === 0) return;
 
                 const seq = sequenceNumber; // capture current seq for this chunk
-                sequenceNumber += 1; // increment immediately
+                sequenceNumber += 1; // increment immediately to avoid races
 
+                // Advance clock when chunk is created so failures still move timeline forward
                 const chunkStartSeconds = accumulatedChunkSeconds;
-                accumulatedChunkSeconds += (currentChunkInterval / 1000); // advance immediately
+                accumulatedChunkSeconds += (currentChunkInterval / 1000);
 
                 const sendStartTime = Date.now();
                 const reader = new FileReader();
