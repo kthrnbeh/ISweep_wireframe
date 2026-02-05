@@ -842,7 +842,7 @@ window.__isweepApplyDecision = function(decision) {
             // Calculate when this mute would end
             const scheduledMuteStart = now + captionOffsetMs;
             const scheduledMuteEnd = scheduledMuteStart + durationMs;
-            
+    
             csLog(`[ISweep] Timing: now=${now}ms, scheduledStart=${scheduledMuteStart}ms, scheduledEnd=${scheduledMuteEnd}ms`);
             
             // If already muted, extend the mute period (don't block if already filtering)
@@ -882,7 +882,8 @@ window.__isweepApplyDecision = function(decision) {
                 
                 csLog(`[ISweep] MUTED: term="${matched_term}" duration=${duration.toFixed(2)}s offset=${captionOffsetMs}ms unmute_at=${new Date(muteUntil).toISOString()}`);
                 
-                // Schedule unmute
+                // Schedule unmute at the exact planned end time (offset + duration)
+                const unmuteDelayMs = Math.max(0, muteUntil - Date.now());
                 unmuteTimerId = setTimeout(() => {
                     if (Date.now() >= muteUntil) {
                         // Only unmute if ISweep muted it (don't unmute user-manual mutes)
@@ -894,7 +895,7 @@ window.__isweepApplyDecision = function(decision) {
                         isMuted = false;
                         unmuteTimerId = null;
                     }
-                }, durationMs);
+                }, unmuteDelayMs);
             }, Math.max(0, captionOffsetMs)); // Use max(0, offset) to allow negative premute but execute immediately for instant timing
             break;
         case 'skip':
