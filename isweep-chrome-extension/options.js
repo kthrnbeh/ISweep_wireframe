@@ -1,12 +1,6 @@
 import { PRESET_PACKS, getPackWords, mergeWords } from './preset-packs.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (window.innerWidth < 420 && chrome?.runtime?.openOptionsPage) {
-        chrome.runtime.openOptionsPage();
-        window.close();
-        return;
-    }
-
     const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8001';
     const statusMessage = document.getElementById('statusMessage');
     const saveBtn = document.getElementById('saveButton');
