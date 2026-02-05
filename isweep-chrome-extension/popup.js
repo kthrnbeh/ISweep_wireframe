@@ -190,6 +190,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             console.log('[ISweep-Popup] TOGGLED enabled:', isweep_enabled);
 
+            if (isweep_enabled) {
+                startAsrIfNeeded();
+            } else {
+                stopAsr();
+            }
+
             // Notify active tab's content script to toggle immediately
             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                 if (tabs.length > 0) {
@@ -298,12 +304,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             isweep_enabled = Boolean(changes.isweep_enabled.newValue);
             updateUI(isweep_enabled);
             console.log('[ISweep-Popup] Updated enabled state from isweep_enabled:', isweep_enabled);
+            if (isweep_enabled) {
+                startAsrIfNeeded();
+            } else {
+                stopAsr();
+            }
         }
 
         // Handle isweep_asr_enabled changes
         if (changes.isweep_asr_enabled) {
             isweep_asr_enabled = Boolean(changes.isweep_asr_enabled.newValue);
-            asrToggle.checked = isweep_asr_enabled;
             console.log('[ISweep-Popup] Updated ASR state from isweep_asr_enabled:', isweep_asr_enabled);
             updateAsrStatus(isweep_asr_status, isweep_asr_metrics);
         }
