@@ -1117,30 +1117,34 @@ function extractCaptions(videoElement, index) {
     csLog(`[ISweep] Video ${index}: Found ${tracks.length} caption track(s)`);
 
     tracks.forEach((track, trackIndex) => {
-        // Try to load and parse VTT file
+        const textTrack = track.track;
+        if (textTrack) {
+            // Ensure cues load and cuechange fires even if captions aren’t shown
+            textTrack.mode = 'hidden';
+            textTrack.addEventListener('cuechange', () => {
+                const activeCues = textTrack.activeCues;
+                if (activeCues && activeCues.length > 0) {
+                    const cue = activeCues[0];
+                    const captionText = cue.text;
+                    videoElement._isweepCurrentCaption = captionText;
+                    videoElement._isweepCurrentCaptionStart = cue.startTime;
+                    videoElement._isweepCurrentCaptionEnd = cue.endTime;
+                    csLog(`[ISweep] Cue captured from track ${trackIndex}:`, captionText.slice(0, 60));
+                }
+            });
+        }
+
+        // Best-effort fetch/parse (may be blocked by CORS; treat as optional)
         const src = track.src;
         if (src) {
             fetch(src)
                 .then(r => r.text())
                 .then(vttText => {
                     videoElement._isweepCaptions = parseVTT(vttText);
-                    csLog(`[ISweep] Loaded ${videoElement._isweepCaptions.length} caption cues`);
+                    csLog(`[ISweep] Loaded ${videoElement._isweepCaptions.length} caption cues (parsed VTT)`);
                 })
-                .catch(e => console.warn(`[ISweep] Failed to load captions: ${e}`));
+                .catch(e => console.warn(`[ISweep] Failed to load captions (best-effort parse): ${e}`));
         }
-
-        // Also listen for cues that are added dynamically
-        track.track.addEventListener('cuechange', () => {
-            const activeCues = track.track.activeCues;
-            if (activeCues && activeCues.length > 0) {
-                const cue = activeCues[0];
-                const captionText = cue.text;
-                videoElement._isweepCurrentCaption = captionText;
-                videoElement._isweepCurrentCaptionStart = cue.startTime;
-                videoElement._isweepCurrentCaptionEnd = cue.endTime;
-                csLog(`[ISweep] Cue captured from track ${trackIndex}:`, captionText.slice(0, 60));
-            }
-        });
     });
 }
 
@@ -1150,6 +1154,23 @@ function parseVTT(vttText) {
     const lines = vttText.split('\n');
     let currentCue = null;
 
+    const toSeconds = (ts) => {
+        // Supports HH:MM:SS.mmm or MM:SS.mmm
+        const parts = ts.trim().split(':');
+        if (parts.length < 2 || parts.length > 3) return NaN;
+        let hours = 0, minutes = 0, seconds = 0;
+        if (parts.length === 3) {
+            hours = Number(parts[0]);
+            minutes = Number(parts[1]);
+            seconds = Number(parts[2]);
+        } else {
+            minutes = Number(parts[0]);
+            seconds = Number(parts[1]);
+        }
+        if ([hours, minutes, seconds].some(v => Number.isNaN(v))) return NaN;
+        return (hours * 3600) + (minutes * 60) + seconds;
+    };
+
     for (let line of lines) {
         line = line.trim();
         
@@ -1158,8 +1179,17 @@ function parseVTT(vttText) {
 
         // Check for timestamp line (HH:MM:SS.mmm --> HH:MM:SS.mmm)
         if (line.includes('-->')) {
-            currentCue = { text: '' };
-            cues.push(currentCue);
+            const parts = line.split('-->');
+            if (parts.length === 2) {
+                const start = toSeconds(parts[0]);
+                const end = toSeconds(parts[1]);
+                if (Number.isFinite(start) && Number.isFinite(end)) {
+                    currentCue = { start, end, text: '' };
+                    cues.push(currentCue);
+                } else {
+                    currentCue = null; // Invalid timestamp line
+                }
+            }
         } else if (currentCue && line) {
             // Add text to current cue
             if (currentCue.text) {
@@ -1180,12 +1210,21 @@ function parseVTT(vttText) {
 function findCueAtTime(cues, currentTime) {
     if (!cues || cues.length === 0) return null;
     
-    // Linear search for exact or nearest cue (simple approach)
+    // Prefer cues with start/end timing
+    if (Number.isFinite(currentTime)) {
+        for (const cue of cues) {
+            if (Number.isFinite(cue.start) && Number.isFinite(cue.end) && cue.text) {
+                if (currentTime >= cue.start && currentTime <= cue.end) {
+                    return { text: cue.text, startTime: cue.start, endTime: cue.end };
+                }
+            }
+        }
+    }
+
+    // Fallback: first cue with text
     for (const cue of cues) {
-        // For now, just return the first cue with text (VTT parser doesn't extract timestamps)
-        // In production, parse timestamps from VTT and match by time
         if (cue.text) {
-            return { text: cue.text };
+            return { text: cue.text, startTime: cue.start, endTime: cue.end };
         }
     }
     
