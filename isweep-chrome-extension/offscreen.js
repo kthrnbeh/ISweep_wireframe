@@ -22,6 +22,9 @@
     let currentChunkInterval = CHUNK_INTERVAL_MS;
     let silenceTimer = null;
     let lastSegmentTime = Date.now();
+    let audioContext = null;
+    let audioClockStartSec = null; // Stable clock anchor for chunk_start_seconds
+    let accumulatedChunkSeconds = 0; // Advances per chunk to avoid resets
 
     // Latency monitoring
     let sendTimings = []; // [{ sendTime, rttTime }, ...]
@@ -78,10 +81,19 @@
         }
     }
 
+    function updateStatusText(text) {
+        const el = document.getElementById('status');
+        if (el) el.textContent = text;
+        const dbg = document.getElementById('debug');
+        if (dbg && dbg.style.display !== 'none') {
+            dbg.textContent = text;
+        }
+    }
+
     /**
      * Start audio capture from tab and stream to backend
      * @param {number} tabIdParam - Chrome tab ID to capture
-    * @param {string} backendUrlParam - Backend URL (configured by user)
+     * @param {string} backendUrlParam - Backend URL (configured by user)
      * @param {string} userIdParam - User ID for tracking
      */
     async function startAudioCapture(tabIdParam, backendUrlParam, userIdParam) {
@@ -96,8 +108,11 @@
         sequenceNumber = 0;
         currentChunkInterval = CHUNK_INTERVAL_MS;
         lastSegmentTime = Date.now();
+        audioClockStartSec = null;
+        accumulatedChunkSeconds = 0;
         asrStatus = 'starting';
         await updateAsrStatus(asrStatus);
+        updateStatusText('ASR starting...');
 
         try {
             asrLog(`Starting audio capture for tab ${tabId} -> ${backendUrl}`);
@@ -115,6 +130,28 @@
 
             asrLog('Tab audio captured successfully');
 
+            // Optional monitor playback for sticky capture/debug
+            const monitor = document.getElementById('monitor');
+            if (monitor) {
+                try {
+                    monitor.srcObject = stream;
+                    monitor.muted = true;
+                    monitor.play().catch(() => {});
+                } catch (_) {
+                    // ignore monitor errors
+                }
+            }
+
+            // Stable audio clock anchor
+            audioContext = new AudioContext();
+            try {
+                const srcNode = audioContext.createMediaStreamSource(stream);
+                srcNode.connect(audioContext.destination);
+            } catch (_) {
+                // connecting to destination may fail if permissions differ; ok to continue
+            }
+            audioClockStartSec = audioContext.currentTime;
+
             // Create MediaRecorder with audio/webm codec
             mediaRecorder = new MediaRecorder(stream, {
                 mimeType: 'audio/webm;codecs=opus',
@@ -131,6 +168,7 @@
                 reader.onload = async () => {
                     const base64Data = reader.result.split(',')[1];
                     const fetchStartTime = Date.now();
+                    const chunkStartSeconds = accumulatedChunkSeconds;
 
                     try {
                         const response = await fetch(`${backendUrl}/asr/stream`, {
@@ -140,6 +178,7 @@
                                 user_id: userId,
                                 tab_id: tabId,
                                 seq: sequenceNumber,
+                                chunk_start_seconds: chunkStartSeconds,
                                 mime_type: 'audio/webm;codecs=opus',
                                 audio_b64: base64Data
                             })
@@ -184,8 +223,10 @@
                                 asrLog('Failed to send segments to background:', err.message);
                             });
 
-                            asrLog(`Streamed seq ${sequenceNumber}: ${result.segments.length} segments, send=${sendTimeMs}ms, rtt=${rttMs}ms`);
+                            asrLog(`Streamed seq ${sequenceNumber}: ${result.segments.length} segments, send=${sendTimeMs}ms, rtt=${rttMs}ms, chunkStart=${chunkStartSeconds.toFixed(2)}s`);
                         }
+
+                        accumulatedChunkSeconds += (currentChunkInterval / 1000);
 
                         // Adaptive chunk sizing: increase interval if RTT consistently high
                         if (rttMs > ADAPTIVE_CHUNK_THRESHOLD_MS && currentChunkInterval === CHUNK_INTERVAL_MS) {
@@ -229,6 +270,7 @@
             sessionActive = true;
             asrStatus = 'streaming';
             await updateAsrStatus(asrStatus);
+            updateStatusText('ASR streaming');
 
             // Start metrics reporting interval
             if (metricsInterval) clearInterval(metricsInterval);
@@ -239,6 +281,7 @@
             asrLog('ERROR starting audio capture:', error.message || error);
             asrStatus = 'error';
             await updateAsrStatus(asrStatus);
+            updateStatusText('ASR error');
             stopAudioCapture();
         }
     }
@@ -255,6 +298,7 @@
         sequenceNumber = 0;
         asrStatus = 'stopped';
         await updateAsrStatus(asrStatus);
+        updateStatusText('ASR stopped');
 
         // Clear metrics interval
         if (metricsInterval) {
@@ -289,11 +333,18 @@
             }
         }
 
+        if (audioContext) {
+            try { await audioContext.close(); } catch (_) {}
+        }
+
         mediaRecorder = null;
         stream = null;
         tabId = null;
         backendUrl = null;
         userId = null;
+        audioContext = null;
+        audioClockStartSec = null;
+        accumulatedChunkSeconds = 0;
 
         asrLog('Audio capture cleanup complete');
     }

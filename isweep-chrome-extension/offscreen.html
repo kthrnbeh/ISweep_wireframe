@@ -13,13 +13,22 @@
             font-size: 12px;
         }
         #status {
-            padding: 10px;
-            color: #333;
-        }
+                padding: 10px;
+                color: #333;
+                white-space: pre-wrap;
+            }
+            .muted { color: #666; }
     </style>
 </head>
 <body>
-    <div id="status">ISweep Audio Capture (Offscreen)</div>
-    <script src="offscreen.js"></script>
+        <div id="status">ISweep Audio Capture (Offscreen)</div>
+
+        <!-- Hidden media element for optional monitor playback -->
+        <audio id="monitor" autoplay class="muted" style="display:none;"></audio>
+
+        <!-- Optional debug dump; toggle display via JS if needed -->
+        <pre id="debug" class="muted" style="padding:10px; display:none;"></pre>
+
+        <script src="offscreen.js"></script>
 </body>
 </html>
