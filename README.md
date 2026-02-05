@@ -58,6 +58,21 @@ Katherine Behunin (@kthrnbeh)
 ## 🔗 Links
 - Repository: https://github.com/kthrnbeh/ISweep_wireframe
 - Documentation: See markdown files in root directory
+
+## DEV_SETUP (Windows + VS Code)
+
+1. Select interpreter: Ctrl+Shift+P → "Python: Select Interpreter" → choose `.venv\Scripts\python.exe` in `C:\ISweep_wireframe`.
+2. Verify active Python:
+	```bash
+	python -c "import sys; print(sys.executable)"
+	```
+	Expect the path to `.venv\Scripts\python.exe` (not the Windows Store alias).
+3. Use the explicit venv path for installs:
+	```bash
+	C:\ISweep_wireframe\.venv\Scripts\python.exe -m pip install -r requirements.txt
+	```
+4. Optional Windows tip: Settings → Apps → App execution aliases → turn off `python.exe` / `python3.exe` to avoid the Microsoft Store shim.
+
 ### Marketing Website Setup
 
 You can use any static server to serve the site:
