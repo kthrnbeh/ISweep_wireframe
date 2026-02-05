@@ -18,7 +18,7 @@
   <div class="block">
     <h2>Quick steps</h2>
     <ol>
-      <li>Place this file, <code>captions.vtt</code>, and (optional) <code>test.mp4</code> in the same folder.</li>
+      <li>Place this file and <code>captions.vtt</code> in the same folder (add a local <code>test.mp4</code> here if you want fully-local media).</li>
       <li>From this folder run: <code>python -m http.server 8080</code></li>
       <li>Open: <a href="http://127.0.0.1:8080/isweep_test.html">http://127.0.0.1:8080/isweep_test.html</a></li>
       <li>If you must use file URLs, enable "Allow access to file URLs" for the ISweep extension.</li>
@@ -28,9 +28,9 @@
 
   <div class="block">
     <h2>Test video</h2>
-    <p>Best results: keep <code>test.mp4</code> in this folder. If you temporarily point to a remote MP4, keep <code>crossorigin="anonymous"</code>.</p>
-    <video id="testVideo" controls crossorigin="anonymous">
-      <source src="test.mp4" type="video/mp4">
+    <p>Default uses a remote MP4; for flaky remote+local-track combos, drop a local <code>test.mp4</code> beside this file and switch the source to <code>src="test.mp4"</code>.</p>
+    <video id="testVideo" controls preload="metadata" width="720" crossorigin="anonymous">
+      <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
       <track kind="captions" src="captions.vtt" srclang="en" label="English" default>
       Sorry, your browser does not support embedded videos.
     </video>
