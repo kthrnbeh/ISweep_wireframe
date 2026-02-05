@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8001';
     // Guard: Check for all required elements
     const toggleButton = document.getElementById('toggleButton');
-    const asrToggle = document.getElementById('asrToggle');
     const statusIndicator = document.getElementById('statusIndicator');
     const statusText = document.getElementById('statusText');
     const userIdInput = document.getElementById('userIdInput');
@@ -13,17 +12,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const openPreferencesBtn = document.getElementById('openPreferences');
     const videosDetectedSpan = document.getElementById('videosDetected');
     const actionsAppliedSpan = document.getElementById('actionsApplied');
+    const asrStatusText = document.getElementById('asrStatusText');
+    const asrMetrics = document.getElementById('asrMetrics');
 
     // ASR status elements
-    const asrStatusSection = document.getElementById('asrStatusSection');
-    const asrStatusText = document.getElementById('asrStatusText');
-    const asrSendMs = document.getElementById('asrSendMs');
-    const asrRttMs = document.getElementById('asrRttMs');
+    const asrStatusSection = null;
+    const asrSendMs = null;
+    const asrRttMs = null;
 
     // Validate all required elements exist
     const requiredElements = {
         toggleButton,
-        asrToggle,
         statusIndicator,
         statusText,
         userIdInput,
@@ -31,7 +30,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearStatsBtn,
         videosDetectedSpan,
         actionsAppliedSpan,
-        openPreferencesBtn
+        openPreferencesBtn,
+        asrStatusText,
+        asrMetrics
     };
 
     const missingElements = Object.entries(requiredElements)
@@ -81,7 +82,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Set initial values in UI
     userIdInput.value = isweepPrefs.user_id || 'user123';
     backendUrlInput.value = isweepPrefs.backendUrl || DEFAULT_BACKEND_URL;
-    asrToggle.checked = isweep_asr_enabled;
     videosDetectedSpan.textContent = videosDetected;
     actionsAppliedSpan.textContent = actionsApplied;
 
@@ -114,65 +114,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Update ASR status display
     const updateAsrStatus = (status, metrics) => {
-        if (!asrStatusSection || !asrStatusText) return;
+        if (!asrStatusText) return;
 
-        if (asrToggle && asrToggle.checked && status) {
-            asrStatusSection.style.display = 'block';
-            
-            // Map status to display text
-            const statusMap = {
-                'idle': 'Off',
-                'starting': 'Connecting...',
-                'streaming': 'Streaming',
-                'error': 'Error',
-                'stopped': 'Stopped'
-            };
-            
-            const displayStatus = statusMap[status] || status;
-            asrStatusText.textContent = displayStatus;
-            
-            // Update color based on status
-            if (status === 'streaming') {
-                asrStatusText.style.color = '#10b981';
-            } else if (status === 'error') {
-                asrStatusText.style.color = '#ef4444';
-            } else {
-                asrStatusText.style.color = '#666';
-            }
-            
-            // Update metrics if available with color coding
-            if (metrics && asrSendMs && asrRttMs) {
-                const sendLatency = metrics.avg_send_ms;
-                const rttLatency = metrics.avg_rtt_ms;
-                
-                // Display with color coding
-                asrSendMs.textContent = sendLatency != null ? `${sendLatency}ms` : '—';
-                asrRttMs.textContent = rttLatency != null ? `${rttLatency}ms` : '—';
-                
-                // Color coding for send latency: green (<100ms), yellow (100-300ms), red (>300ms)
-                if (sendLatency != null) {
-                    if (sendLatency < 100) {
-                        asrSendMs.style.color = '#10b981'; // green
-                    } else if (sendLatency < 300) {
-                        asrSendMs.style.color = '#f59e0b'; // yellow
-                    } else {
-                        asrSendMs.style.color = '#ef4444'; // red
-                    }
-                }
-                
-                // Color coding for RTT: green (<200ms), yellow (200-500ms), red (>500ms)
-                if (rttLatency != null) {
-                    if (rttLatency < 200) {
-                        asrRttMs.style.color = '#10b981'; // green
-                    } else if (rttLatency < 500) {
-                        asrRttMs.style.color = '#f59e0b'; // yellow
-                    } else {
-                        asrRttMs.style.color = '#ef4444'; // red
-                    }
-                }
-            }
+        const statusMap = {
+            'idle': 'Stopped',
+            'starting': 'Starting…',
+            'streaming': 'Streaming',
+            'error': 'Error',
+            'stopped': 'Stopped'
+        };
+
+        const displayStatus = statusMap[status] || status || 'Stopped';
+        asrStatusText.textContent = `ASR: ${displayStatus}`;
+
+        if (displayStatus === 'Streaming') {
+            asrStatusText.style.color = '#16a34a';
+        } else if (displayStatus === 'Error') {
+            asrStatusText.style.color = '#dc2626';
         } else {
-            asrStatusSection.style.display = 'none';
+            asrStatusText.style.color = '#4b5563';
+        }
+
+        if (asrMetrics && metrics) {
+            const send = metrics.avg_send_ms != null ? `${metrics.avg_send_ms}ms send` : null;
+            const rtt = metrics.avg_rtt_ms != null ? `${metrics.avg_rtt_ms}ms rtt` : null;
+            const parts = [send, rtt].filter(Boolean);
+            asrMetrics.textContent = parts.length ? parts.join(' • ') : '';
         }
     };
 
@@ -238,13 +205,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // ASR toggle handler
-    if (asrToggle) {
-        asrToggle.addEventListener('change', async () => {
-            isweep_asr_enabled = asrToggle.checked;
-            await chrome.storage.local.set({ isweep_asr_enabled });
-            console.log('[ISweep-Popup] ASR toggled to:', isweep_asr_enabled);
-        });
+    // ASR auto-manage helpers
+    async function startAsrIfNeeded() {
+        if (!isweep_enabled) return;
+        try {
+            chrome.runtime.sendMessage({ action: 'START_ASR' }, () => {});
+        } catch (e) {
+            console.log('[ISweep-Popup] Failed to start ASR:', e.message);
+        }
+    }
+
+    async function stopAsr() {
+        try {
+            chrome.runtime.sendMessage({ action: 'STOP_ASR' }, () => {});
+        } catch (e) {
+            console.log('[ISweep-Popup] Failed to stop ASR:', e.message);
+        }
     }
 
     // Save user ID on input change (guarded)
