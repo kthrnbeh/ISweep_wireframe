@@ -28,31 +28,55 @@
 
   <div class="block">
     <h2>Test video</h2>
-    <p>Default uses a remote MP4; for flaky remote+local-track combos, drop a local <code>test.mp4</code> beside this file and switch the source to <code>src="test.mp4"</code>.</p>
-    <video id="testVideo" controls preload="metadata" width="720" crossorigin="anonymous">
-      <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-      <track kind="captions" src="captions.vtt" srclang="en" label="English" default>
-      Sorry, your browser does not support embedded videos.
+    <p>Prefer keeping <code>test.mp4</code> in this folder (local avoids remote/local CORS quirks). If you keep a remote MP4 temporarily, leave <code>crossorigin="anonymous"</code> as-is.</p>
+    <video id="testVideo" controls playsinline preload="metadata" width="720" crossorigin="anonymous">
+      <!-- Prefer local video for fewer CORS/caption headaches -->
+      <source src="test.mp4" type="video/mp4" />
+
+      <!-- Captions must live next to the HTML (or resolve relative to this page) -->
+      <track
+        kind="captions"
+        src="captions.vtt"
+        srclang="en"
+        label="English"
+        default
+      />
+      Your browser does not support embedded videos.
     </video>
     <p id="captionStatus"></p>
   </div>
 
   <script>
-    // Minimal helper to show whether the caption track is loaded
+    // Helper to show caption load state and current playback time
     const video = document.getElementById('testVideo');
     const status = document.getElementById('captionStatus');
 
     function updateStatus() {
       const tracks = video.textTracks;
-      if (!tracks || tracks.length === 0) {
-        status.textContent = 'Captions: no textTracks found yet.';
-        return;
-      }
-      status.textContent = `Captions: ${tracks.length} track(s), mode=${tracks[0].mode || 'unset'}`;
+      const trackInfo = (!tracks || tracks.length === 0)
+        ? 'Captions: no textTracks found yet.'
+        : `Captions: ${tracks.length} track(s), mode=${tracks[0].mode || 'unset'}`;
+      const timeInfo = Number.isFinite(video.currentTime)
+        ? ` | t=${video.currentTime.toFixed(2)}s`
+        : '';
+      status.textContent = trackInfo + timeInfo;
+    }
+
+    function pumpTime() {
+      updateStatus();
+      requestAnimationFrame(pumpTime);
     }
 
     video.addEventListener('loadedmetadata', updateStatus);
-    window.addEventListener('load', updateStatus);
+    window.addEventListener('load', () => {
+      // Ensure captions are allowed to render if browser defaults differ
+      for (const track of video.textTracks || []) {
+        if (track.kind === 'captions') {
+          track.mode = 'showing';
+        }
+      }
+      pumpTime();
+    });
   </script>
 </body>
 </html>
