@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             captionOffsetInput.value = captionOffsetByCategory[category] ?? DEFAULT_CAPTION_OFFSET[category];
             captionOffsetInput.onchange = () => {
                 const val = parseInt(captionOffsetInput.value, 10);
-                const safeVal = Number.isFinite(val) ? Math.max(0, Math.min(2000, val)) : DEFAULT_CAPTION_OFFSET[category];
+                const safeVal = Number.isFinite(val) ? Math.max(-1000, Math.min(2000, val)) : DEFAULT_CAPTION_OFFSET[category];
                 captionOffsetByCategory[category] = safeVal;
                 chrome.storage.local.set({ captionOffsetByCategory });
                 log(`${category} caption_offset_ms updated:`, captionOffsetByCategory[category]);

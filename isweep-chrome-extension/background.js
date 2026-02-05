@@ -13,6 +13,7 @@ const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8001';
 
 let offscreenDocumentId = null;
 let activeAsrTabId = null;
+let asrSessionActive = false;
 
 // Helper function to update icon based on enabled state
 function updateIcon(enabled) {
@@ -63,6 +64,10 @@ async function ensureOffscreenDocument() {
  */
 async function startAsr(tabId, backendUrl, userId) {
     try {
+        if (asrSessionActive && activeAsrTabId === tabId) {
+            console.log('[ISweep-BG] ASR already active for tab', tabId);
+            return;
+        }
         if (!backendUrl || typeof backendUrl !== 'string' || backendUrl.trim().length === 0) {
             console.warn('[ISweep-BG] Backend URL not configured; ASR will not start');
             return;
@@ -70,6 +75,7 @@ async function startAsr(tabId, backendUrl, userId) {
         await ensureOffscreenDocument();
 
         activeAsrTabId = tabId;
+        asrSessionActive = true;
 
         const message = {
             action: 'START_ASR',
@@ -85,6 +91,8 @@ async function startAsr(tabId, backendUrl, userId) {
                 console.log('[ISweep-BG] START_ASR response:', response);
             }
         });
+
+        await chrome.storage.local.set({ isweep_asr_enabled: true });
     } catch (error) {
         console.error('[ISweep-BG] Failed to start ASR:', error.message || error);
     }
@@ -95,6 +103,7 @@ async function startAsr(tabId, backendUrl, userId) {
  */
 async function stopAsr() {
     try {
+        if (!asrSessionActive && !activeAsrTabId) return;
         const message = { action: 'STOP_ASR' };
 
         chrome.runtime.sendMessage(message, (response) => {
@@ -106,9 +115,46 @@ async function stopAsr() {
         });
 
         activeAsrTabId = null;
+        asrSessionActive = false;
+
+        await chrome.storage.local.set({
+            isweep_asr_enabled: false,
+            isweep_asr_status: 'stopped'
+        });
     } catch (error) {
         console.error('[ISweep-BG] Failed to stop ASR:', error.message || error);
     }
+}
+
+async function handleVideoPresence(tabId, hasVideo) {
+    if (!tabId) return;
+
+    const { isweep_enabled, isweepPrefs } = await chrome.storage.local.get([
+        'isweep_enabled',
+        'isweepPrefs'
+    ]);
+
+    if (!hasVideo) {
+        if (activeAsrTabId === tabId) {
+            console.log('[ISweep-BG] Video ended or navigated; stopping ASR for tab', tabId);
+            await stopAsr();
+        }
+        return;
+    }
+
+    if (!isweep_enabled) {
+        console.log('[ISweep-BG] Video detected but ISweep disabled; skipping ASR');
+        return;
+    }
+
+    const backendUrl = isweepPrefs?.backendUrl || DEFAULT_BACKEND_URL;
+    const userId = isweepPrefs?.user_id || 'user123';
+
+    if (activeAsrTabId && activeAsrTabId !== tabId) {
+        await stopAsr();
+    }
+
+    await startAsr(tabId, backendUrl, userId);
 }
 
 // Initialize extension on install
@@ -171,6 +217,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Popup requests ASR stop
         stopAsr();
         sendResponse({ success: true });
+    } else if (request.action === 'VIDEO_PRESENT') {
+        const tabId = sender?.tab?.id;
+        handleVideoPresence(tabId, true);
+        sendResponse({ acknowledged: true });
+    } else if (request.action === 'VIDEO_GONE') {
+        const tabId = sender?.tab?.id;
+        handleVideoPresence(tabId, false);
+        sendResponse({ acknowledged: true });
     }
 });
 

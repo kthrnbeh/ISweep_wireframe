@@ -7,31 +7,33 @@
   <link rel="stylesheet" href="options.css" />
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar">
-      <div class="brand">
+  <div class="page">
+    <header class="hero">
+      <div class="hero__brand">
         <div class="logo-dot" aria-hidden="true"></div>
         <div>
-          <h1>ISweep Settings</h1>
-          <p>Choose what to filter and what happens when it’s detected.</p>
+          <p class="eyebrow">ISweep</p>
+          <h1>Preferences</h1>
+          <span>Fine-tune what to filter and how to react.</span>
         </div>
       </div>
-
-      <div class="topbar-actions">
-        <button id="resetButton" class="btn btn-ghost" type="button">Reset</button>
-        <button id="saveButton" class="btn btn-primary" type="button">Save</button>
+      <div class="hero__actions">
+        <button id="resetButton" class="btn ghost" type="button">Reset</button>
+        <button id="saveButton" class="btn primary" type="button">Save</button>
       </div>
     </header>
 
-    <main class="content">
-      <section class="card">
+    <main class="layout">
+      <section class="card card--main">
         <div class="card-head">
-          <h2>Filter Categories</h2>
-          <div class="hint">Switch categories to edit rules.</div>
+          <div>
+            <p class="eyebrow">Filters</p>
+            <h2>Categories</h2>
+          </div>
+          <p class="hint">Switch tabs to edit each category.</p>
         </div>
 
-        <!-- Category tabs (JS relies on .tab-btn and data-category) -->
-        <div class="segmented category-tabs" role="tablist" aria-label="Filter categories">
+        <div class="category-tabs" role="tablist" aria-label="Filter categories">
           <button class="tab-btn active" data-category="language" role="tab" aria-selected="true">
             💬 <span>Language</span>
           </button>
@@ -43,236 +45,247 @@
           </button>
         </div>
 
-        <!-- PANEL: Language -->
-        <div class="category-panel" id="panel-language">
-          <div class="panel-head">
-            <h3>Language</h3>
-            <p class="panel-sub">Mute/skip/fast-forward when language matches your filters.</p>
-          </div>
-
-          <div class="grid-3 panel-controls">
-            <div class="field">
-              <label for="langAction">Action</label>
-              <select id="langAction" class="control">
-                <option value="mute">Mute</option>
-                <option value="skip">Skip</option>
-                <option value="fast_forward">Fast Forward</option>
-                <option value="none">None</option>
-              </select>
+        <div class="category-panels">
+          <!-- PANEL: Language -->
+          <div class="category-panel" id="panel-language">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Language</p>
+                <h3>Mute, skip, or fast-forward based on language filters.</h3>
+              </div>
+              <p class="panel-sub">Adjust timing and presets to your comfort level.</p>
             </div>
 
-            <div class="field">
-              <label for="langDuration">Duration (seconds)</label>
-              <input type="number" id="langDuration" class="control" value="0.5" min="0.1" step="0.1" />
-            </div>
-
-            <div class="field">
-              <label for="langCaptionOffset">Caption Offset (ms)</label>
-              <input type="number" id="langCaptionOffset" class="control" value="300" min="-1000" max="2000" step="50" />
-              <div class="field-help">Negative = pre-mute • Positive = delay</div>
-            </div>
-          </div>
-
-          <div class="split">
-            <div class="subcard">
-              <div class="subhead">
-                <h4>Preset Packs</h4>
-                <p>Quick switches for common filters.</p>
+            <div class="controls-grid">
+              <div class="field">
+                <label for="langAction">Action</label>
+                <select id="langAction" class="control">
+                  <option value="mute">Mute</option>
+                  <option value="skip">Skip</option>
+                  <option value="fast_forward">Fast Forward</option>
+                  <option value="none">None</option>
+                </select>
               </div>
 
-              <div class="preset-list" id="langPresets">
-                <div class="preset-row" data-pack="strong_profanity">
-                  <div class="preset-meta">
-                    <div class="preset-name">Strong Profanity</div>
-                    <div class="preset-note">Most explicit terms</div>
-                  </div>
-                  <label class="toggle">
-                    <input type="checkbox" checked />
-                    <span class="toggle-ui" aria-hidden="true"></span>
-                  </label>
+              <div class="field">
+                <label for="langDuration">Duration (seconds)</label>
+                <input type="number" id="langDuration" class="control" value="0.5" min="0.1" step="0.1" />
+              </div>
+
+              <div class="field">
+                <label for="langCaptionOffset">Caption Offset (ms)</label>
+                <input type="number" id="langCaptionOffset" class="control" value="300" min="-1000" max="2000" step="50" />
+                <div class="field-help">Negative = pre-mute • Positive = delay</div>
+              </div>
+            </div>
+
+            <div class="split">
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Preset Packs</h4>
+                  <p>Quick switches for common filters.</p>
                 </div>
 
-                <div class="preset-row" data-pack="mild_language">
-                  <div class="preset-meta">
-                    <div class="preset-name">Mild Language</div>
-                    <div class="preset-note">Common softer terms</div>
+                <div class="preset-list" id="langPresets">
+                  <div class="preset-row" data-pack="strong_profanity">
+                    <div class="preset-meta">
+                      <div class="preset-name">Strong Profanity</div>
+                      <div class="preset-note">Most explicit terms</div>
+                    </div>
+                    <label class="toggle">
+                      <input type="checkbox" checked />
+                      <span class="toggle-ui" aria-hidden="true"></span>
+                    </label>
                   </div>
-                  <label class="toggle">
-                    <input type="checkbox" />
-                    <span class="toggle-ui" aria-hidden="true"></span>
-                  </label>
-                </div>
 
-                <div class="preset-row" data-pack="blasphemy">
-                  <div class="preset-meta">
-                    <div class="preset-name">Blasphemy</div>
-                    <div class="preset-note">Religious profanity</div>
+                  <div class="preset-row" data-pack="mild_language">
+                    <div class="preset-meta">
+                      <div class="preset-name">Mild Language</div>
+                      <div class="preset-note">Common softer terms</div>
+                    </div>
+                    <label class="toggle">
+                      <input type="checkbox" />
+                      <span class="toggle-ui" aria-hidden="true"></span>
+                    </label>
                   </div>
-                  <label class="toggle">
-                    <input type="checkbox" />
-                    <span class="toggle-ui" aria-hidden="true"></span>
-                  </label>
-                </div>
-              </div>
-            </div>
 
-            <div class="subcard">
-              <div class="subhead">
-                <h4>Custom Words</h4>
-                <p>Add your own words or phrases.</p>
-              </div>
-
-              <div class="custom-input-row">
-                <input type="text" id="langCustomInput" class="control" placeholder="Add custom word/phrase" />
-                <button class="btn btn-secondary btn-sm" data-category="language" type="button">Add</button>
-              </div>
-
-              <ul class="custom-list" id="langCustomList"></ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- PANEL: Violence -->
-        <div class="category-panel" id="panel-violence" style="display:none;">
-          <div class="panel-head">
-            <h3>Violence</h3>
-            <p class="panel-sub">Controls for violence-related detection.</p>
-          </div>
-
-          <div class="grid-3 panel-controls">
-            <div class="field">
-              <label for="violenceAction">Action</label>
-              <select id="violenceAction" class="control">
-                <option value="mute">Mute</option>
-                <option value="skip">Skip</option>
-                <option value="fast_forward">Fast Forward</option>
-                <option value="none">None</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="violenceDuration">Duration (seconds)</label>
-              <input type="number" id="violenceDuration" class="control" value="10" min="0" step="0.5" />
-            </div>
-
-            <div class="field">
-              <label for="violenceCaptionOffset">Caption Offset (ms)</label>
-              <input type="number" id="violenceCaptionOffset" class="control" value="300" min="-1000" max="2000" step="50" />
-              <div class="field-help">Negative = pre-mute • Positive = delay</div>
-            </div>
-          </div>
-
-          <div class="split">
-            <div class="subcard">
-              <div class="subhead">
-                <h4>Preset Packs</h4>
-                <p>Toggle a pack on/off.</p>
-              </div>
-
-              <div class="preset-list" id="violencePresets">
-                <div class="preset-row" data-pack="graphic_violence">
-                  <div class="preset-meta">
-                    <div class="preset-name">Graphic Violence</div>
-                    <div class="preset-note">Severe/explicit violence terms</div>
+                  <div class="preset-row" data-pack="blasphemy">
+                    <div class="preset-meta">
+                      <div class="preset-name">Blasphemy</div>
+                      <div class="preset-note">Religious profanity</div>
+                    </div>
+                    <label class="toggle">
+                      <input type="checkbox" />
+                      <span class="toggle-ui" aria-hidden="true"></span>
+                    </label>
                   </div>
-                  <label class="toggle">
-                    <input type="checkbox" />
-                    <span class="toggle-ui" aria-hidden="true"></span>
-                  </label>
                 </div>
               </div>
-            </div>
 
-            <div class="subcard">
-              <div class="subhead">
-                <h4>Custom Words/Phrases</h4>
-                <p>Add terms you want filtered.</p>
-              </div>
-
-              <div class="custom-input-row">
-                <input type="text" id="violenceCustomInput" class="control" placeholder="e.g., fight, attack" />
-                <button class="btn btn-secondary btn-sm" data-category="violence" type="button">Add</button>
-              </div>
-
-              <ul class="custom-list" id="violenceCustomList"></ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- PANEL: Sexual -->
-        <div class="category-panel" id="panel-sexual" style="display:none;">
-          <div class="panel-head">
-            <h3>Sexual Content</h3>
-            <p class="panel-sub">Controls for sexual content detection.</p>
-          </div>
-
-          <div class="grid-3 panel-controls">
-            <div class="field">
-              <label for="sexualAction">Action</label>
-              <select id="sexualAction" class="control">
-                <option value="mute">Mute</option>
-                <option value="skip">Skip</option>
-                <option value="fast_forward">Fast Forward</option>
-                <option value="none">None</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="sexualDuration">Duration (seconds)</label>
-              <input type="number" id="sexualDuration" class="control" value="30" min="0" step="0.5" />
-            </div>
-
-            <div class="field">
-              <label for="sexualCaptionOffset">Caption Offset (ms)</label>
-              <input type="number" id="sexualCaptionOffset" class="control" value="300" min="-1000" max="2000" step="50" />
-              <div class="field-help">Negative = pre-mute • Positive = delay</div>
-            </div>
-          </div>
-
-          <div class="split">
-            <div class="subcard">
-              <div class="subhead">
-                <h4>Preset Packs</h4>
-                <p>Quick switches for common filters.</p>
-              </div>
-
-              <div class="preset-list" id="sexualPresets">
-                <div class="preset-row" data-pack="explicit_terms">
-                  <div class="preset-meta">
-                    <div class="preset-name">Explicit Terms</div>
-                    <div class="preset-note">Common explicit vocabulary</div>
-                  </div>
-                  <label class="toggle">
-                    <input type="checkbox" />
-                    <span class="toggle-ui" aria-hidden="true"></span>
-                  </label>
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Custom Words</h4>
+                  <p>Add your own words or phrases.</p>
                 </div>
 
-                <div class="preset-row" data-pack="intimate_acts">
-                  <div class="preset-meta">
-                    <div class="preset-name">Intimate Acts</div>
-                    <div class="preset-note">Phrases describing intimacy</div>
-                  </div>
-                  <label class="toggle">
-                    <input type="checkbox" />
-                    <span class="toggle-ui" aria-hidden="true"></span>
-                  </label>
+                <div class="custom-input-row">
+                  <input type="text" id="langCustomInput" class="control" placeholder="Add custom word/phrase" />
+                  <button class="btn secondary btn-sm" data-category="language" type="button">Add</button>
                 </div>
+
+                <ul class="custom-list" id="langCustomList"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL: Violence -->
+          <div class="category-panel" id="panel-violence" style="display:none;">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Violence</p>
+                <h3>Control how violent content is handled.</h3>
+              </div>
+              <p class="panel-sub">Tune actions and timing to your threshold.</p>
+            </div>
+
+            <div class="controls-grid">
+              <div class="field">
+                <label for="violenceAction">Action</label>
+                <select id="violenceAction" class="control">
+                  <option value="mute">Mute</option>
+                  <option value="skip">Skip</option>
+                  <option value="fast_forward">Fast Forward</option>
+                  <option value="none">None</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="violenceDuration">Duration (seconds)</label>
+                <input type="number" id="violenceDuration" class="control" value="10" min="0" step="0.5" />
+              </div>
+
+              <div class="field">
+                <label for="violenceCaptionOffset">Caption Offset (ms)</label>
+                <input type="number" id="violenceCaptionOffset" class="control" value="300" min="-1000" max="2000" step="50" />
+                <div class="field-help">Negative = pre-mute • Positive = delay</div>
               </div>
             </div>
 
-            <div class="subcard">
-              <div class="subhead">
-                <h4>Custom Words/Phrases</h4>
-                <p>Add your own words or phrases.</p>
+            <div class="split">
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Preset Packs</h4>
+                  <p>Toggle a pack on/off.</p>
+                </div>
+
+                <div class="preset-list" id="violencePresets">
+                  <div class="preset-row" data-pack="graphic_violence">
+                    <div class="preset-meta">
+                      <div class="preset-name">Graphic Violence</div>
+                      <div class="preset-note">Severe/explicit violence terms</div>
+                    </div>
+                    <label class="toggle">
+                      <input type="checkbox" />
+                      <span class="toggle-ui" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                </div>
               </div>
 
-              <div class="custom-input-row">
-                <input type="text" id="sexualCustomInput" class="control" placeholder="Add custom word/phrase" />
-                <button class="btn btn-secondary btn-sm" data-category="sexual" type="button">Add</button>
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Custom Words/Phrases</h4>
+                  <p>Add terms you want filtered.</p>
+                </div>
+
+                <div class="custom-input-row">
+                  <input type="text" id="violenceCustomInput" class="control" placeholder="e.g., fight, attack" />
+                  <button class="btn secondary btn-sm" data-category="violence" type="button">Add</button>
+                </div>
+
+                <ul class="custom-list" id="violenceCustomList"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL: Sexual -->
+          <div class="category-panel" id="panel-sexual" style="display:none;">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Sexual</p>
+                <h3>Handle sexual content with your preferred action.</h3>
+              </div>
+              <p class="panel-sub">Manage presets and custom words.</p>
+            </div>
+
+            <div class="controls-grid">
+              <div class="field">
+                <label for="sexualAction">Action</label>
+                <select id="sexualAction" class="control">
+                  <option value="mute">Mute</option>
+                  <option value="skip">Skip</option>
+                  <option value="fast_forward">Fast Forward</option>
+                  <option value="none">None</option>
+                </select>
               </div>
 
-              <ul class="custom-list" id="sexualCustomList"></ul>
+              <div class="field">
+                <label for="sexualDuration">Duration (seconds)</label>
+                <input type="number" id="sexualDuration" class="control" value="30" min="0" step="0.5" />
+              </div>
+
+              <div class="field">
+                <label for="sexualCaptionOffset">Caption Offset (ms)</label>
+                <input type="number" id="sexualCaptionOffset" class="control" value="300" min="-1000" max="2000" step="50" />
+                <div class="field-help">Negative = pre-mute • Positive = delay</div>
+              </div>
+            </div>
+
+            <div class="split">
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Preset Packs</h4>
+                  <p>Quick switches for common filters.</p>
+                </div>
+
+                <div class="preset-list" id="sexualPresets">
+                  <div class="preset-row" data-pack="explicit_terms">
+                    <div class="preset-meta">
+                      <div class="preset-name">Explicit Terms</div>
+                      <div class="preset-note">Common explicit vocabulary</div>
+                    </div>
+                    <label class="toggle">
+                      <input type="checkbox" />
+                      <span class="toggle-ui" aria-hidden="true"></span>
+                    </label>
+                  </div>
+
+                  <div class="preset-row" data-pack="intimate_acts">
+                    <div class="preset-meta">
+                      <div class="preset-name">Intimate Acts</div>
+                      <div class="preset-note">Phrases describing intimacy</div>
+                    </div>
+                    <label class="toggle">
+                      <input type="checkbox" />
+                      <span class="toggle-ui" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Custom Words/Phrases</h4>
+                  <p>Add your own words or phrases.</p>
+                </div>
+
+                <div class="custom-input-row">
+                  <input type="text" id="sexualCustomInput" class="control" placeholder="Add custom word/phrase" />
+                  <button class="btn secondary btn-sm" data-category="sexual" type="button">Add</button>
+                </div>
+
+                <ul class="custom-list" id="sexualCustomList"></ul>
+              </div>
             </div>
           </div>
         </div>
@@ -280,8 +293,11 @@
 
       <section class="card summary-section">
         <div class="card-head">
-          <h2>Summary</h2>
-          <div class="hint">A quick snapshot of what’s active.</div>
+          <div>
+            <p class="eyebrow">Snapshot</p>
+            <h2>Summary</h2>
+          </div>
+          <p class="hint">Quick view of what’s active.</p>
         </div>
 
         <div class="summary-grid">
@@ -303,11 +319,11 @@
 
         <div id="statusMessage" class="status-message" style="display:none;"></div>
       </section>
-
-      <div class="footer-note">Settings save locally and can sync across tabs.</div>
     </main>
 
-    <script type="module" src="options.js"></script>
+    <footer class="footer-note">Settings save locally and can sync across tabs.</footer>
   </div>
+
+  <script type="module" src="options.js"></script>
 </body>
 </html>

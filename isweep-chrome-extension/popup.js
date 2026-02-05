@@ -190,12 +190,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             console.log('[ISweep-Popup] TOGGLED enabled:', isweep_enabled);
 
-            if (isweep_enabled) {
-                startAsrIfNeeded();
-            } else {
-                stopAsr();
-            }
-
             // Notify active tab's content script to toggle immediately
             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                 if (tabs.length > 0) {
@@ -215,7 +209,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function startAsrIfNeeded() {
         if (!isweep_enabled) return;
         try {
-            chrome.runtime.sendMessage({ action: 'START_ASR' }, () => {});
+            chrome.runtime.sendMessage({
+                action: 'startAsr',
+                backendUrl: isweepPrefs.backendUrl || DEFAULT_BACKEND_URL,
+                userId: isweepPrefs.user_id || 'user123'
+            }, () => {});
         } catch (e) {
             console.log('[ISweep-Popup] Failed to start ASR:', e.message);
         }
@@ -223,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function stopAsr() {
         try {
-            chrome.runtime.sendMessage({ action: 'STOP_ASR' }, () => {});
+            chrome.runtime.sendMessage({ action: 'stopAsr' }, () => {});
         } catch (e) {
             console.log('[ISweep-Popup] Failed to stop ASR:', e.message);
         }
@@ -274,11 +272,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (openPreferencesBtn) {
         openPreferencesBtn.addEventListener('click', () => {
-            if (chrome?.runtime?.openOptionsPage) {
-                chrome.runtime.openOptionsPage();
-            } else {
-                chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
-            }
+            const url = chrome.runtime.getURL('options.html');
+            chrome.tabs.create({ url, active: true });
             window.close();
         });
     }
@@ -304,11 +299,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             isweep_enabled = Boolean(changes.isweep_enabled.newValue);
             updateUI(isweep_enabled);
             console.log('[ISweep-Popup] Updated enabled state from isweep_enabled:', isweep_enabled);
-            if (isweep_enabled) {
-                startAsrIfNeeded();
-            } else {
-                stopAsr();
-            }
         }
 
         // Handle isweep_asr_enabled changes

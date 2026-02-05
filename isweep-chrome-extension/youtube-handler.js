@@ -31,6 +31,17 @@
     let noCaptionsWarningLogged = false; // Track if we've warned about missing captions
 
     let isEnabled = false;
+    let videoPresenceReported = false;
+
+    function notifyVideoPresence(hasVideo) {
+        if (hasVideo === videoPresenceReported) return;
+        videoPresenceReported = hasVideo;
+        try {
+            chrome.runtime.sendMessage({ action: hasVideo ? 'VIDEO_PRESENT' : 'VIDEO_GONE' });
+        } catch (_) {
+            // Ignore failures (tab closing or SW asleep)
+        }
+    }
 
     async function loadSettings() {
         try {
@@ -57,6 +68,7 @@
                     ytCaptionObserver = null;
                     ytLog('[ISweep-YT] Caption observer disconnected (disabled)');
                 }
+                notifyVideoPresence(false);
             } else {
                 // Restart monitoring if enabled
                 ytLog('[ISweep-YT] Restarting caption monitoring (enabled)');
@@ -131,6 +143,10 @@
         const handleMutation = () => {
             const segments = getCaptionSegments();
             const captionText = readCaptionTextFromSegments(segments);
+
+            // Notify background that a playable video exists when enabled
+            const player = getYouTubeVideoElement();
+            notifyVideoPresence(isEnabled && Boolean(player));
 
             const now = Date.now();
             if (!window._ytSegmentDebugTs || (now - window._ytSegmentDebugTs) >= 2000) {

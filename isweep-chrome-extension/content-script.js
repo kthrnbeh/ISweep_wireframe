@@ -1056,6 +1056,17 @@ function isYouTubeHost() {
 // Detect all video elements on page (skip YouTube; handled by youtube-handler)
 const __isweepIsYouTube = isYouTubeHost();
 let __isweepYTLogged = false;
+let __isweepVideoPresent = false;
+
+function notifyVideoPresence(hasVideo) {
+    if (hasVideo === __isweepVideoPresent) return;
+    __isweepVideoPresent = hasVideo;
+    try {
+        chrome.runtime.sendMessage({ action: hasVideo ? 'VIDEO_PRESENT' : 'VIDEO_GONE' });
+    } catch (_) {
+        // Ignore if messaging fails (e.g., tab is closing)
+    }
+}
 
 function detectVideos() {
     if (__isweepIsYouTube) {
@@ -1063,10 +1074,17 @@ function detectVideos() {
             __isweepYTLogged = true;
             csLog('[ISweep-CS] YouTube detected - skipping non-YouTube caption extraction');
         }
+        notifyVideoPresence(false);
         return;
     }
 
     const videos = document.querySelectorAll('video');
+
+    if (isEnabled && videos.length > 0) {
+        notifyVideoPresence(true);
+    } else {
+        notifyVideoPresence(false);
+    }
     
     if (videos.length > 0 && detectedVideos !== videos.length) {
         detectedVideos = videos.length;
