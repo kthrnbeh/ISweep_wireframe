@@ -1235,7 +1235,7 @@ function findCueAtTime(cues, currentTime) {
 
 // Main filtering logic
 async function checkForFilters(videoElement, index) {
-    if (!videoElement.currentTime || videoElement.paused) return;
+    if (!Number.isFinite(videoElement.currentTime) || videoElement.paused) return;
 
     // Get current caption text - primary source is cuechange event
     let captionText = videoElement._isweepCurrentCaption || '';
