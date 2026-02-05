@@ -7,99 +7,75 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>ISweep</h1>
-            <p class="subtitle">Content Filter</p>
+    <div class="shell">
+        <header class="top">
+            <div class="title">
+                <div class="dot"></div>
+                <div>
+                    <h1>ISweep</h1>
+                    <p>Content Filter</p>
+                </div>
+            </div>
+            <div class="pill" id="statusIndicator">
+                <span class="dot tiny inactive"></span>
+                <span id="statusText">Inactive</span>
+            </div>
         </header>
 
-        <main>
-            <!-- Status Section -->
-            <section class="status-section">
-                <div class="status-indicator" id="statusIndicator">
-                    <span class="status-dot inactive"></span>
-                    <span class="status-text" id="statusText">Inactive</span>
+        <main class="card">
+            <section class="grid-2">
+                <div class="field">
+                    <label for="userIdInput">User ID</label>
+                    <input 
+                        type="text" 
+                        id="userIdInput" 
+                        placeholder="user123"
+                        maxlength="50"
+                    >
+                </div>
+                <div class="field">
+                    <label for="backendUrl">Backend URL</label>
+                    <input 
+                        type="text" 
+                        id="backendUrl" 
+                        placeholder="http://127.0.0.1:8001"
+                    >
+                    <div id="backendUrlError" class="error"></div>
                 </div>
             </section>
 
-            <!-- User Section -->
-            <section class="user-section">
-                <label for="userIdInput">User ID:</label>
-                <input 
-                    type="text" 
-                    id="userIdInput" 
-                    placeholder="user123"
-                    maxlength="50"
-                >
+            <section class="actions-row">
+                <button id="toggleButton" class="btn primary">Enable ISweep</button>
             </section>
 
-            <!-- Backend URL Section -->
-            <section class="backend-section">
-                <label for="backendUrl">Backend URL:</label>
-                <input 
-                    type="text" 
-                    id="backendUrl" 
-                    placeholder="http://127.0.0.1:8001"
-                >
-                <div id="backendUrlError" 
-                     style="
-                       color: #ef4444;
-                       font-size: 0.85rem;
-                       margin-top: 0.25rem;
-                       display: none;
-                     ">
+            <section class="asr-card">
+                <div class="asr-row">
+                    <div class="label">ASR</div>
+                    <div class="status-line">
+                        <span id="asrStatusText">Starting…</span>
+                        <span id="asrMetrics" class="muted"></span>
+                    </div>
                 </div>
             </section>
 
-            <!-- Toggle Button -->
-            <section class="toggle-section">
-                <button id="toggleButton" class="btn btn-primary">Enable ISweep</button>
-            </section>
-
-            <!-- ASR Toggle -->
-            <section class="asr-section">
-                <label for="asrToggle" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                    <input type="checkbox" id="asrToggle" style="cursor: pointer;">
-                    <span>Backend Transcription (ASR)</span>
-                </label>
-                <p style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
-                    Capture tab audio for automatic speech recognition (requires tab permission)
-                </p>
-            </section>
-
-            <!-- ASR Status & Metrics -->
-            <section class="asr-status-section" id="asrStatusSection" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background: #f9fafb; border-radius: 0.375rem; font-size: 0.85rem;">
-                <div style="margin-bottom: 0.5rem;">
-                    <strong>ASR Status:</strong> <span id="asrStatusText" style="color: #666;">Off</span>
-                </div>
-                <div style="margin-bottom: 0.25rem;">
-                    <strong>Avg Send:</strong> <span id="asrSendMs" style="color: #666;">—</span>
-                </div>
-                <div>
-                    <strong>Avg RTT:</strong> <span id="asrRttMs" style="color: #666;">—</span>
-                </div>
-            </section>
-
-            <!-- Stats -->
-            <section class="stats-section">
+            <section class="stats">
                 <div class="stat">
-                    <span class="stat-label">Videos Detected:</span>
-                    <span class="stat-value" id="videosDetected">0</span>
+                    <div class="k">Videos Detected</div>
+                    <div class="v" id="videosDetected">0</div>
                 </div>
                 <div class="stat">
-                    <span class="stat-label">Actions Applied:</span>
-                    <span class="stat-value" id="actionsApplied">0</span>
+                    <div class="k">Actions Applied</div>
+                    <div class="v" id="actionsApplied">0</div>
                 </div>
             </section>
 
-            <!-- Settings Link -->
-            <section class="settings-section">
-                <button id="openPreferences" class="settings-link" type="button">⚙️ Preferences</button>
-                <a href="#" class="settings-link" id="clearStats">Clear Stats</a>
+            <section class="footer-links">
+                <button id="openPreferences" class="btn ghost" type="button">⚙️ Preferences</button>
+                <button id="clearStats" class="btn ghost" type="button">Clear Stats</button>
             </section>
         </main>
 
-        <footer>
+        <footer class="foot">
             <p class="version">v0.1.0</p>
         </footer>
     </div>
