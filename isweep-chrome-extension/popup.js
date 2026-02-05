@@ -292,7 +292,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (openPreferencesBtn) {
         openPreferencesBtn.addEventListener('click', () => {
-            chrome.runtime.openOptionsPage();
+            if (chrome?.runtime?.openOptionsPage) {
+                chrome.runtime.openOptionsPage();
+            } else {
+                chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+            }
             window.close();
         });
     }

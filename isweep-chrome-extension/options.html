@@ -52,8 +52,8 @@
 
           <div class="grid-3 panel-controls">
             <div class="field">
-              <label for="languageAction">Action</label>
-              <select id="languageAction" class="control">
+              <label for="langAction">Action</label>
+              <select id="langAction" class="control">
                 <option value="mute">Mute</option>
                 <option value="skip">Skip</option>
                 <option value="fast_forward">Fast Forward</option>
@@ -62,13 +62,13 @@
             </div>
 
             <div class="field">
-              <label for="languageDuration">Duration (seconds)</label>
-              <input type="number" id="languageDuration" class="control" value="0.5" min="0.1" step="0.1" />
+              <label for="langDuration">Duration (seconds)</label>
+              <input type="number" id="langDuration" class="control" value="0.5" min="0.1" step="0.1" />
             </div>
 
             <div class="field">
-              <label for="languageCaptionOffset">Caption Offset (ms)</label>
-              <input type="number" id="languageCaptionOffset" class="control" value="300" min="-1000" max="2000" step="50" />
+              <label for="langCaptionOffset">Caption Offset (ms)</label>
+              <input type="number" id="langCaptionOffset" class="control" value="300" min="-1000" max="2000" step="50" />
               <div class="field-help">Negative = pre-mute • Positive = delay</div>
             </div>
           </div>
@@ -123,11 +123,11 @@
               </div>
 
               <div class="custom-input-row">
-                <input type="text" id="languageCustomInput" class="control" placeholder="Add custom word/phrase" />
+                <input type="text" id="langCustomInput" class="control" placeholder="Add custom word/phrase" />
                 <button class="btn btn-secondary btn-sm" data-category="language" type="button">Add</button>
               </div>
 
-              <ul class="custom-list" id="languageCustomList"></ul>
+              <ul class="custom-list" id="langCustomList"></ul>
             </div>
           </div>
         </div>
