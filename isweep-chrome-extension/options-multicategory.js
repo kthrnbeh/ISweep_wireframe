@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 log('Backend not configured, using local storage');
                 return false;
             }
-
+                const backendURL = storage.isweepPrefs?.backendUrl || storage.backendUrl || storage.backendURL || DEFAULT_BACKEND_URL;
             const res = await fetch(`${backendURL}/preferences/${userId}`);
             if (!res.ok) {
                 log('Backend fetch failed, using local storage');
@@ -138,6 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderCustomWords('language');
         renderCustomWords('violence');
         renderCustomWords('sexual');
+        updateSummaryForCategory(currentCategory);
     }
 
     function renderLanguagePresets() {
@@ -173,14 +174,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 actionByCategory[category] = actionSelect.value;
                 chrome.storage.local.set({ actionByCategory });
                 log(`${category} action updated:`, actionByCategory[category]);
-            };
-        }
+                    const packKey = row.dataset.pack;
+                    if (!cb || !packKey) return;
 
-        if (durationInput) {
-            durationInput.value = durationSecondsByCategory[category] ?? DEFAULT_DURATION[category];
-            durationInput.onchange = () => {
-                const val = parseFloat(durationInput.value);
-                const safeVal = Number.isFinite(val) ? Math.max(0, val) : DEFAULT_DURATION[category];
+                    cb.checked = Boolean(langSelected[packKey]);
+                    cb.onchange = () => {
+                        selectedPacks.language = selectedPacks.language || {};
+                        selectedPacks.language[packKey] = cb.checked;
+                        chrome.storage.local.set({ selectedPacks });
+                        updateSummaryForCategory('language');
+                        log('selectedPacks updated:', selectedPacks);
+                    };
                 durationSecondsByCategory[category] = safeVal;
                 chrome.storage.local.set({ durationSecondsByCategory });
                 log(`${category} duration updated:`, durationSecondsByCategory[category]);
@@ -287,8 +291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await chrome.storage.local.set({ selectedPacks, actionByCategory, durationSecondsByCategory, customWordsByCategory });
 
             if (!isBackendConfigured(backendURL)) {
-                const langWords = preferences.language.blocked_words;
-                updateSummary(langWords);
+                updateSummaryForCategory(currentCategory);
                 showStatus('Saved locally (backend not configured)', 'success');
                 log('Backend not configured; local-only save complete');
                 return { success: true, mode: 'local-only' };
@@ -308,13 +311,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const result = await res.json();
             log('Bulk save response:', result);
 
-            const langWords = preferences.language.blocked_words;
-            updateSummary(langWords);
+            updateSummaryForCategory(currentCategory);
             showStatus(`Saved ${result.categories_saved?.length || 0} categories`, 'success');
             return { success: true, mode: 'backend' };
         } catch (err) {
-            const langWords = preferences.language.blocked_words;
-            updateSummary(langWords);
+            updateSummaryForCategory(currentCategory);
             console.warn('[ISweep-Options] Backend unavailable; saved locally', err);
             showStatus('Saved locally (backend unavailable)', 'success');
             return { success: true, mode: 'local-only' };
@@ -324,6 +325,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateSummary(effectiveWords) {
         const now = new Date();
         const timeStr = now.toLocaleTimeString();
+
+        if (!effectiveCount || !effectivePreview || !lastSavedTime) return;
 
         effectiveCount.textContent = effectiveWords.length;
         effectivePreview.innerHTML = '';
