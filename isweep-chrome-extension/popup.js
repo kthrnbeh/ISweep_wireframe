@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const backendUrlInput = document.getElementById('backendUrl');
     const backendUrlError = document.getElementById('backendUrlError');
     const clearStatsBtn = document.getElementById('clearStats');
+    const openPreferencesBtn = document.getElementById('openPreferences');
     const videosDetectedSpan = document.getElementById('videosDetected');
     const actionsAppliedSpan = document.getElementById('actionsApplied');
 
@@ -29,7 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         backendUrlInput,
         clearStatsBtn,
         videosDetectedSpan,
-        actionsAppliedSpan
+        actionsAppliedSpan,
+        openPreferencesBtn
     };
 
     const missingElements = Object.entries(requiredElements)
@@ -285,6 +287,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             if (videosDetectedSpan) videosDetectedSpan.textContent = '0';
             if (actionsAppliedSpan) actionsAppliedSpan.textContent = '0';
+        });
+    }
+
+    if (openPreferencesBtn) {
+        openPreferencesBtn.addEventListener('click', () => {
+            chrome.runtime.openOptionsPage();
+            window.close();
         });
     }
 
