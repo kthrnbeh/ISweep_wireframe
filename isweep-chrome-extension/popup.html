@@ -3,83 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ISweep</title>
+    <title>ISweep Settings</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <div class="shell">
-        <header class="top">
-            <div class="title">
-                <div class="dot"></div>
-                <div>
-                    <h1>ISweep</h1>
-                    <p>Content Filter</p>
-                </div>
+<body class="settings-shell">
+    <main class="settings-card" data-settings-root>
+        <header class="settings-header">
+            <div>
+                <p class="eyebrow">ISweep</p>
+                <h1>Settings</h1>
+                <p class="subtitle">Choose how ISweep filters and responds.</p>
             </div>
-            <!-- UI contract: status indicator must contain .status-dot and #statusText for popup.js to update -->
-            <div class="pill" id="statusIndicator" aria-live="polite" aria-label="ISweep status">
-                <span class="dot tiny status-dot inactive"></span>
-                <span id="statusText" class="status-text">Inactive</span>
-            </div>
+            <button id="openFullSettings" class="btn ghost" type="button">Open full settings</button>
         </header>
 
-        <main class="card">
-            <section class="grid-2">
-                <div class="field">
-                    <label for="userIdInput">User ID</label>
-                    <input 
-                        type="text" 
-                        id="userIdInput" 
-                        placeholder="user123"
-                        maxlength="50"
-                    >
-                </div>
-                <div class="field">
-                    <label for="backendUrl">Backend URL</label>
-                    <input 
-                        type="text" 
-                        id="backendUrl" 
-                        placeholder="http://127.0.0.1:8001"
-                    >
-                    <div id="backendUrlError" class="error"></div>
-                </div>
-            </section>
-
-            <section class="actions-row">
-                <button id="toggleButton" class="btn primary">Enable ISweep</button>
-            </section>
-
-            <section class="asr-card">
-                <div class="asr-row">
-                    <div class="label">ASR</div>
-                    <div class="status-line">
-                        <span id="asrStatusText">Starting…</span>
-                        <span id="asrMetrics" class="muted"></span>
+        <section class="card">
+            <h2>Content Filters</h2>
+            <form id="contentFiltersForm" class="profile-form">
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Filter Categories</strong>
+                        <p>Select what you want ISweep to catch and manage.</p>
+                        <label><input type="checkbox" id="filter-profanity"> Profanity / swearing</label>
+                        <label><input type="checkbox" id="filter-sexual"> Sexual content / nudity</label>
+                        <label><input type="checkbox" id="filter-violence"> Graphic violence</label>
+                        <label><input type="checkbox" id="filter-horror"> Horror / jump scares</label>
+                        <label><input type="checkbox" id="filter-crude"> Crude or inappropriate humor</label>
                     </div>
+                    <button type="submit">Save</button>
                 </div>
-            </section>
+            </form>
+        </section>
 
-            <section class="stats">
-                <div class="stat">
-                    <div class="k">Videos Detected</div>
-                    <div class="v" id="videosDetected">0</div>
+        <section class="card">
+            <h2>Filter Actions</h2>
+            <form id="filterActionsForm" class="profile-form">
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Profanity</strong>
+                        <p>What should ISweep do when it hears profanity?</p>
+                        <select id="action-profanity">
+                            <option value="mute">Mute audio only</option>
+                            <option value="skip">Skip the scene</option>
+                            <option value="fast-forward">Fast-forward 10 seconds</option>
+                            <option value="log-only">Just log it (no action)</option>
+                        </select>
+                    </div>
+                    <button type="submit">Save</button>
                 </div>
-                <div class="stat">
-                    <div class="k">Actions Applied</div>
-                    <div class="v" id="actionsApplied">0</div>
+
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Sexual Content</strong>
+                        <p>Choose how ISweep responds to sexual content.</p>
+                        <select id="action-sexual">
+                            <option value="skip">Skip the scene</option>
+                            <option value="fast-forward">Fast-forward 30 seconds</option>
+                            <option value="mute">Mute audio only</option>
+                            <option value="log-only">Just log it (no action)</option>
+                        </select>
+                    </div>
+                    <button type="submit">Save</button>
                 </div>
-            </section>
 
-            <section class="footer-links">
-                <button id="openPreferences" class="btn ghost" type="button">⚙️ Preferences</button>
-                <button id="clearStats" class="btn ghost" type="button">Clear Stats</button>
-            </section>
-        </main>
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Violence</strong>
+                        <p>How strict do you want ISweep to be with violence?</p>
+                        <select id="action-violence">
+                            <option value="mute">Mute audio only</option>
+                            <option value="skip">Skip intense scenes</option>
+                            <option value="fast-forward">Fast-forward 15 seconds</option>
+                            <option value="log-only">Just log it (no action)</option>
+                        </select>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </section>
 
-        <footer class="foot">
-            <p class="version">v0.1.0</p>
+        <section class="card">
+            <h2>Sensitivity</h2>
+            <form id="sensitivityForm" class="profile-form">
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Filter Sensitivity</strong>
+                        <p>Adjust how strict ISweep should be overall.</p>
+                        <label class="range-line">
+                            <span>Low</span>
+                            <input type="range" id="sensitivity" min="1" max="3" value="2">
+                            <span>High</span>
+                            <span id="sensitivityValue" class="chip">2</span>
+                        </label>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Notifications</h2>
+            <form id="notificationsForm" class="profile-form">
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Session Reports</strong>
+                        <p>How would you like to receive viewing summaries?</p>
+                        <label><input type="checkbox" id="notify-email"> Email me a weekly summary</label>
+                        <label><input type="checkbox" id="notify-inapp"> Show in-app notifications after each session</label>
+                        <label><input type="checkbox" id="notify-none"> Don’t send any notifications</label>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Parental Controls</h2>
+            <form id="parentalForm" class="profile-form">
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Parental PIN</strong>
+                        <p>Lock settings so kids can’t change filters without a PIN.</p>
+                        <label class="stack mini-gap">
+                            <span>Create / Update PIN</span>
+                            <input class="profile-input" type="password" id="parent-pin" minlength="4" maxlength="6" placeholder="Enter 4–6 digit PIN">
+                        </label>
+                        <label><input type="checkbox" id="require-pin"> Require PIN to change filters or plans</label>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </section>
+
+        <footer class="settings-footer">
+            <p id="saveStatus" aria-live="polite">Changes save automatically.</p>
         </footer>
-    </div>
+    </main>
 
     <script src="popup.js" defer></script>
 </body>

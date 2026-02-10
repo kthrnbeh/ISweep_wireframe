@@ -1,348 +1,219 @@
-// popup.js
-document.addEventListener('DOMContentLoaded', async () => {
-    const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8001';
-    // Guard: Check for all required elements
-    const toggleButton = document.getElementById('toggleButton');
-    const statusIndicator = document.getElementById('statusIndicator');
-    const statusText = document.getElementById('statusText');
-    const userIdInput = document.getElementById('userIdInput');
-    const backendUrlInput = document.getElementById('backendUrl');
-    const backendUrlError = document.getElementById('backendUrlError');
-    const clearStatsBtn = document.getElementById('clearStats');
-    const openPreferencesBtn = document.getElementById('openPreferences');
-    const videosDetectedSpan = document.getElementById('videosDetected');
-    const actionsAppliedSpan = document.getElementById('actionsApplied');
-    const asrStatusText = document.getElementById('asrStatusText');
-    const asrMetrics = document.getElementById('asrMetrics');
+// popup.js — shared for popup and options
+document.addEventListener('DOMContentLoaded', () => {
+    const root = document.querySelector('[data-settings-root]');
+    if (!root || !chrome?.storage) return;
 
-    // ASR status elements
-    const asrStatusSection = null;
-    const asrSendMs = null;
-    const asrRttMs = null;
+    const storage = chrome.storage.sync || chrome.storage.local;
 
-    // Validate all required elements exist
-    const requiredElements = {
-        toggleButton,
-        statusIndicator,
-        statusText,
-        userIdInput,
-        backendUrlInput,
-        clearStatsBtn,
-        videosDetectedSpan,
-        actionsAppliedSpan,
-        openPreferencesBtn,
-        asrStatusText,
-        asrMetrics
-    };
-
-    const missingElements = Object.entries(requiredElements)
-        .filter(([_, element]) => !element)
-        .map(([name]) => name);
-
-    if (missingElements.length > 0) {
-        console.warn('[ISweep-Popup] Missing expected elements:', missingElements);
-    }
-
-    // Guard: Ensure status indicator and dot exist; self-heal if missing
-    let statusDot = null;
-    if (statusIndicator) {
-        statusDot = statusIndicator.querySelector('.status-dot');
-        if (!statusDot) {
-            console.warn('[ISweep-Popup] .status-dot missing; creating fallback');
-            statusDot = document.createElement('span');
-            statusDot.className = 'dot tiny status-dot inactive';
-            statusIndicator.insertBefore(statusDot, statusIndicator.firstChild);
-        }
-    } else {
-        console.warn('[ISweep-Popup] statusIndicator missing; status updates disabled');
-    }
-
-    // Load state from Chrome storage
-    let { isweepPrefs, isweep_enabled, isweep_asr_enabled, videosDetected, actionsApplied, isweep_asr_status, isweep_asr_metrics } = await chrome.storage.local.get([
-        'isweepPrefs',
-        'isweep_enabled',
-        'isweep_asr_enabled',
-        'videosDetected',
-        'actionsApplied',
-        'isweep_asr_status',
-        'isweep_asr_metrics'
-    ]);
-
-    console.log('[ISweep-Popup] Loaded state from storage:', { isweepPrefs, isweep_enabled, isweep_asr_enabled, videosDetected, actionsApplied });
-
-    // Initialize isweepPrefs with defaults if not set
-    isweepPrefs = isweepPrefs || {
-        user_id: 'user123',
-        backendUrl: DEFAULT_BACKEND_URL,
-        blocked_words: [],
-        duration_seconds: 3,
-        action: 'mute'
-    };
-
-    // Initialize other state with defaults
-    isweep_enabled = Boolean(isweep_enabled);
-    if (typeof isweep_asr_enabled === 'undefined') {
-        isweep_asr_enabled = true;
-        await chrome.storage.local.set({ isweep_asr_enabled: true });
-    } else {
-        isweep_asr_enabled = Boolean(isweep_asr_enabled);
-    }
-    videosDetected = videosDetected || 0;
-    actionsApplied = actionsApplied || 0;
-
-    // Set initial values in UI
-    userIdInput.value = isweepPrefs.user_id || 'user123';
-    backendUrlInput.value = isweepPrefs.backendUrl || DEFAULT_BACKEND_URL;
-    videosDetectedSpan.textContent = videosDetected;
-    actionsAppliedSpan.textContent = actionsApplied;
-
-    // Update UI based on state
-    const updateUI = (enabled) => {
-        if (!statusIndicator || !statusDot || !statusText || !toggleButton) return;
-        if (enabled) {
-            statusDot.classList.remove('inactive');
-            statusDot.classList.add('active');
-            statusText.textContent = 'Active';
-            toggleButton.textContent = 'Disable ISweep';
-            toggleButton.classList.add('active');
-        } else {
-            statusDot.classList.remove('active');
-            statusDot.classList.add('inactive');
-            statusText.textContent = 'Inactive';
-            toggleButton.textContent = 'Enable ISweep';
-            toggleButton.classList.remove('active');
+    const DEFAULT_PREFS = {
+        filters: {
+            profanity: true,
+            sexual: true,
+            violence: false,
+            horror: false,
+            crude: false
+        },
+        actions: {
+            profanity: 'mute',
+            sexual: 'skip',
+            violence: 'skip'
+        },
+        sensitivity: 2,
+        notifications: {
+            email: true,
+            inapp: true,
+            none: false
+        },
+        parental: {
+            pin: '',
+            requirePin: true
         }
     };
 
-    // Ensure enabled is boolean
-    isweep_enabled = Boolean(isweep_enabled);
-    updateUI(isweep_enabled);
-    console.log('[ISweep-Popup] Initial enabled state:', isweep_enabled);
+    const els = {
+        filtersForm: document.getElementById('contentFiltersForm'),
+        actionsForm: document.getElementById('filterActionsForm'),
+        sensitivityForm: document.getElementById('sensitivityForm'),
+        notificationsForm: document.getElementById('notificationsForm'),
+        parentalForm: document.getElementById('parentalForm'),
+        filterChecks: {
+            profanity: document.getElementById('filter-profanity'),
+            sexual: document.getElementById('filter-sexual'),
+            violence: document.getElementById('filter-violence'),
+            horror: document.getElementById('filter-horror'),
+            crude: document.getElementById('filter-crude')
+        },
+        actionSelects: {
+            profanity: document.getElementById('action-profanity'),
+            sexual: document.getElementById('action-sexual'),
+            violence: document.getElementById('action-violence')
+        },
+        sensitivity: document.getElementById('sensitivity'),
+        sensitivityValue: document.getElementById('sensitivityValue'),
+        notifyEmail: document.getElementById('notify-email'),
+        notifyInapp: document.getElementById('notify-inapp'),
+        notifyNone: document.getElementById('notify-none'),
+        parentPin: document.getElementById('parent-pin'),
+        requirePin: document.getElementById('require-pin'),
+        saveStatus: document.getElementById('saveStatus'),
+        openFullSettings: document.getElementById('openFullSettings')
+    };
 
-    // Update ASR status display
-    const updateAsrStatus = (status, metrics) => {
-        if (!asrStatusText) return;
+    let prefs = null;
+    let saveTimeout = null;
 
-        const statusMap = {
-            'idle': 'Stopped',
-            'starting': 'Starting…',
-            'streaming': 'Streaming',
-            'error': 'Error',
-            'stopped': 'Stopped'
+    const showSaved = (message = 'Saved') => {
+        if (!els.saveStatus) return;
+        els.saveStatus.textContent = message;
+    };
+
+    const safeSet = async (next) => {
+        prefs = next;
+        try {
+            await storage.set({ isweepPrefs: prefs });
+            showSaved('Saved');
+        } catch (err) {
+            console.warn('[ISweep] Failed to save prefs', err);
+            showSaved('Save failed');
+        }
+    };
+
+    const collectPrefs = () => {
+        const filters = {
+            profanity: Boolean(els.filterChecks.profanity?.checked),
+            sexual: Boolean(els.filterChecks.sexual?.checked),
+            violence: Boolean(els.filterChecks.violence?.checked),
+            horror: Boolean(els.filterChecks.horror?.checked),
+            crude: Boolean(els.filterChecks.crude?.checked)
         };
 
-        const displayStatus = statusMap[status] || status || (isweep_asr_enabled ? 'On' : 'Stopped');
-        asrStatusText.textContent = `ASR: ${displayStatus}`;
+        const actions = {
+            profanity: els.actionSelects.profanity?.value || DEFAULT_PREFS.actions.profanity,
+            sexual: els.actionSelects.sexual?.value || DEFAULT_PREFS.actions.sexual,
+            violence: els.actionSelects.violence?.value || DEFAULT_PREFS.actions.violence
+        };
 
-        if (displayStatus === 'Streaming' || isweep_asr_enabled) {
-            asrStatusText.style.color = '#16a34a';
-        } else if (displayStatus === 'Error') {
-            asrStatusText.style.color = '#dc2626';
+        const notifications = {
+            email: Boolean(els.notifyEmail?.checked),
+            inapp: Boolean(els.notifyInapp?.checked),
+            none: Boolean(els.notifyNone?.checked)
+        };
+
+        const parental = {
+            pin: els.parentPin?.value || '',
+            requirePin: Boolean(els.requirePin?.checked)
+        };
+
+        const sensitivity = Number(els.sensitivity?.value || DEFAULT_PREFS.sensitivity);
+
+        return { filters, actions, sensitivity, notifications, parental };
+    };
+
+    const applyPrefs = (p) => {
+        const next = { ...DEFAULT_PREFS, ...p };
+        next.filters = { ...DEFAULT_PREFS.filters, ...(p?.filters || {}) };
+        next.actions = { ...DEFAULT_PREFS.actions, ...(p?.actions || {}) };
+        next.notifications = { ...DEFAULT_PREFS.notifications, ...(p?.notifications || {}) };
+        next.parental = { ...DEFAULT_PREFS.parental, ...(p?.parental || {}) };
+
+        prefs = next;
+
+        Object.entries(next.filters).forEach(([key, value]) => {
+            const box = els.filterChecks[key];
+            if (box) box.checked = Boolean(value);
+        });
+
+        Object.entries(next.actions).forEach(([key, value]) => {
+            const sel = els.actionSelects[key];
+            if (sel) sel.value = value;
+        });
+
+        if (els.sensitivity) {
+            els.sensitivity.value = String(next.sensitivity);
+        }
+        if (els.sensitivityValue) {
+            els.sensitivityValue.textContent = String(next.sensitivity);
+        }
+
+        if (els.notifyEmail) els.notifyEmail.checked = Boolean(next.notifications.email);
+        if (els.notifyInapp) els.notifyInapp.checked = Boolean(next.notifications.inapp);
+        if (els.notifyNone) els.notifyNone.checked = Boolean(next.notifications.none);
+
+        if (els.parentPin) els.parentPin.value = next.parental.pin || '';
+        if (els.requirePin) els.requirePin.checked = Boolean(next.parental.requirePin);
+    };
+
+    const autoSave = () => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => safeSet(collectPrefs()), 150);
+    };
+
+    const handleNotifyToggle = () => {
+        if (els.notifyNone?.checked) {
+            if (els.notifyEmail) els.notifyEmail.checked = false;
+            if (els.notifyInapp) els.notifyInapp.checked = false;
         } else {
-            asrStatusText.style.color = '#4b5563';
+            if (els.notifyNone) els.notifyNone.checked = false;
         }
-
-        if (asrMetrics && metrics) {
-            const send = metrics.avg_send_ms != null ? `${metrics.avg_send_ms}ms send` : null;
-            const rtt = metrics.avg_rtt_ms != null ? `${metrics.avg_rtt_ms}ms rtt` : null;
-            const parts = [send, rtt].filter(Boolean);
-            asrMetrics.textContent = parts.length ? parts.join(' • ') : '';
-        }
+        autoSave();
     };
 
-    // Initial ASR status update
-    updateAsrStatus(isweep_asr_status, isweep_asr_metrics);
-
-    // Validation function for backend URL
-    const isValidBackendUrl = (url) => {
-        if (!url || typeof url !== 'string') return true;
-        const trimmed = url.trim();
-        if (trimmed.length === 0) return true;
-        return trimmed.startsWith('http://') || trimmed.startsWith('https://');
-    };
-
-    // Display or clear error message
-    const showBackendUrlError = (message) => {
-        if (backendUrlError) {
-            backendUrlError.textContent = message;
-            backendUrlError.style.display = message ? 'block' : 'none';
-        }
-        if (message) {
-            console.warn('[ISweep-Popup] Backend URL validation error:', message);
-        }
-    };
-
-    // Toggle button (guarded)
-    if (toggleButton) {
-        toggleButton.addEventListener('click', async () => {
-            isweep_enabled = !isweep_enabled;
-            isweepPrefs.user_id = userIdInput.value.trim();
-            const backendUrl = backendUrlInput.value.trim();
-
-            // Validate backend URL before saving (optional)
-            if (!isValidBackendUrl(backendUrl)) {
-                showBackendUrlError('Invalid URL: must start with http:// or https://');
-                return;
-            }
-
-            showBackendUrlError('');
-            isweepPrefs.backendUrl = backendUrl;
-
-            // Save to storage (separate keys for enabled and prefs)
-            await chrome.storage.local.set({
-                isweep_enabled,
-                isweepPrefs
-            });
-            updateUI(isweep_enabled);
-
-            console.log('[ISweep-Popup] TOGGLED enabled:', isweep_enabled);
-            await startAsrIfNeeded();
-
-            // Notify active tab's content script to toggle immediately
-            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-                if (tabs.length > 0) {
-                    chrome.tabs.sendMessage(tabs[0].id, {
-                        action: 'toggleISweep',
-                        enabled: isweep_enabled,
-                        prefs: isweepPrefs
-                    }).catch((err) => {
-                        console.log('[ISweep-Popup] Could not send message to active tab (expected on non-content pages):', err.message);
-                    });
-                }
+    const addListeners = () => {
+        [els.filtersForm, els.actionsForm, els.sensitivityForm, els.notificationsForm, els.parentalForm].forEach((form) => {
+            form?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                autoSave();
             });
         });
-    }
 
-    // ASR auto-manage helpers
-    async function startAsrIfNeeded() {
-        if (!isweep_enabled || !isweep_asr_enabled) return;
+        Object.values(els.filterChecks).forEach((box) => box?.addEventListener('change', autoSave));
+        Object.values(els.actionSelects).forEach((sel) => sel?.addEventListener('change', autoSave));
+
+        if (els.sensitivity) {
+            els.sensitivity.addEventListener('input', () => {
+                if (els.sensitivityValue) els.sensitivityValue.textContent = String(els.sensitivity.value);
+            });
+            els.sensitivity.addEventListener('change', autoSave);
+        }
+
+        if (els.notifyEmail) els.notifyEmail.addEventListener('change', handleNotifyToggle);
+        if (els.notifyInapp) els.notifyInapp.addEventListener('change', handleNotifyToggle);
+        if (els.notifyNone) els.notifyNone.addEventListener('change', handleNotifyToggle);
+
+        if (els.parentPin) els.parentPin.addEventListener('change', autoSave);
+        if (els.requirePin) els.requirePin.addEventListener('change', autoSave);
+
+        if (els.openFullSettings) {
+            els.openFullSettings.addEventListener('click', () => {
+                chrome.runtime.openOptionsPage().catch(() => {
+                    const url = chrome.runtime.getURL('options.html');
+                    chrome.tabs.create({ url, active: true });
+                }).finally(() => window.close());
+            });
+        }
+    };
+
+    const init = async () => {
         try {
-            chrome.runtime.sendMessage({
-                action: 'startAsr',
-                backendUrl: isweepPrefs.backendUrl || DEFAULT_BACKEND_URL,
-                userId: isweepPrefs.user_id || 'user123'
-            }, () => {});
-        } catch (e) {
-            console.log('[ISweep-Popup] Failed to start ASR:', e.message);
+            const stored = await storage.get('isweepPrefs');
+            applyPrefs(stored?.isweepPrefs || DEFAULT_PREFS);
+            showSaved('Changes save automatically.');
+        } catch (err) {
+            console.warn('[ISweep] Failed to load prefs', err);
+            applyPrefs(DEFAULT_PREFS);
+            showSaved('Loaded defaults');
         }
-    }
 
-    async function stopAsr() {
-        try {
-            chrome.runtime.sendMessage({ action: 'stopAsr' }, () => {});
-        } catch (e) {
-            console.log('[ISweep-Popup] Failed to stop ASR:', e.message);
-        }
-    }
+        addListeners();
 
-    // Save user ID on input change (guarded)
-    if (userIdInput) {
-        userIdInput.addEventListener('change', async () => {
-            isweepPrefs.user_id = userIdInput.value.trim();
-            await chrome.storage.local.set({ isweepPrefs });
-            console.log('[ISweep-Popup] Updated user_id to:', isweepPrefs.user_id);
-        });
-    }
-
-    // Save backend URL on input change (guarded with validation)
-    if (backendUrlInput) {
-        backendUrlInput.addEventListener('change', async () => {
-            const backendUrl = backendUrlInput.value.trim();
-
-            // Validate backend URL (optional)
-            if (!isValidBackendUrl(backendUrl)) {
-                showBackendUrlError('Invalid URL: must start with http:// or https://');
-                // Revert to saved value
-                backendUrlInput.value = isweepPrefs.backendUrl || DEFAULT_BACKEND_URL;
-                return;
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area !== (storage === chrome.storage.sync ? 'sync' : 'local')) return;
+            if (changes.isweepPrefs?.newValue) {
+                applyPrefs(changes.isweepPrefs.newValue);
+                showSaved('Updated');
             }
-
-            showBackendUrlError('');
-            isweepPrefs.backendUrl = backendUrl;
-            await chrome.storage.local.set({ isweepPrefs });
-            console.log('[ISweep-Popup] Updated backendUrl to:', isweepPrefs.backendUrl);
         });
-    }
+    };
 
-    // Clear stats (guarded)
-    if (clearStatsBtn) {
-        clearStatsBtn.addEventListener('click', async () => {
-            videosDetected = 0;
-            actionsApplied = 0;
-            await chrome.storage.local.set({
-                videosDetected,
-                actionsApplied
-            });
-            if (videosDetectedSpan) videosDetectedSpan.textContent = '0';
-            if (actionsAppliedSpan) actionsAppliedSpan.textContent = '0';
-        });
-    }
-
-    if (openPreferencesBtn) {
-        openPreferencesBtn.addEventListener('click', () => {
-            chrome.runtime.openOptionsPage().catch(() => {
-                const url = chrome.runtime.getURL('options.html');
-                chrome.tabs.create({ url, active: true });
-            }).finally(() => window.close());
-        });
-    }
-
-    // Listen for updates from background script or other parts of extension
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName !== 'local') return;
-
-        // Handle isweepPrefs changes
-        if (changes.isweepPrefs) {
-            const updated = changes.isweepPrefs.newValue;
-            if (updated) {
-                isweepPrefs = updated;
-                if (userIdInput) userIdInput.value = isweepPrefs.user_id || 'user123';
-                if (backendUrlInput) backendUrlInput.value = isweepPrefs.backendUrl || DEFAULT_BACKEND_URL;
-                showBackendUrlError('');
-                console.log('[ISweep-Popup] Updated from isweepPrefs:', isweepPrefs);
-            }
-        }
-
-        // Handle isweep_enabled changes
-        if (changes.isweep_enabled) {
-            isweep_enabled = Boolean(changes.isweep_enabled.newValue);
-            updateUI(isweep_enabled);
-            console.log('[ISweep-Popup] Updated enabled state from isweep_enabled:', isweep_enabled);
-        }
-
-        // Handle isweep_asr_enabled changes
-        if (changes.isweep_asr_enabled) {
-            isweep_asr_enabled = Boolean(changes.isweep_asr_enabled.newValue);
-            console.log('[ISweep-Popup] Updated ASR state from isweep_asr_enabled:', isweep_asr_enabled);
-            updateAsrStatus(isweep_asr_status, isweep_asr_metrics);
-        }
-
-        // Handle isweep_asr_status changes
-        if (changes.isweep_asr_status) {
-            isweep_asr_status = changes.isweep_asr_status.newValue;
-            updateAsrStatus(isweep_asr_status, isweep_asr_metrics);
-            console.log('[ISweep-Popup] Updated ASR status:', isweep_asr_status);
-        }
-
-        // Handle isweep_asr_metrics changes
-        if (changes.isweep_asr_metrics) {
-            isweep_asr_metrics = changes.isweep_asr_metrics.newValue;
-            updateAsrStatus(isweep_asr_status, isweep_asr_metrics);
-            console.log('[ISweep-Popup] Updated ASR metrics:', isweep_asr_metrics);
-        }
-
-        // Handle videosDetected changes
-        if (changes.videosDetected && videosDetectedSpan) {
-            videosDetected = changes.videosDetected.newValue;
-            videosDetectedSpan.textContent = videosDetected || 0;
-            console.log('[ISweep-Popup] Updated videosDetected:', videosDetected);
-        }
-
-        // Handle actionsApplied changes
-        if (changes.actionsApplied && actionsAppliedSpan) {
-            actionsApplied = changes.actionsApplied.newValue;
-            actionsAppliedSpan.textContent = actionsApplied || 0;
-            console.log('[ISweep-Popup] Updated actionsApplied:', actionsApplied);
-        }
-    });
+    init();
 });
