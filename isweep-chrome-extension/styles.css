@@ -16,8 +16,9 @@ body {
     font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     color: var(--text);
     background: var(--bg);
-    width: clamp(460px, 94vw, 720px);
-    max-height: none;
+    width: clamp(420px, 92vw, 520px);
+    min-height: 600px;
+    max-height: 720px;
 }
 
 .settings-shell {
@@ -26,7 +27,7 @@ body {
 
 .settings-shell.wide {
     width: auto;
-    max-width: 900px;
+    max-width: 960px;
     margin: 0 auto 32px;
     max-height: none;
 }
@@ -52,6 +53,13 @@ body {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .eyebrow {
