@@ -7,7 +7,9 @@
         "**/venv/**": true,
         "**/.tox/**": true,
         "**/__pycache__/**": true,
-        "**/Lib/site-packages/**": true
+        "**/Lib/site-packages/**": true,
+        "**/site-packages/**": true,
+        "**/_distutils_hack/**": true
     },
     "search.exclude": {
         "**/.venv/**": true,
@@ -15,7 +17,9 @@
         "**/venv/**": true,
         "**/.tox/**": true,
         "**/__pycache__/**": true,
-        "**/Lib/site-packages/**": true
+        "**/Lib/site-packages/**": true,
+        "**/site-packages/**": true,
+        "**/_distutils_hack/**": true
     },
     "files.watcherExclude": {
         "**/.venv/**": true,
@@ -23,7 +27,9 @@
         "**/venv/**": true,
         "**/.tox/**": true,
         "**/__pycache__/**": true,
-        "**/Lib/site-packages/**": true
+        "**/Lib/site-packages/**": true,
+        "**/site-packages/**": true,
+        "**/_distutils_hack/**": true
     },
     "python.analysis.extraPaths": [
         "isweep-backend"
@@ -34,14 +40,18 @@
         "**/venv/**",
         "**/.tox/**",
         "**/__pycache__/**",
-        "**/Lib/site-packages/**"
+        "**/Lib/site-packages/**",
+        "**/site-packages/**",
+        "**/_distutils_hack/**"
     ],
     "pylint.args": [
         "--ignore=.venv,_venv,venv,.tox,__pycache__",
-        "--ignore-patterns=.*site-packages.*"
+        "--ignore-patterns=.*site-packages.*",
+        "--ignore-paths=.*(site-packages|_distutils_hack|\\.venv|_venv|venv).*"
     ],
     "python.linting.pylintArgs": [
         "--ignore=.venv,_venv,venv,.tox,__pycache__",
-        "--ignore-patterns=.*site-packages.*"
+        "--ignore-patterns=.*site-packages.*",
+        "--ignore-paths=.*(site-packages|_distutils_hack|\\.venv|_venv|venv).*"
     ]
 }
