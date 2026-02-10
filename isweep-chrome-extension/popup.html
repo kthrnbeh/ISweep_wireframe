@@ -16,9 +16,10 @@
                     <p>Content Filter</p>
                 </div>
             </div>
-            <div class="pill" id="statusIndicator">
-                <span class="dot tiny inactive"></span>
-                <span id="statusText">Inactive</span>
+            <!-- UI contract: status indicator must contain .status-dot and #statusText for popup.js to update -->
+            <div class="pill" id="statusIndicator" aria-live="polite" aria-label="ISweep status">
+                <span class="dot tiny status-dot inactive"></span>
+                <span id="statusText" class="status-text">Inactive</span>
             </div>
         </header>
 
