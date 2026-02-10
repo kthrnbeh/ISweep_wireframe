@@ -7,19 +7,24 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="settings-shell">
-    <main class="settings-card" data-settings-root>
-        <header class="settings-header">
-            <div>
-                <p class="eyebrow">ISweep</p>
-                <h1>Settings</h1>
-                <p class="subtitle">Choose how ISweep filters and responds.</p>
-            </div>
-            <div class="header-actions">
-                <button id="openSidebar" class="btn primary" type="button">Open sidebar</button>
-                <button id="openFullSettings" class="btn ghost" type="button">Open full settings</button>
-            </div>
-        </header>
+    <div class="popup-root">
+        <div class="popup-header settings-card">
+            <header class="settings-header">
+                <div>
+                    <p class="eyebrow">ISweep</p>
+                    <h1>Settings</h1>
+                    <p class="subtitle">Choose how ISweep filters and responds.</p>
+                </div>
+                <div class="header-actions">
+                    <button id="openSidebar" class="btn primary" type="button">Open sidebar</button>
+                    <button id="openFullSettings" class="btn ghost" type="button">Open full settings</button>
+                </div>
+            </header>
+        </div>
 
+        <div class="popup-scroll">
+            <main class="settings-card" data-settings-root>
+        
         <section class="card">
             <h2>Content Filters</h2>
             <form id="contentFiltersForm" class="profile-form">
