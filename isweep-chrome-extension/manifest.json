@@ -11,6 +11,7 @@
     "offscreen"
   ],
   "host_permissions": [
+    "<all_urls>",
     "*://*.youtube.com/*",
     "*://youtube.com/*",
     "*://youtu.be/*",
@@ -43,7 +44,7 @@
         "*://youtube.com/*",
         "*://youtu.be/*"
       ],
-      "js": ["content-script.js", "youtube-handler.js"],
+      "js": ["content-script.js", "youtube-handler.js", "plumbing.js"],
       "all_frames": false,
       "run_at": "document_idle"
     },
@@ -54,7 +55,7 @@
         "*://youtube.com/*",
         "*://youtu.be/*"
       ],
-      "js": ["content-script.js"],
+      "js": ["content-script.js", "plumbing.js"],
       "all_frames": false,
       "run_at": "document_idle"
     }
