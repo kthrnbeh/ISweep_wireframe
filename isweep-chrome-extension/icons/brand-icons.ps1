@@ -16,7 +16,8 @@ foreach ($s in $sizes) {
     $brush.Dispose()
     $fontSize = if ($s -le 32) { $s / 3.2 } else { $s / 3.0 }
     $fontSizeSingle = [System.Single]::Parse($fontSize.ToString([System.Globalization.CultureInfo]::InvariantCulture))
-    $font = New-Object System.Drawing.Font 'Segoe UI Semibold', $fontSizeSingle, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel
+    $fontArgs = @('Segoe UI Semibold', $fontSizeSingle, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+    $font = New-Object System.Drawing.Font -ArgumentList $fontArgs
     $text = 'IS'
     $textSize = $g.MeasureString($text, $font)
     $x = ($s - $textSize.Width) / 2
