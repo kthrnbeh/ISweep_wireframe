@@ -47,11 +47,11 @@
     "pylint.args": [
         "--ignore=.venv,_venv,venv,.tox,__pycache__",
         "--ignore-patterns=.*site-packages.*",
-        "--ignore-paths=.*(site-packages|_distutils_hack|\\.venv|_venv|venv).*"
+        "--ignore-paths=.*[\\/](\\.venv|_venv|venv|site-packages|_distutils_hack)[\\/].*"
     ],
     "python.linting.pylintArgs": [
         "--ignore=.venv,_venv,venv,.tox,__pycache__",
         "--ignore-patterns=.*site-packages.*",
-        "--ignore-paths=.*(site-packages|_distutils_hack|\\.venv|_venv|venv).*"
+        "--ignore-paths=.*[\\/](\\.venv|_venv|venv|site-packages|_distutils_hack)[\\/].*"
     ]
 }
