@@ -17,6 +17,17 @@
         "**/__pycache__/**": true,
         "**/Lib/site-packages/**": true
     },
+    "files.watcherExclude": {
+        "**/.venv/**": true,
+        "**/_venv/**": true,
+        "**/venv/**": true,
+        "**/.tox/**": true,
+        "**/__pycache__/**": true,
+        "**/Lib/site-packages/**": true
+    },
+    "python.analysis.extraPaths": [
+        "isweep-backend"
+    ],
     "python.analysis.exclude": [
         "**/.venv/**",
         "**/_venv/**",
