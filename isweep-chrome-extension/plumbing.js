@@ -5,15 +5,28 @@
     const MSG_APPLY = 'APPLY_PREFS';
 
     let currentPrefs = null;
+    let warnedUnknown = false;
 
     const log = (...args) => { if (DEBUG) console.log('[ISweep-plumb]', ...args); };
 
     const getVideos = () => Array.from(document.querySelectorAll('video'));
 
+    const normalizeAction = (raw) => {
+        const value = String(raw || '').toLowerCase();
+        if (value.includes('mute')) return 'mute';
+        if (value.includes('skip') || value.includes('fast')) return 'skip';
+        if (!warnedUnknown) {
+            console.warn('[ISweep-plumb] Unknown action, defaulting to none:', raw);
+            warnedUnknown = true;
+        }
+        return 'none';
+    };
+
     const applyPrefs = (prefs) => {
         currentPrefs = prefs;
         const enabled = !!prefs?.enabled ?? true;
-        const doMute = enabled && prefs?.categories?.profanity && prefs?.actions?.profanity === 'mute';
+        const act = normalizeAction(prefs?.actions?.profanity);
+        const doMute = enabled && prefs?.categories?.profanity && act === 'mute';
         log('applyPrefs', { enabled, doMute });
         getVideos().forEach(v => {
             if (!(v instanceof HTMLVideoElement)) return;

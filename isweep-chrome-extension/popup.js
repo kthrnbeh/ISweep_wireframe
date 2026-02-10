@@ -61,6 +61,19 @@ document.addEventListener('DOMContentLoaded', () => {
         testMute: document.getElementById('testMute')
     };
 
+    const normalizeAction = (raw) => {
+        const value = String(raw || '').toLowerCase();
+        if (value.includes('mute')) return 'mute';
+        if (value.includes('skip') || value.includes('fast')) return 'skip';
+        return 'none';
+    };
+
+    const uiValueForAction = (normalized) => {
+        if (normalized === 'mute') return 'mute';
+        if (normalized === 'skip') return 'skip';
+        return 'log-only';
+    };
+
     let prefs = null;
     let saveTimeout = null;
 
@@ -91,9 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const actions = {
-            profanity: els.actionSelects.profanity?.value || DEFAULT_PREFS.actions.profanity,
-            sexual: els.actionSelects.sexual?.value || DEFAULT_PREFS.actions.sexual,
-            violence: els.actionSelects.violence?.value || DEFAULT_PREFS.actions.violence
+            profanity: normalizeAction(els.actionSelects.profanity?.value || DEFAULT_PREFS.actions.profanity),
+            sexual: normalizeAction(els.actionSelects.sexual?.value || DEFAULT_PREFS.actions.sexual),
+            violence: normalizeAction(els.actionSelects.violence?.value || DEFAULT_PREFS.actions.violence)
         };
 
         const notifications = {
@@ -128,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         Object.entries(next.actions).forEach(([key, value]) => {
             const sel = els.actionSelects[key];
-            if (sel) sel.value = value;
+            if (sel) sel.value = uiValueForAction(normalizeAction(value));
         });
 
         if (els.sensitivity) {
