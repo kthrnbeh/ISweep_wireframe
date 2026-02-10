@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="options.css" />
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to main content</a>
   <div class="page">
     <header class="hero">
       <div class="hero__brand">
@@ -23,7 +24,7 @@
       </div>
     </header>
 
-    <main class="layout">
+    <main id="main" class="layout">
       <section class="card card--main">
         <div class="card-head">
           <div>
@@ -34,20 +35,20 @@
         </div>
 
         <div class="category-tabs" role="tablist" aria-label="Filter categories">
-          <button class="tab-btn active" data-category="language" role="tab" aria-selected="true">
+          <button id="tab-language" class="tab-btn active" data-category="language" role="tab" aria-selected="true" aria-controls="panel-language" tabindex="0">
             💬 <span>Language</span>
           </button>
-          <button class="tab-btn" data-category="violence" role="tab" aria-selected="false">
+          <button id="tab-violence" class="tab-btn" data-category="violence" role="tab" aria-selected="false" aria-controls="panel-violence" tabindex="-1">
             ⚔️ <span>Violence</span>
           </button>
-          <button class="tab-btn" data-category="sexual" role="tab" aria-selected="false">
+          <button id="tab-sexual" class="tab-btn" data-category="sexual" role="tab" aria-selected="false" aria-controls="panel-sexual" tabindex="-1">
             💋 <span>Sexual</span>
           </button>
         </div>
 
         <div class="category-panels">
           <!-- PANEL: Language -->
-          <div class="category-panel" id="panel-language">
+          <div class="category-panel" id="panel-language" role="tabpanel" aria-labelledby="tab-language">
             <div class="panel-head">
               <div>
                 <p class="eyebrow">Language</p>
@@ -93,7 +94,7 @@
                       <div class="preset-note">Most explicit terms</div>
                     </div>
                     <label class="toggle">
-                      <input type="checkbox" checked />
+                      <input type="checkbox" aria-label="Toggle Strong Profanity" checked />
                       <span class="toggle-ui" aria-hidden="true"></span>
                     </label>
                   </div>
@@ -104,7 +105,7 @@
                       <div class="preset-note">Common softer terms</div>
                     </div>
                     <label class="toggle">
-                      <input type="checkbox" />
+                      <input type="checkbox" aria-label="Toggle Mild Language" />
                       <span class="toggle-ui" aria-hidden="true"></span>
                     </label>
                   </div>
@@ -115,7 +116,7 @@
                       <div class="preset-note">Religious profanity</div>
                     </div>
                     <label class="toggle">
-                      <input type="checkbox" />
+                      <input type="checkbox" aria-label="Toggle Blasphemy" />
                       <span class="toggle-ui" aria-hidden="true"></span>
                     </label>
                   </div>
@@ -139,7 +140,7 @@
           </div>
 
           <!-- PANEL: Violence -->
-          <div class="category-panel" id="panel-violence" style="display:none;">
+          <div class="category-panel" id="panel-violence" role="tabpanel" aria-labelledby="tab-violence" style="display:none;">
             <div class="panel-head">
               <div>
                 <p class="eyebrow">Violence</p>
@@ -185,7 +186,7 @@
                       <div class="preset-note">Severe/explicit violence terms</div>
                     </div>
                     <label class="toggle">
-                      <input type="checkbox" />
+                      <input type="checkbox" aria-label="Toggle Graphic Violence" />
                       <span class="toggle-ui" aria-hidden="true"></span>
                     </label>
                   </div>
@@ -209,7 +210,7 @@
           </div>
 
           <!-- PANEL: Sexual -->
-          <div class="category-panel" id="panel-sexual" style="display:none;">
+          <div class="category-panel" id="panel-sexual" role="tabpanel" aria-labelledby="tab-sexual" style="display:none;">
             <div class="panel-head">
               <div>
                 <p class="eyebrow">Sexual</p>
@@ -255,7 +256,7 @@
                       <div class="preset-note">Common explicit vocabulary</div>
                     </div>
                     <label class="toggle">
-                      <input type="checkbox" />
+                      <input type="checkbox" aria-label="Toggle Explicit Terms" />
                       <span class="toggle-ui" aria-hidden="true"></span>
                     </label>
                   </div>
@@ -266,7 +267,7 @@
                       <div class="preset-note">Phrases describing intimacy</div>
                     </div>
                     <label class="toggle">
-                      <input type="checkbox" />
+                      <input type="checkbox" aria-label="Toggle Intimate Acts" />
                       <span class="toggle-ui" aria-hidden="true"></span>
                     </label>
                   </div>
@@ -317,7 +318,7 @@
           </div>
         </div>
 
-        <div id="statusMessage" class="status-message" style="display:none;"></div>
+        <div id="statusMessage" class="status-message" style="display:none;" role="status" aria-live="polite" aria-atomic="true"></div>
       </section>
     </main>
 

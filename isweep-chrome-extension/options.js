@@ -130,12 +130,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function switchCategory(category) {
         currentCategory = category;
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.category === category);
+        const tabs = document.querySelectorAll('.tab-btn');
+        const panels = document.querySelectorAll('.category-panel');
+
+        tabs.forEach(btn => {
+            const isActive = btn.dataset.category === category;
+            btn.classList.toggle('active', isActive);
+            btn.setAttribute('aria-selected', String(isActive));
+            btn.tabIndex = isActive ? 0 : -1;
         });
-        document.querySelectorAll('.category-panel').forEach(panel => {
-            panel.style.display = panel.id === `panel-${category}` ? 'block' : 'none';
+
+        panels.forEach(panel => {
+            const isActive = panel.id === `panel-${category}`;
+            panel.style.display = isActive ? 'block' : 'none';
+            panel.hidden = !isActive;
         });
+
         render();
     }
 
@@ -470,9 +480,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { statusMessage.style.display = 'none'; }, 1600);
     }
 
-    // Category tab switching
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    // Category tab switching + keyboard navigation
+    const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
+    tabButtons.forEach((btn, index) => {
         btn.addEventListener('click', () => switchCategory(btn.dataset.category));
+        btn.addEventListener('keydown', (e) => {
+            const { key } = e;
+            const lastIndex = tabButtons.length - 1;
+            let targetIndex = null;
+
+            if (key === 'ArrowRight' || key === 'ArrowDown') targetIndex = (index + 1) % tabButtons.length;
+            if (key === 'ArrowLeft' || key === 'ArrowUp') targetIndex = (index - 1 + tabButtons.length) % tabButtons.length;
+            if (key === 'Home') targetIndex = 0;
+            if (key === 'End') targetIndex = lastIndex;
+
+            if (targetIndex !== null) {
+                e.preventDefault();
+                const targetBtn = tabButtons[targetIndex];
+                switchCategory(targetBtn.dataset.category);
+                targetBtn.focus();
+            }
+        });
     });
 
     // Custom word add buttons
