@@ -53,5 +53,7 @@
         "--ignore=.venv,_venv,venv,.tox,__pycache__",
         "--ignore-patterns=.*site-packages.*",
         "--ignore-paths=.*[\\/](\\.venv|_venv|venv|site-packages|_distutils_hack)[\\/].*"
-    ]
+    ],
+    "python.linting.enabled": true,
+    "pylint.enable": false
 }
