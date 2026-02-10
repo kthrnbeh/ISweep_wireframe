@@ -57,7 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
         requirePin: document.getElementById('require-pin'),
         saveStatus: document.getElementById('saveStatus'),
         openFullSettings: document.getElementById('openFullSettings'),
-        openSidebar: document.getElementById('openSidebar')
+        openSidebar: document.getElementById('openSidebar'),
+        testMute: document.getElementById('testMute')
     };
 
     let prefs = null;
@@ -73,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await storage.set({ isweepPrefs: prefs });
             showSaved('Saved');
+            chrome.runtime.sendMessage({ type: 'PREFS_UPDATED' }).catch(() => {});
         } catch (err) {
             console.warn('[ISweep] Failed to save prefs', err);
             showSaved('Save failed');
@@ -210,6 +212,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const url = chrome.runtime.getURL('options.html');
                     chrome.tabs.create({ url, active: true });
                 }).finally(() => window.close());
+            });
+        }
+
+        if (els.testMute) {
+            els.testMute.addEventListener('click', () => {
+                chrome.runtime.sendMessage({ type: 'TEST_MUTE' }).catch(() => {});
             });
         }
     };
