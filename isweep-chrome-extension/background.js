@@ -15,6 +15,16 @@ let offscreenDocumentId = null;
 let activeAsrTabId = null;
 let asrSessionActive = false;
 
+// Ensure ASR is on by default for fresh and existing installs
+async function ensureAsrDefaults() {
+    const { isweep_asr_enabled } = await chrome.storage.local.get(['isweep_asr_enabled']);
+    if (typeof isweep_asr_enabled === 'undefined') {
+        await chrome.storage.local.set({ isweep_asr_enabled: true });
+    }
+}
+
+ensureAsrDefaults();
+
 // Helper function to update icon based on enabled state
 function updateIcon(enabled) {
     const icons = {
@@ -164,7 +174,7 @@ chrome.runtime.onInstalled.addListener(() => {
     // Set default values on first install
     chrome.storage.local.set({
         isweep_enabled: false,
-        isweep_asr_enabled: false,
+        isweep_asr_enabled: true,
         isweepPrefs: {
             user_id: 'user123',
             backendUrl: DEFAULT_BACKEND_URL,

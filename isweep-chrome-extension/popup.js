@@ -81,7 +81,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize other state with defaults
     isweep_enabled = Boolean(isweep_enabled);
-    isweep_asr_enabled = Boolean(isweep_asr_enabled);
+    if (typeof isweep_asr_enabled === 'undefined') {
+        isweep_asr_enabled = true;
+        await chrome.storage.local.set({ isweep_asr_enabled: true });
+    } else {
+        isweep_asr_enabled = Boolean(isweep_asr_enabled);
+    }
     videosDetected = videosDetected || 0;
     actionsApplied = actionsApplied || 0;
 
@@ -126,10 +131,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             'stopped': 'Stopped'
         };
 
-        const displayStatus = statusMap[status] || status || 'Stopped';
+        const displayStatus = statusMap[status] || status || (isweep_asr_enabled ? 'On' : 'Stopped');
         asrStatusText.textContent = `ASR: ${displayStatus}`;
 
-        if (displayStatus === 'Streaming') {
+        if (displayStatus === 'Streaming' || isweep_asr_enabled) {
             asrStatusText.style.color = '#16a34a';
         } else if (displayStatus === 'Error') {
             asrStatusText.style.color = '#dc2626';
@@ -182,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             showBackendUrlError('');
             isweepPrefs.backendUrl = backendUrl;
-            
+
             // Save to storage (separate keys for enabled and prefs)
             await chrome.storage.local.set({
                 isweep_enabled,
@@ -191,6 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateUI(isweep_enabled);
 
             console.log('[ISweep-Popup] TOGGLED enabled:', isweep_enabled);
+            await startAsrIfNeeded();
 
             // Notify active tab's content script to toggle immediately
             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -274,9 +280,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (openPreferencesBtn) {
         openPreferencesBtn.addEventListener('click', () => {
-            const url = chrome.runtime.getURL('options.html');
-            chrome.tabs.create({ url, active: true });
-            window.close();
+            chrome.runtime.openOptionsPage().catch(() => {
+                const url = chrome.runtime.getURL('options.html');
+                chrome.tabs.create({ url, active: true });
+            }).finally(() => window.close());
         });
     }
 
