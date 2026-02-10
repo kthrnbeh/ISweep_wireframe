@@ -122,6 +122,19 @@ input[type="range"] { padding: 0; }
 .btn.ghost { background: #fff; color: #0f766e; border: 1px solid var(--border); }
 .btn.ghost:hover { background: #f1f5f9; }
 
+.profile-form button {
+    background: var(--btn);
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(15, 118, 110, 0.16);
+}
+
+.profile-form button:hover { background: var(--btn-hover); }
+
 .profile-input { border: 1px solid var(--border); background: #fff; }
 
 .settings-footer { color: var(--muted); font-size: 13px; text-align: left; }
