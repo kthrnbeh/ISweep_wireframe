@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISweep Sidebar</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="settings-shell wide">
+    <main class="settings-card" data-settings-root>
+        <header class="settings-header">
+            <div>
+                <p class="eyebrow">ISweep</p>
+                <h1>Settings</h1>
+                <p class="subtitle">Choose how ISweep filters and responds.</p>
+            </div>
+            <div class="header-actions">
+                <button id="openFullSettings" class="btn ghost" type="button">Open full settings</button>
+            </div>
+        </header>
+
+        <section class="card">
+            <h2>Content Filters</h2>
+            <form id="contentFiltersForm" class="profile-form">
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Filter Categories</strong>
+                        <p>Select what you want ISweep to catch and manage.</p>
+                        <label><input type="checkbox" id="filter-profanity"> Profanity / swearing</label>
+                        <label><input type="checkbox" id="filter-sexual"> Sexual content / nudity</label>
+                        <label><input type="checkbox" id="filter-violence"> Graphic violence</label>
+                        <label><input type="checkbox" id="filter-horror"> Horror / jump scares</label>
+                        <label><input type="checkbox" id="filter-crude"> Crude or inappropriate humor</label>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Filter Actions</h2>
+            <form id="filterActionsForm" class="profile-form">
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Profanity</strong>
+                        <p>What should ISweep do when it hears profanity?</p>
+                        <select id="action-profanity">
+                            <option value="mute">Mute audio only</option>
+                            <option value="skip">Skip the scene</option>
+                            <option value="fast-forward">Fast-forward 10 seconds</option>
+                            <option value="log-only">Just log it (no action)</option>
+                        </select>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Sexual Content</strong>
+                        <p>Choose how ISweep responds to sexual content.</p>
+                        <select id="action-sexual">
+                            <option value="skip">Skip the scene</option>
+                            <option value="fast-forward">Fast-forward 30 seconds</option>
+                            <option value="mute">Mute audio only</option>
+                            <option value="log-only">Just log it (no action)</option>
+                        </select>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Violence</strong>
+                        <p>How strict do you want ISweep to be with violence?</p>
+                        <select id="action-violence">
+                            <option value="mute">Mute audio only</option>
+                            <option value="skip">Skip intense scenes</option>
+                            <option value="fast-forward">Fast-forward 15 seconds</option>
+                            <option value="log-only">Just log it (no action)</option>
+                        </select>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Sensitivity</h2>
+            <form id="sensitivityForm" class="profile-form">
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Filter Sensitivity</strong>
+                        <p>Adjust how strict ISweep should be overall.</p>
+                        <label class="range-line">
+                            <span>Low</span>
+                            <input type="range" id="sensitivity" min="1" max="3" value="2">
+                            <span>High</span>
+                            <span id="sensitivityValue" class="chip">2</span>
+                        </label>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Notifications</h2>
+            <form id="notificationsForm" class="profile-form">
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Session Reports</strong>
+                        <p>How would you like to receive viewing summaries?</p>
+                        <label><input type="checkbox" id="notify-email"> Email me a weekly summary</label>
+                        <label><input type="checkbox" id="notify-inapp"> Show in-app notifications after each session</label>
+                        <label><input type="checkbox" id="notify-none"> Don’t send any notifications</label>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Parental Controls</h2>
+            <form id="parentalForm" class="profile-form">
+                <div class="item-row">
+                    <div class="stack">
+                        <strong>Parental PIN</strong>
+                        <p>Lock settings so kids can’t change filters without a PIN.</p>
+                        <label class="stack mini-gap">
+                            <span>Create / Update PIN</span>
+                            <input class="profile-input" type="password" id="parent-pin" minlength="4" maxlength="6" placeholder="Enter 4–6 digit PIN">
+                        </label>
+                        <label><input type="checkbox" id="require-pin"> Require PIN to change filters or plans</label>
+                    </div>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </section>
+
+        <footer class="settings-footer">
+            <p id="saveStatus" aria-live="polite">Changes save automatically.</p>
+        </footer>
+    </main>
+
+    <script src="popup.js" defer></script>
+</body>
+</html>

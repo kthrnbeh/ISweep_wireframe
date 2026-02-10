@@ -33,6 +33,9 @@
     "page": "options.html",
     "open_in_tab": true
   },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
   "content_scripts": [
     {
       "matches": [
