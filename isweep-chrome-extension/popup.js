@@ -56,7 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         parentPin: document.getElementById('parent-pin'),
         requirePin: document.getElementById('require-pin'),
         saveStatus: document.getElementById('saveStatus'),
-        openFullSettings: document.getElementById('openFullSettings')
+        openFullSettings: document.getElementById('openFullSettings'),
+        openSidebar: document.getElementById('openSidebar')
     };
 
     let prefs = null;
@@ -185,6 +186,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (els.openFullSettings) {
             els.openFullSettings.addEventListener('click', () => {
+                chrome.runtime.openOptionsPage().catch(() => {
+                    const url = chrome.runtime.getURL('options.html');
+                    chrome.tabs.create({ url, active: true });
+                }).finally(() => window.close());
+            });
+        }
+
+        if (els.openSidebar) {
+            els.openSidebar.addEventListener('click', async () => {
+                try {
+                    if (chrome.sidePanel?.open) {
+                        const win = await chrome.windows.getCurrent();
+                        await chrome.sidePanel.open({ windowId: win?.id });
+                        window.close();
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('[ISweep] Side panel open failed, falling back', err);
+                }
+
                 chrome.runtime.openOptionsPage().catch(() => {
                     const url = chrome.runtime.getURL('options.html');
                     chrome.tabs.create({ url, active: true });
