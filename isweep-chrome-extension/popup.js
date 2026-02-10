@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ASR auto-manage helpers
     async function startAsrIfNeeded() {
-        if (!isweep_enabled) return;
+        if (!isweep_enabled || !isweep_asr_enabled) return;
         try {
             chrome.runtime.sendMessage({
                 action: 'startAsr',

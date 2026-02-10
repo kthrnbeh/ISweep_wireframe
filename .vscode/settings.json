@@ -1,4 +1,32 @@
 {
     "editor.inlineSuggest.suppressSuggestions": true,
-    "emmet.useInlineCompletions": true
+    "emmet.useInlineCompletions": true,
+    "files.exclude": {
+        "**/.venv/**": true,
+        "**/_venv/**": true,
+        "**/venv/**": true,
+        "**/.tox/**": true,
+        "**/__pycache__/**": true,
+        "**/Lib/site-packages/**": true
+    },
+    "search.exclude": {
+        "**/.venv/**": true,
+        "**/_venv/**": true,
+        "**/venv/**": true,
+        "**/.tox/**": true,
+        "**/__pycache__/**": true,
+        "**/Lib/site-packages/**": true
+    },
+    "python.analysis.exclude": [
+        "**/.venv/**",
+        "**/_venv/**",
+        "**/venv/**",
+        "**/.tox/**",
+        "**/__pycache__/**",
+        "**/Lib/site-packages/**"
+    ],
+    "pylint.args": [
+        "--ignore=.venv,_venv,venv,.tox,__pycache__",
+        "--ignore-patterns=.*site-packages.*"
+    ]
 }
