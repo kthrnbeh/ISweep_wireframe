@@ -40,15 +40,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         .map(([name]) => name);
 
     if (missingElements.length > 0) {
-        console.error('[ISweep-Popup] FATAL: Missing required HTML elements:', missingElements);
-        return;
+        console.warn('[ISweep-Popup] Missing expected elements:', missingElements);
     }
 
-    // Guard: Check for status-dot within statusIndicator
-    const statusDot = statusIndicator.querySelector('.status-dot');
-    if (!statusDot) {
-        console.error('[ISweep-Popup] FATAL: Missing .status-dot element inside statusIndicator');
-        return;
+    // Guard: Ensure status indicator and dot exist; self-heal if missing
+    let statusDot = null;
+    if (statusIndicator) {
+        statusDot = statusIndicator.querySelector('.status-dot');
+        if (!statusDot) {
+            console.warn('[ISweep-Popup] .status-dot missing; creating fallback');
+            statusDot = document.createElement('span');
+            statusDot.className = 'dot tiny status-dot inactive';
+            statusIndicator.insertBefore(statusDot, statusIndicator.firstChild);
+        }
+    } else {
+        console.warn('[ISweep-Popup] statusIndicator missing; status updates disabled');
     }
 
     // Load state from Chrome storage
@@ -87,20 +93,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Update UI based on state
     const updateUI = (enabled) => {
-        const dot = statusIndicator.querySelector('.status-dot');
-        if (!dot) {
-            console.error('[ISweep-Popup] WARNING: .status-dot element not found in statusIndicator');
-            return;
-        }
+        if (!statusIndicator || !statusDot || !statusText || !toggleButton) return;
         if (enabled) {
-            dot.classList.remove('inactive');
-            dot.classList.add('active');
+            statusDot.classList.remove('inactive');
+            statusDot.classList.add('active');
             statusText.textContent = 'Active';
             toggleButton.textContent = 'Disable ISweep';
             toggleButton.classList.add('active');
         } else {
-            dot.classList.remove('active');
-            dot.classList.add('inactive');
+            statusDot.classList.remove('active');
+            statusDot.classList.add('inactive');
             statusText.textContent = 'Inactive';
             toggleButton.textContent = 'Enable ISweep';
             toggleButton.classList.remove('active');
