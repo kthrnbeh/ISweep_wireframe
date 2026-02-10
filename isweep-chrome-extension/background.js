@@ -194,6 +194,47 @@ chrome.action.onClicked.addListener((tab) => {
     console.log('[ISweep] Icon clicked on tab:', tab.id);
 });
 
+const PREFS_KEY = 'isweepPrefs';
+const DEBUG = false;
+
+const dbg = (...args) => { if (DEBUG) console.log('[ISweep-BG]', ...args); };
+
+async function ensureDefaultPrefs() {
+    const existing = await chrome.storage.sync.get(PREFS_KEY).catch(() => ({}));
+    if (!existing[PREFS_KEY]) {
+        const defaults = {
+            enabled: true,
+            categories: { profanity: true, sexual: true, violence: false, horror: false, crude: false },
+            actions: { profanity: 'mute', sexual: 'skip', violence: 'skip' },
+            sensitivity: 2,
+            notifications: { email: true, inapp: true, none: false },
+            parental: { pin: '', requirePin: true }
+        };
+        await chrome.storage.sync.set({ [PREFS_KEY]: defaults });
+    }
+}
+
+async function broadcastPrefs(prefs) {
+    dbg('broadcastPrefs');
+    const allTabs = await chrome.tabs.query({});
+    await Promise.all(allTabs.map(tab => {
+        if (!tab.id) return Promise.resolve();
+        return chrome.tabs.sendMessage(tab.id, { type: 'APPLY_PREFS', prefs }).catch(() => {});
+    }));
+}
+
+async function sendPrefsToActive() {
+    const data = await chrome.storage.sync.get(PREFS_KEY).catch(() => chrome.storage.local.get(PREFS_KEY));
+    const prefs = data?.[PREFS_KEY];
+    if (!prefs) return;
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+        await chrome.tabs.sendMessage(tab.id, { type: 'APPLY_PREFS', prefs }).catch(() => {});
+    }
+}
+
+ensureDefaultPrefs();
+
 // Handle messages from popup and content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'logEvent') {
@@ -235,6 +276,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const tabId = sender?.tab?.id;
         handleVideoPresence(tabId, false);
         sendResponse({ acknowledged: true });
+    } else if (request.type === 'PREFS_UPDATED') {
+        sendPrefsToActive();
+        sendResponse?.({ ok: true });
+    } else if (request.type === 'TEST_MUTE') {
+        sendPrefsToActive();
+        sendResponse?.({ ok: true });
     }
 });
 
@@ -278,6 +325,12 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
             // Stop ASR
             stopAsr();
         }
+    }
+
+    if (changes[PREFS_KEY]) {
+        const next = changes[PREFS_KEY].newValue;
+        dbg('prefs changed, broadcasting');
+        broadcastPrefs(next);
     }
 });
 
