@@ -123,7 +123,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const sensitivity = Number(els.sensitivity?.value || DEFAULT_PREFS.sensitivity);
 
-        return { filters, actions, sensitivity, notifications, parental };
+        return {
+            enabled: prefs?.enabled !== false, // preserve enabled unless explicitly off
+            filters,
+            categories: { ...filters },
+            actions,
+            sensitivity,
+            notifications,
+            parental
+        };
     };
 
     const applyPrefs = (p) => {
