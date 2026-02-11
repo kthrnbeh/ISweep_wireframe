@@ -19,6 +19,7 @@
 
     const normalizeAction = (raw) => {
         const value = String(raw || '').toLowerCase().trim();
+        if (value === 'none') return 'none';
         if (value.includes('mute')) return 'mute';
         if (value.includes('skip') || value.includes('fast')) return 'skip';
         if (!warnedUnknown) {
