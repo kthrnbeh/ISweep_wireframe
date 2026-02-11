@@ -79,10 +79,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let prefs = null;
     let saveTimeout = null;
+    let statusTimeout = null;
 
-    const showSaved = (message = 'Saved') => {
+    const showStatus = (message = 'Changes save automatically.', revertMs = 2000) => {
         if (!els.saveStatus) return;
         els.saveStatus.textContent = message;
+        if (statusTimeout) clearTimeout(statusTimeout);
+        if (revertMs) {
+            statusTimeout = setTimeout(() => {
+                if (els.saveStatus) els.saveStatus.textContent = 'Changes save automatically.';
+            }, revertMs);
+        }
+    };
+
+    const showSaved = (message = 'Saved') => {
+        showStatus(message, 1800);
     };
 
     const safeSet = async (next) => {
@@ -244,12 +255,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (els.testMute) {
             els.testMute.addEventListener('click', () => {
                 chrome.runtime.sendMessage({ type: 'TEST_MUTE' }).catch(() => {});
+                showStatus('Sent test mute to this tab', 1500);
             });
         }
 
         if (els.testTimedMute) {
             els.testTimedMute.addEventListener('click', () => {
                 chrome.runtime.sendMessage({ type: 'TEST_TIMED_MUTE', durationMs: 5000 }).catch(() => {});
+                showStatus('Timed mute sent (5s)', 1500);
             });
         }
     };
