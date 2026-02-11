@@ -24,10 +24,14 @@
     let captionObserver = null;
     let lastCaptionHash = '';
     let lastCaptionAt = 0;
+    let lastTriggerAt = 0;
 
     // Normalize a single word for consistent comparisons across packs, prefs, and captions.
     const normalizeWord = (word) => (word || '').toString().toLowerCase().trim();
 
+    // Map UI/legacy pack names to the internal ids so packs stay loadable across prefs shapes.
+    // Why: user prefs may store different slugs; this keeps pack loading resilient.
+    // Effect: ensures the right vocabulary is merged before caption matching runs.
     const mapPackName = (raw) => {
         const key = normalizeWord(raw).replace(/\s+/g, '_');
         const aliases = {
@@ -40,6 +44,9 @@
         return aliases[key] || null;
     };
 
+    // Gather all enabled pack names from multiple prefs shapes into a single set of ids.
+    // Why: options, popup, or backend may store pack selections differently; we need one view.
+    // Effect: determines which built-in vocab groups become active for filtering.
     const extractEnabledPackNames = (prefs, packMap) => {
         const enabled = new Set();
         const candidates = [
@@ -72,6 +79,9 @@
         return Array.from(enabled);
     };
 
+    // Remove duplicates and normalize casing so matching is consistent and fast.
+    // Why: packs + custom words may overlap; we only want unique normalized terms.
+    // Effect: keeps the active blocked list minimal for caption scanning.
     const dedupeWords = (words = []) => {
         const set = new Set();
         words
@@ -82,6 +92,8 @@
     };
 
     // Normalize caption text into a stable format so vocabulary matches are reliable.
+    // Why: YouTube captions vary in punctuation/casing; normalization aligns them with prefs.
+    // Effect: boosts match accuracy without changing stored user preferences.
     const normalizeText = (text) => {
         return (text || '')
             .toString()
@@ -91,7 +103,9 @@
             .trim();
     };
 
-    // Basic padded-include check to reduce false positives without heavy tokenization.
+    // Check if a normalized caption contains any blocked term using padded includes.
+    // Why: simple, fast matching suits real-time captions; padding reduces mid-word false hits.
+    // Effect: triggers mutes only when whole blocked terms appear in captions.
     const containsBlockedTerm = (normalizedCaption, blockedWords = []) => {
         if (!normalizedCaption || !blockedWords.length) return null;
         const paddedCaption = ` ${normalizedCaption} `;
@@ -105,6 +119,8 @@
     };
 
     // Merge built-in packs with user vocabulary so caption matching uses a single deduped list.
+    // Why: users expect pack selections and custom entries to work together automatically.
+    // Effect: currentPrefs.blocked_words becomes the definitive vocabulary for filtering.
     const buildVocabulary = async (prefs) => {
         const packMap = await profanityPacksPromise;
         const enabledPackNames = extractEnabledPackNames(prefs, packMap);
@@ -133,11 +149,15 @@
     };
 
     // Detect whether we should attach YouTube-specific caption listeners for the current page.
+    // Why: caption scanning only applies on YouTube watch pages; other sites skip this path.
+    // Effect: prevents unnecessary observers and keeps filtering scoped to relevant pages.
     const isYouTubeWatch = () => {
         return location.hostname.includes('youtube.com') && location.pathname.includes('/watch');
     };
 
     // Extract the currently visible caption text across both YouTube renderers (player + overlay).
+    // Why: YouTube uses multiple DOM paths; we collect from both so matching stays reliable.
+    // Effect: returns the live caption string used for blocked-term detection.
     const getYouTubeCaptionText = () => {
         const selectors = [
             '.ytp-caption-segment',
@@ -159,6 +179,8 @@
     };
 
     // Handle caption updates: dedupe repeats, match vocabulary, and trigger timed mute when needed.
+    // Why: avoids re-triggering on the same line while still reacting quickly to new captions.
+    // Effect: starts/extends the mute window when blocked terms appear in captions.
     const handleCaptionChange = (rawText) => {
         const normalized = normalizeText(rawText);
         if (!normalized) return;
@@ -167,6 +189,8 @@
         if (normalized === lastCaptionHash && now - lastCaptionAt < 1200) return;
         lastCaptionHash = normalized;
         lastCaptionAt = now;
+
+        if (now - lastTriggerAt < 800) return;
 
         if (!currentPrefs || !shouldMute(currentPrefs)) return;
         const vocab = currentPrefs.blocked_words || [];
@@ -177,6 +201,7 @@
         const durationMs = Number.isFinite(durationSeconds) && durationSeconds > 0 ? durationSeconds * 1000 : 4000;
 
         muteFor(durationMs);
+        lastTriggerAt = now;
 
         if (DEBUG) {
             console.log('[ISweep DEBUG] Caption match -> mute', { matched, durationMs, sample: normalized.slice(0, 120) });
@@ -184,6 +209,8 @@
     };
 
     // Start observing caption DOM when on YouTube watch pages and mute action is enabled.
+    // Why: we only want to watch captions when user prefs allow auto-mute on language.
+    // Effect: feeds caption text into the matcher so mutes fire from detected terms.
     const attachYouTubeCaptionObserver = () => {
         if (captionObserver || !isYouTubeWatch()) return;
         const target = document.body || document.documentElement;
@@ -200,6 +227,8 @@
     };
 
     // Tear down caption observer when user prefs or page context says auto mute should not run.
+    // Why: reduces overhead and prevents unwanted mutes when the feature is off.
+    // Effect: stops caption-driven filtering until conditions become valid again.
     const detachYouTubeCaptionObserver = () => {
         if (captionObserver) {
             captionObserver.disconnect();
@@ -208,6 +237,8 @@
     };
 
     // Ensure caption observer state matches the latest preferences and page context.
+    // Why: APPLY_PREFS can flip enabled/action states; observer must follow immediately.
+    // Effect: dynamically starts/stops caption monitoring without extra observers.
     const syncCaptionObserver = (prefs) => {
         if (!prefs || !isYouTubeWatch()) {
             detachYouTubeCaptionObserver();
