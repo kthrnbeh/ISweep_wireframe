@@ -12,7 +12,7 @@
     const getVideos = () => Array.from(document.querySelectorAll('video'));
 
     const normalizeAction = (raw) => {
-        const value = String(raw || '').toLowerCase();
+        const value = String(raw || '').toLowerCase().trim();
         if (value.includes('mute')) return 'mute';
         if (value.includes('skip') || value.includes('fast')) return 'skip';
         if (!warnedUnknown) {
@@ -24,9 +24,10 @@
 
     const applyPrefs = (prefs) => {
         currentPrefs = prefs;
-        const enabled = !!prefs?.enabled ?? true;
+        const enabled = prefs?.enabled !== false;
+        const categories = prefs?.categories || prefs?.filters || { profanity: true };
         const act = normalizeAction(prefs?.actions?.profanity);
-        const doMute = enabled && prefs?.categories?.profanity && act === 'mute';
+        const doMute = enabled && categories.profanity !== false && act === 'mute';
         log('applyPrefs', { enabled, doMute });
         getVideos().forEach(v => {
             if (!(v instanceof HTMLVideoElement)) return;
