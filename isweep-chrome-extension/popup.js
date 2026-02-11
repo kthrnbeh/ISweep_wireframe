@@ -137,9 +137,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const applyPrefs = (p) => {
         const next = { ...DEFAULT_PREFS, ...p };
         next.filters = { ...DEFAULT_PREFS.filters, ...(p?.filters || {}) };
+        next.categories = { ...next.filters, ...(p?.categories || {}) };
         next.actions = { ...DEFAULT_PREFS.actions, ...(p?.actions || {}) };
         next.notifications = { ...DEFAULT_PREFS.notifications, ...(p?.notifications || {}) };
         next.parental = { ...DEFAULT_PREFS.parental, ...(p?.parental || {}) };
+        next.enabled = p?.enabled !== false;
 
         prefs = next;
 
