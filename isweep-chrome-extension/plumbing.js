@@ -186,10 +186,12 @@
         if (!normalized) return;
 
         const now = Date.now();
+        // Captions often re-render the same line; skip repeats within ~1.2s to avoid rapid remutes.
         if (normalized === lastCaptionHash && now - lastCaptionAt < 1200) return;
         lastCaptionHash = normalized;
         lastCaptionAt = now;
 
+        // Secondary debounce to avoid multiple triggers inside the same second window.
         if (now - lastTriggerAt < 800) return;
 
         if (!currentPrefs || !shouldMute(currentPrefs)) return;
@@ -223,7 +225,8 @@
 
         captionObserver.observe(target, { childList: true, subtree: true, characterData: true });
 
-        if (!DEBUG) console.log('[ISweep] YouTube captions monitoring active');
+        // Minimal production log so users/devs know captions monitoring is on for this page.
+        if (!DEBUG) console.log('[ISweep] YouTube captions monitoring enabled');
     };
 
     // Tear down caption observer when user prefs or page context says auto mute should not run.
