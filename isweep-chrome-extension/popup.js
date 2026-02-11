@@ -1,5 +1,6 @@
 // popup.js — shared for popup and options
 document.addEventListener('DOMContentLoaded', () => {
+    try {
     const root = document.querySelector('[data-settings-root]');
     if (!root || !chrome?.storage) return;
 
@@ -276,4 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     init();
+    } catch (err) {
+        console.error('[ISweep] popup init failed', err);
+    }
 });
