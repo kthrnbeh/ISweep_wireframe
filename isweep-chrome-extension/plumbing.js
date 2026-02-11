@@ -137,7 +137,7 @@
 
         const deduped = dedupeWords(vocab);
 
-        if (enabledPackNames.length) {
+        if (enabledPackNames.length && DEBUG) {
             const signature = enabledPackNames.join(',');
             if (signature !== lastLoggedPackSignature) {
                 console.log(`[ISweep] Loaded profanity packs: ${enabledPackNames.join(', ')}`);
@@ -254,11 +254,19 @@
     };
 
     // Debug-only logging helpers to keep production consoles clean.
+    // Why: diagnostics should be opt-in so normal browsing stays quiet.
+    // Effect: when DEBUG is false, only the minimal startup line is emitted.
     const log = (...args) => { if (DEBUG) console.log('[ISweep-plumb]', ...args); };
     const timeLog = (...args) => { if (DEBUG) console.log('[ISweep-time]', ...args); };
 
+    // Collect all video elements on the page for mute application.
+    // Why: ISweep must silence every video instance when a match occurs.
+    // Effect: ensures caption-driven mutes and manual tests cover all videos.
     const getVideos = () => Array.from(document.querySelectorAll('video'));
 
+    // Normalize action strings so prefs from different sources resolve to the same intent.
+    // Why: keeps popup/options/backend values compatible with the mute pipeline.
+    // Effect: determines whether captions should trigger mutes or be ignored.
     const normalizeAction = (raw) => {
         const value = String(raw || '').toLowerCase().trim();
         if (value === 'none') return 'none';
@@ -271,6 +279,9 @@
         return 'none';
     };
 
+    // Decide if profanity captions should mute based on enabled flag, category, and action.
+    // Why: user control must be respected; no muting when disabled or non-mute action.
+    // Effect: gates both caption observer activation and actual mute enforcement.
     const shouldMute = (prefs) => {
         const enabled = prefs?.enabled !== false;
         const categories = prefs?.categories || prefs?.filters || { profanity: true };
@@ -279,6 +290,8 @@
     };
 
     // Apply or remove mute state on a single video element based on current policy.
+    // Why: keeps per-video state aligned with global mute windows and user prefs.
+    // Effect: toggles audio on the element whenever a mute window starts or ends.
     const applyToVideo = (videoEl, doMute) => {
         if (!(videoEl instanceof HTMLVideoElement)) return;
         const already = appliedState.get(videoEl);
@@ -287,7 +300,7 @@
         if (targetMute) {
             ensureMuted(videoEl);
             appliedState.set(videoEl, true);
-            console.log('[ISweep] auto-apply mute');
+            if (DEBUG) console.log('[ISweep DEBUG] auto-apply mute');
         } else {
             videoEl.muted = false;
             appliedState.set(videoEl, false);
@@ -295,6 +308,8 @@
     };
 
     // Ingest new preferences, merge vocabulary, attach caption observer, and apply mute policy.
+    // Why: APPLY_PREFS must immediately update what we watch for and how we respond.
+    // Effect: updates blocked_words, starts/stops caption monitoring, and re-applies mute state.
     const applyPrefs = async (prefs) => {
         const nextPrefs = { ...(prefs || {}) };
         const vocab = await buildVocabulary(nextPrefs);
@@ -305,7 +320,7 @@
 
         currentPrefs = nextPrefs;
         const doMute = shouldMute(nextPrefs);
-        console.log('[ISweep] prefs received');
+        if (DEBUG) console.log('[ISweep DEBUG] prefs received');
         syncCaptionObserver(nextPrefs);
         getVideos().forEach(v => {
             registerVideo(v);
@@ -313,6 +328,9 @@
         });
     };
 
+    // Force a video to mute while remembering prior state so we can restore safely.
+    // Why: avoids permanently altering user volume when auto-muting.
+    // Effect: sets muted+volume=0 and stores previous values for later restore.
     const ensureMuted = (videoEl) => {
         if (!(videoEl instanceof HTMLVideoElement)) return;
         if (!muteState.restore.has(videoEl)) {
@@ -322,6 +340,9 @@
         videoEl.volume = 0;
     };
 
+    // Restore videos to their prior mute/volume settings after a timed mute completes.
+    // Why: respects the user’s previous audio choices once filtering has passed.
+    // Effect: returns each video to its stored state and clears the cache.
     const restoreMuteState = () => {
         muteState.restore.forEach((state, videoEl) => {
             if (!(videoEl instanceof HTMLVideoElement)) return;
@@ -332,6 +353,8 @@
     };
 
     // Timed mute controller that extends the window on overlapping detections.
+    // Why: captions can surface repeated terms; we extend the window instead of flickering audio.
+    // Effect: mutes all videos immediately and restores only after the final window expires.
     const muteFor = (durationMs) => {
         const ms = Number(durationMs);
         if (!Number.isFinite(ms) || ms <= 0) return;
@@ -370,6 +393,9 @@
         return shouldExtend;
     };
 
+    // Load initial prefs from sync/local storage so auto-mute has the latest settings on page load.
+    // Why: ensures caption logic and video handlers use the user’s saved preferences.
+    // Effect: hydrates currentPrefs and kicks off observer + mute alignment.
     const loadPrefs = async () => {
         try {
             const data = await chrome.storage.sync.get(PREFS_KEY).catch(() => chrome.storage.local.get(PREFS_KEY));
@@ -381,6 +407,8 @@
     };
 
     // Route messages from background/popup to apply prefs or run manual test mutes.
+    // Why: popup buttons and background updates rely on this bridge to trigger behavior.
+    // Effect: updates prefs live or runs manual mute commands without altering auto logic.
     const handleMessage = (message, sender, sendResponse) => {
         if (message?.type === MSG_APPLY && message.prefs) {
             applyPrefs(message.prefs)
@@ -396,6 +424,9 @@
         }
     };
 
+    // Attach listeners to a video so state changes (play/seek/load) re-apply mute rules.
+    // Why: dynamic players may reset audio; we reassert the desired mute state on events.
+    // Effect: keeps each video aligned with current mute window and prefs.
     const registerVideo = (videoEl) => {
         if (!(videoEl instanceof HTMLVideoElement)) return;
         if (appliedState.has(videoEl)) return;
@@ -410,6 +441,9 @@
         handler();
     };
 
+    // Watch the DOM for new/removed videos so mute policy applies to dynamic content.
+    // Why: many sites inject videos after load; we must register them automatically.
+    // Effect: ensures all present videos follow the current mute and caption rules.
     const observeVideos = () => {
         const observer = new MutationObserver(() => {
             getVideos().forEach(v => registerVideo(v));
