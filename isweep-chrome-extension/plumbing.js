@@ -10,14 +10,23 @@
         .catch(() => ({}));
     let lastLoggedPackSignature = '';
 
+    // Track current preferences plus mute and caption state used for on-page enforcement.
     let currentPrefs = null;
     let warnedUnknown = false;
     let muteState = {
         timerId: null,
-        restore: new Map()
+        restore: new Map(),
+        activeUntil: 0
     };
     const appliedState = new WeakMap();
 
+    // Track YouTube caption monitoring lifecycle so we only observe when needed.
+    let captionObserver = null;
+    let lastCaptionHash = '';
+    let lastCaptionAt = 0;
+    let lastMatchAt = 0;
+
+    // Normalize a single word for consistent comparisons across packs, prefs, and captions.
     const normalizeWord = (word) => (word || '').toString().toLowerCase().trim();
 
     const mapPackName = (raw) => {
@@ -73,6 +82,30 @@
         return Array.from(set);
     };
 
+    // Normalize caption text into a stable format so vocabulary matches are reliable.
+    const normalizeText = (text) => {
+        return (text || '')
+            .toString()
+            .toLowerCase()
+            .replace(/[.,!?;:\-"()\[\]{}]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    };
+
+    // Basic padded-include check to reduce false positives without heavy tokenization.
+    const containsBlockedTerm = (normalizedCaption, blockedWords = []) => {
+        if (!normalizedCaption || !blockedWords.length) return null;
+        const paddedCaption = ` ${normalizedCaption} `;
+        for (const word of blockedWords) {
+            const normWord = normalizeText(word);
+            if (!normWord) continue;
+            const paddedWord = ` ${normWord} `;
+            if (paddedCaption.includes(paddedWord)) return normWord;
+        }
+        return null;
+    };
+
+    // Merge built-in packs with user vocabulary so caption matching uses a single deduped list.
     const buildVocabulary = async (prefs) => {
         const packMap = await profanityPacksPromise;
         const enabledPackNames = extractEnabledPackNames(prefs, packMap);
@@ -100,8 +133,100 @@
         return deduped;
     };
 
+    // Detect whether we should attach YouTube-specific caption listeners for the current page.
+    const isYouTubeWatch = () => {
+        return location.hostname.includes('youtube.com') && location.pathname.includes('/watch');
+    };
+
+    // Extract the currently visible caption text across both YouTube renderers (player + overlay).
+    const getYouTubeCaptionText = () => {
+        const selectors = [
+            '.ytp-caption-segment',
+            '.ytp-caption-window-container span',
+            '.ytp-transcript-segment-text',
+            'ytd-transcript-renderer .segment-text'
+        ];
+
+        const collected = new Set();
+        selectors.forEach(sel => {
+            document.querySelectorAll(sel).forEach(node => {
+                const text = (node.textContent || '').trim();
+                if (text) collected.add(text);
+            });
+        });
+
+        if (!collected.size) return null;
+        return Array.from(collected).join(' ');
+    };
+
+    // Handle caption updates: dedupe repeats, match vocabulary, and trigger timed mute when needed.
+    const handleCaptionChange = (rawText) => {
+        const normalized = normalizeText(rawText);
+        if (!normalized) return;
+
+        const now = Date.now();
+        if (normalized === lastCaptionHash && now - lastCaptionAt < 1200) return;
+        lastCaptionHash = normalized;
+        lastCaptionAt = now;
+
+        if (!currentPrefs || !shouldMute(currentPrefs)) return;
+        const vocab = currentPrefs.blocked_words || [];
+        const matched = containsBlockedTerm(normalized, vocab);
+        if (!matched) return;
+
+        const durationSeconds = Number(currentPrefs.duration_seconds ?? currentPrefs.durationSeconds ?? 4);
+        const durationMs = Number.isFinite(durationSeconds) && durationSeconds > 0 ? durationSeconds * 1000 : 4000;
+
+        muteFor(durationMs);
+        lastMatchAt = now;
+
+        if (DEBUG) {
+            console.log('[ISweep DEBUG] Caption match -> mute', { matched, durationMs, sample: normalized.slice(0, 120) });
+        }
+    };
+
+    // Start observing caption DOM when on YouTube watch pages and mute action is enabled.
+    const attachYouTubeCaptionObserver = () => {
+        if (captionObserver || !isYouTubeWatch()) return;
+        const target = document.body || document.documentElement;
+        if (!target) return;
+
+        captionObserver = new MutationObserver(() => {
+            const text = getYouTubeCaptionText();
+            if (text) handleCaptionChange(text);
+        });
+
+        captionObserver.observe(target, { childList: true, subtree: true, characterData: true });
+
+        if (!DEBUG) console.log('[ISweep] YouTube captions monitoring active');
+    };
+
+    // Tear down caption observer when user prefs or page context says auto mute should not run.
+    const detachYouTubeCaptionObserver = () => {
+        if (captionObserver) {
+            captionObserver.disconnect();
+            captionObserver = null;
+        }
+    };
+
+    // Ensure caption observer state matches the latest preferences and page context.
+    const syncCaptionObserver = (prefs) => {
+        if (!prefs || !isYouTubeWatch()) {
+            detachYouTubeCaptionObserver();
+            return;
+        }
+
+        if (!shouldMute(prefs)) {
+            detachYouTubeCaptionObserver();
+            return;
+        }
+
+        attachYouTubeCaptionObserver();
+    };
+
+    // Debug-only logging helpers to keep production consoles clean.
     const log = (...args) => { if (DEBUG) console.log('[ISweep-plumb]', ...args); };
-    const timeLog = (...args) => console.log('[ISweep-time]', ...args);
+    const timeLog = (...args) => { if (DEBUG) console.log('[ISweep-time]', ...args); };
 
     const getVideos = () => Array.from(document.querySelectorAll('video'));
 

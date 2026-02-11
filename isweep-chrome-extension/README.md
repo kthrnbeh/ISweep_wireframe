@@ -1,122 +1,225 @@
-# ISweep Chrome Extension
+ISweep Chrome Extension
 
-Browser extension that detects and controls video playback based on content filtering preferences.
+ISweep is a local-first content filtering Chrome extension that automatically mutes, skips, or fast-forwards video content based on your preferences for language, violence, and sexual content.
 
-## Features
+Filtering actions are applied immediately and locally. An optional backend enhances the system with audio transcription (ASR) and future ML-based analysis, but ISweep continues working even if the backend is unavailable.
 
-✅ Detects HTML5 `<video>` elements on any page
-✅ Shows status badge on active videos
-✅ Seamlessly applies filters (mute, skip, fast-forward)
-✅ Connects to ISweep backend API
-✅ Real-time stats tracking
-✅ Easy on/off toggle
+Core Principles
 
-## Installation
+Local-first: Filtering actions run in the browser with no required backend.
 
-### For Development
+Real-time: Videos are detected and handled as they play.
 
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable **Developer mode** (top right)
-3. Click **Load unpacked**
-4. Select the `isweep-chrome-extension` folder
-5. The extension should appear in your extensions list
+User-controlled: You define what categories are filtered and how.
 
-### Using the Extension
+Resilient: Backend outages do not break core functionality.
 
-1. Click the ISweep icon in the top right
-2. Enter your **User ID** (must match backend)
-3. If using a backend, set **Backend URL** to your backend base URL
-4. Click **Enable ISweep**
-5. The extension will now monitor all videos on the page
+Features
 
-## How It Works
+✅ Detects HTML5 <video> elements on any site
+✅ Automatically applies actions: mute, skip, fast-forward, or none
+✅ Per-category controls (language, violence, sexual content)
+✅ Full-page Settings / Options UI (opens in a tab, not embedded)
+✅ Popup dashboard with live stats (videos detected, actions applied)
+✅ Optional ASR (audio transcription) via offscreen audio capture
+✅ Works with dynamically loaded videos (MutationObserver)
 
-### Detection
-- Scans page for `<video>` elements
-- Uses MutationObserver to detect dynamically added videos
-- Shows "✓ ISweep Active" badge on each video
+Installation (Development)
 
-### Decision Making
-1. Content script monitors video playback
-2. Sends event data to backend via POST `/event`
-3. Backend returns decision (mute, skip, fast-forward)
-4. Action is applied seamlessly to video
+Open Chrome and navigate to chrome://extensions
 
-### Actions
-- **Mute** — Silences video for specified duration
-- **Skip** — Jumps forward by specified seconds
-- **Fast-forward** — Speeds up playback 2x for duration
-- **None** — No action taken
+Enable Developer mode (top-right)
 
-## Files
+Click Load unpacked
 
-```
+Select the isweep-chrome-extension/ folder
+
+The ISweep icon will appear in the toolbar
+
+Using ISweep
+Popup (Quick Controls)
+
+Enable / disable ISweep
+
+View live stats:
+
+Videos detected
+
+Actions applied
+
+Open:
+
+Sidebar
+
+Full Settings
+
+Test actions:
+
+Mute on this tab
+
+Timed mute (debug)
+
+Full Settings (Options Page)
+
+Opened via “Open full settings” — always opens in a full browser tab.
+
+You can configure:
+
+Categories
+
+Language
+
+Violence
+
+Sexual content
+
+Per-category behavior
+
+Action: mute / skip / fast-forward / none
+
+Duration (seconds)
+
+Caption timing offset
+
+Preset word packs
+
+Custom words / phrases
+
+All settings are saved locally and applied instantly.
+
+How It Works
+Video Detection
+
+Scans pages for HTML5 <video> elements
+
+Uses MutationObserver to catch dynamically added videos
+
+Tracks videos per tab
+
+Action Engine (Local)
+
+Video playback is observed
+
+Local preferences (isweepPrefs) are evaluated
+
+The selected action is applied immediately:
+
+video.muted = true
+
+video.currentTime += N
+
+video.playbackRate = 2.0
+
+No network request is required for actions to occur.
+
+ASR (Optional Backend Integration)
+
+ISweep can optionally capture tab audio and send it to a backend for automatic speech recognition.
+
+ASR is enabled by default
+
+Runs via Chrome’s offscreen document
+
+Used for:
+
+Transcription
+
+Future classification / ML enrichment
+
+Core filtering does not depend on ASR availability
+
+Backend Configuration
+
+Popup fields:
+
+User ID
+
+Backend URL (e.g. http://127.0.0.1:8001)
+
+If the backend is unreachable:
+
+Filtering continues locally
+
+No user intervention required
+
+Project Structure
 isweep-chrome-extension/
-├── manifest.json          # Extension configuration
-├── popup.html            # Popup UI
-├── popup.js              # Popup logic
-├── styles.css            # Styles
-├── content-script.js     # Injected into pages
-├── background.js         # Service worker
-├── README.md             # This file
-└── icons/                # Extension icons (placeholder)
-```
+├── manifest.json          # MV3 configuration
+├── popup.html             # Popup UI
+├── popup.js               # Popup logic & messaging
+├── options.html           # Full settings page (tab)
+├── options.css            # Settings UI styles
+├── options.js             # Settings logic & storage
+├── plumbing.js            # Content script (video control)
+├── offscreen.html         # Offscreen ASR document
+├── offscreen.js           # Audio capture + ASR transport
+├── background.js          # Service worker
+├── icons/                 # Extension icons
+└── README.md
 
-## Backend Integration
+Storage & State
 
-The extension can communicate with an optional ISweep backend:
+Key local storage objects:
 
-```
-Backend URL: <BACKEND_URL>
-Endpoint: POST /event
+isweepPrefs — filtering rules and actions
 
-Request:
-{
-  "user_id": "user123",
-  "text": null,
-  "content_type": "video",
-  "confidence": 0.8,
-  "timestamp_seconds": 12.5
-}
+asrEnabled — ASR state (default: true)
 
-Response:
-{
-  "action": "mute",
-  "duration_seconds": 4,
-  "reason": "Matched category 'language'",
-  "matched_category": "language"
-}
-```
+Session counters — stats displayed in popup
 
-## Console Logs
+Console Logging
 
-Enable Chrome DevTools (F12) to see ISweep logs:
-- `[ISweep] Detected X video(s)`
-- `[ISweep] Action: mute - Blocked word match`
-- `[ISweep] Enabled/Disabled`
+Use Chrome DevTools → Console:
 
-## Troubleshooting
+[ISweep] Videos detected: N
 
-### Extension not detecting videos?
-- Open DevTools (F12) and check Console for errors
-- Ensure content script is enabled in Extension page
-- Try reloading the page
+[ISweep] Action applied: mute / skip / fast-forward
 
-### Backend connection failing?
-- Verify backend is running on the configured URL
-- Check backend URL in extension popup
-- Look for API errors in Console
+[ISweep] ASR active
 
-### Stats not updating?
-- Clear stats using "Clear Stats" button
-- Refresh the page and play a video
+[ISweep] Preferences updated
 
-## Future Enhancements
+Troubleshooting
+Options page looks narrow or broken
 
-- [ ] YouTube player support
-- [ ] Caption/subtitle detection
-- [ ] ML-based confidence scoring
-- [ ] User preferences UI
-- [ ] Keyboard shortcuts
-- [ ] Analytics dashboard
-- [ ] Firefox support
+Ensure settings are opened via “Open full settings”
+
+Reload extension and hard-refresh the options tab (Ctrl+Shift+R)
+
+Actions not triggering
+
+Confirm ISweep is enabled in the popup
+
+Verify category actions are not set to “None”
+
+Test with the popup “Test mute” button
+
+Backend not responding
+
+Filtering still works without backend
+
+Check backend URL and logs if ASR is required
+
+Roadmap (Intentional & Realistic)
+
+🔜 Improved per-event logs and session history
+
+🔜 Confidence-based filtering (ASR + ML)
+
+🔜 User profiles / presets
+
+🔜 Firefox support
+
+🔜 Analytics dashboard (local + optional backend)
+
+Philosophy
+
+ISweep prioritizes control, reliability, and simplicity:
+
+Your rules
+
+Your device
+
+Your media
+
+No surprises
