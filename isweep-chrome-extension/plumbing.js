@@ -24,7 +24,6 @@
     let captionObserver = null;
     let lastCaptionHash = '';
     let lastCaptionAt = 0;
-    let lastMatchAt = 0;
 
     // Normalize a single word for consistent comparisons across packs, prefs, and captions.
     const normalizeWord = (word) => (word || '').toString().toLowerCase().trim();
@@ -178,7 +177,6 @@
         const durationMs = Number.isFinite(durationSeconds) && durationSeconds > 0 ? durationSeconds * 1000 : 4000;
 
         muteFor(durationMs);
-        lastMatchAt = now;
 
         if (DEBUG) {
             console.log('[ISweep DEBUG] Caption match -> mute', { matched, durationMs, sample: normalized.slice(0, 120) });
@@ -249,6 +247,7 @@
         return enabled && categories.profanity !== false && act === 'mute';
     };
 
+    // Apply or remove mute state on a single video element based on current policy.
     const applyToVideo = (videoEl, doMute) => {
         if (!(videoEl instanceof HTMLVideoElement)) return;
         const already = appliedState.get(videoEl);
@@ -264,6 +263,7 @@
         }
     };
 
+    // Ingest new preferences, merge vocabulary, attach caption observer, and apply mute policy.
     const applyPrefs = async (prefs) => {
         const nextPrefs = { ...(prefs || {}) };
         const vocab = await buildVocabulary(nextPrefs);
@@ -275,6 +275,7 @@
         currentPrefs = nextPrefs;
         const doMute = shouldMute(nextPrefs);
         console.log('[ISweep] prefs received');
+        syncCaptionObserver(nextPrefs);
         getVideos().forEach(v => {
             registerVideo(v);
             applyToVideo(v, doMute);
@@ -299,9 +300,15 @@
         muteState.restore.clear();
     };
 
+    // Timed mute controller that extends the window on overlapping detections.
     const muteFor = (durationMs) => {
         const ms = Number(durationMs);
         if (!Number.isFinite(ms) || ms <= 0) return;
+
+        const now = Date.now();
+        const targetUntil = now + ms;
+        const shouldExtend = targetUntil > muteState.activeUntil;
+        muteState.activeUntil = Math.max(muteState.activeUntil, targetUntil);
 
         if (muteState.timerId) {
             clearTimeout(muteState.timerId);
@@ -311,13 +318,25 @@
         getVideos().forEach(ensureMuted);
         timeLog('mute start', `${ms}ms`);
 
-        muteState.timerId = setTimeout(() => {
+        const scheduleUnmute = () => {
+            const remaining = muteState.activeUntil - Date.now();
+            if (remaining > 10) {
+                muteState.timerId = setTimeout(scheduleUnmute, remaining);
+                return;
+            }
+
             restoreMuteState();
             muteState.timerId = null;
+            muteState.activeUntil = 0;
             timeLog('mute restore');
+
             // Re-apply prefs after restore to respect persistent settings
             if (currentPrefs) applyPrefs(currentPrefs);
-        }, ms);
+        };
+
+        muteState.timerId = setTimeout(scheduleUnmute, muteState.activeUntil - Date.now());
+
+        return shouldExtend;
     };
 
     const loadPrefs = async () => {
@@ -330,6 +349,7 @@
         }
     };
 
+    // Route messages from background/popup to apply prefs or run manual test mutes.
     const handleMessage = (message, sender, sendResponse) => {
         if (message?.type === MSG_APPLY && message.prefs) {
             applyPrefs(message.prefs)
