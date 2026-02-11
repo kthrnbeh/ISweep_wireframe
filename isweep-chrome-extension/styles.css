@@ -14,11 +14,11 @@ html { box-sizing: border-box; }
 *, *::before, *::after { box-sizing: inherit; }
 
 html, body {
-    width: 520px;
-    min-width: 420px;
-    max-width: 560px;
-    height: 680px;
-    max-height: 720px;
+    width: 640px;
+    min-width: 520px;
+    max-width: 760px;
+    height: 600px;
+    max-height: 600px;
     margin: 0;
     padding: 0;
     overflow: hidden;
