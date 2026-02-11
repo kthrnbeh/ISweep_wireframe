@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const storage = chrome.storage.sync || chrome.storage.local;
 
     const DEFAULT_PREFS = {
+        enabled: true,
         filters: {
             profanity: true,
             sexual: true,
@@ -62,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const normalizeAction = (raw) => {
-        const value = String(raw || '').toLowerCase();
+        const value = String(raw || '').toLowerCase().trim();
         if (value.includes('mute')) return 'mute';
         if (value.includes('skip') || value.includes('fast')) return 'skip';
         return 'none';
