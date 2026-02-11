@@ -30,10 +30,11 @@ body {
 }
 
 .page {
-  width: min(1040px, 96vw);
+  width: min(980px, 96vw);
+  max-width: 980px;
   min-width: 360px;
-  margin: 0 auto;
-  padding: 28px 22px 36px;
+  margin: 24px auto 32px;
+  padding: 24px 22px 32px;
 }
 
 .skip-link {
@@ -435,7 +436,7 @@ body {
 }
 
 @media (max-width: 480px) {
-  .page { padding: 22px 16px 28px; width: 100%; min-width: 0; }
+  .page { padding: 20px 14px 24px; width: 100%; min-width: 0; margin: 12px auto; }
   .hero { padding: 14px 16px; }
   .tab-btn { flex: 1 1 100%; justify-content: center; }
   .card { padding: 14px; }

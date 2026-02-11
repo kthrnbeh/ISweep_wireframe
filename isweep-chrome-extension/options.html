@@ -4,141 +4,261 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ISweep Options</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="options.css" />
 </head>
-<body class="settings-shell wide">
-  <main class="settings-card" data-settings-root>
-    <header class="settings-header">
-      <div>
-        <p class="eyebrow">ISweep</p>
-        <h1>Settings</h1>
-        <p class="subtitle">Full-page preferences for your content filters.</p>
+<body>
+  <a class="skip-link" href="#mainContent">Skip to content</a>
+
+  <div class="page options-container" id="mainContent">
+    <section class="hero">
+      <div class="hero__brand">
+        <div class="logo-dot" aria-hidden="true"></div>
+        <div>
+          <p class="eyebrow">ISweep</p>
+          <h1>Content Settings</h1>
+          <span>Choose how ISweep handles language, violence, and sexual content.</span>
+        </div>
       </div>
-    </header>
-
-    <section class="card">
-      <h2>Content Filters</h2>
-      <form id="contentFiltersForm" class="profile-form">
-        <div class="item-row">
-          <div class="stack">
-            <strong>Filter Categories</strong>
-            <p>Select what you want ISweep to catch and manage.</p>
-            <label><input type="checkbox" id="filter-profanity"> Profanity / swearing</label>
-            <label><input type="checkbox" id="filter-sexual"> Sexual content / nudity</label>
-            <label><input type="checkbox" id="filter-violence"> Graphic violence</label>
-            <label><input type="checkbox" id="filter-horror"> Horror / jump scares</label>
-            <label><input type="checkbox" id="filter-crude"> Crude or inappropriate humor</label>
-          </div>
-          <button type="submit">Save</button>
-        </div>
-      </form>
+      <div class="hero__actions">
+        <button class="btn ghost btn-sm" id="resetButton" type="button">Reset</button>
+        <button class="btn primary btn-sm" id="saveButton" type="button">Save</button>
+      </div>
     </section>
 
-    <section class="card">
-      <h2>Filter Actions</h2>
-      <form id="filterActionsForm" class="profile-form">
-        <div class="item-row">
-          <div class="stack">
-            <strong>Profanity</strong>
-            <p>What should ISweep do when it hears profanity?</p>
-            <select id="action-profanity">
-              <option value="mute">Mute audio only</option>
-              <option value="skip">Skip the scene</option>
-              <option value="fast-forward">Fast-forward 10 seconds</option>
-              <option value="log-only">Just log it (no action)</option>
-            </select>
+    <div class="layout">
+      <section class="card card--main summary-section">
+        <div class="card-head">
+          <div>
+            <h2>Overview</h2>
+            <p class="hint">Blocked terms and last save time.</p>
           </div>
-          <button type="submit">Save</button>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="k">Blocked terms</div>
+            <div class="v" id="effectiveCount">0</div>
+            <div class="chips" id="effectivePreview"></div>
+          </div>
+          <div class="summary-item">
+            <div class="k">Last saved</div>
+            <div class="v" id="lastSavedTime">—</div>
+            <p class="field-help">Applies across categories.</p>
+          </div>
+        </div>
+        <div id="statusMessage" class="status-message" role="status" aria-live="polite" style="display: none;"></div>
+      </section>
+
+      <section class="card card--main">
+        <div class="card-head">
+          <div>
+            <h2>Categories</h2>
+            <p class="hint">Set actions, duration, and custom words for each type.</p>
+          </div>
         </div>
 
-        <div class="item-row">
-          <div class="stack">
-            <strong>Sexual Content</strong>
-            <p>Choose how ISweep responds to sexual content.</p>
-            <select id="action-sexual">
-              <option value="skip">Skip the scene</option>
-              <option value="fast-forward">Fast-forward 30 seconds</option>
-              <option value="mute">Mute audio only</option>
-              <option value="log-only">Just log it (no action)</option>
-            </select>
-          </div>
-          <button type="submit">Save</button>
+        <div class="category-tabs" role="tablist" aria-label="Content categories">
+          <button class="tab-btn active" data-category="language" role="tab" aria-selected="true">Language</button>
+          <button class="tab-btn" data-category="violence" role="tab" aria-selected="false">Violence</button>
+          <button class="tab-btn" data-category="sexual" role="tab" aria-selected="false">Sexual content</button>
         </div>
 
-        <div class="item-row">
-          <div class="stack">
-            <strong>Violence</strong>
-            <p>How strict do you want ISweep to be with violence?</p>
-            <select id="action-violence">
-              <option value="mute">Mute audio only</option>
-              <option value="skip">Skip intense scenes</option>
-              <option value="fast-forward">Fast-forward 15 seconds</option>
-              <option value="log-only">Just log it (no action)</option>
-            </select>
+        <div class="category-panels">
+          <div class="category-panel" id="panel-language">
+            <div class="panel-head">
+              <h3>Language</h3>
+              <p class="panel-sub">Mute, skip, or fast-forward profanity and slurs.</p>
+            </div>
+            <div class="controls-grid">
+              <div class="field">
+                <label for="languageAction">Action</label>
+                <select class="control" id="languageAction">
+                  <option value="mute">Mute</option>
+                  <option value="fast_forward">Fast-forward</option>
+                  <option value="skip">Skip</option>
+                  <option value="log_only">Log only</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="languageDuration">Duration (seconds)</label>
+                <input class="control" type="number" id="languageDuration" min="0" step="0.5" value="0.5" />
+              </div>
+              <div class="field">
+                <label for="languageCaptionOffset">Caption offset (ms)</label>
+                <input class="control" type="number" id="languageCaptionOffset" min="-1000" max="2000" step="50" value="300" />
+                <p class="field-help">Adjust if captions lag lead detection.</p>
+              </div>
+            </div>
+
+            <div class="split">
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Preset packs</h4>
+                  <p>Select which packs apply to language.</p>
+                </div>
+                <div class="preset-list" id="langPresets">
+                  <label class="preset-row">
+                    <div class="preset-meta">
+                      <span class="preset-name">Strong profanity</span>
+                      <span class="preset-note">Severe profanity terms.</span>
+                    </div>
+                    <input type="checkbox" />
+                  </label>
+                  <label class="preset-row">
+                    <div class="preset-meta">
+                      <span class="preset-name">Mild language</span>
+                      <span class="preset-note">Lighter slang and insults.</span>
+                    </div>
+                    <input type="checkbox" />
+                  </label>
+                  <label class="preset-row">
+                    <div class="preset-meta">
+                      <span class="preset-name">Blasphemy</span>
+                      <span class="preset-note">Religious exclamations.</span>
+                    </div>
+                    <input type="checkbox" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Custom words</h4>
+                  <p>Add your own words or phrases.</p>
+                </div>
+                <div class="custom-input-row">
+                  <input class="control" id="languageCustomInput" placeholder="Add words, comma separated" />
+                  <button class="btn secondary btn-sm" data-category="language" type="button">Add</button>
+                </div>
+                <ul class="custom-list" id="languageCustomList"></ul>
+              </div>
+            </div>
           </div>
-          <button type="submit">Save</button>
-        </div>
-      </form>
-    </section>
 
-    <section class="card">
-      <h2>Sensitivity</h2>
-      <form id="sensitivityForm" class="profile-form">
-        <div class="item-row">
-          <div class="stack">
-            <strong>Filter Sensitivity</strong>
-            <p>Adjust how strict ISweep should be overall.</p>
-            <label class="range-line">
-              <span>Low</span>
-              <input type="range" id="sensitivity" min="1" max="3" value="2">
-              <span>High</span>
-              <span id="sensitivityValue" class="chip">2</span>
-            </label>
+          <div class="category-panel" id="panel-violence" hidden style="display: none;">
+            <div class="panel-head">
+              <h3>Violence</h3>
+              <p class="panel-sub">Handle graphic or intense scenes.</p>
+            </div>
+            <div class="controls-grid">
+              <div class="field">
+                <label for="violenceAction">Action</label>
+                <select class="control" id="violenceAction">
+                  <option value="fast_forward">Fast-forward</option>
+                  <option value="skip">Skip</option>
+                  <option value="mute">Mute</option>
+                  <option value="log_only">Log only</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="violenceDuration">Duration (seconds)</label>
+                <input class="control" type="number" id="violenceDuration" min="0" step="0.5" value="10" />
+              </div>
+              <div class="field">
+                <label for="violenceCaptionOffset">Caption offset (ms)</label>
+                <input class="control" type="number" id="violenceCaptionOffset" min="-1000" max="2000" step="50" value="300" />
+              </div>
+            </div>
+
+            <div class="split">
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Preset packs</h4>
+                  <p>Graphic or violent keywords.</p>
+                </div>
+                <div class="preset-list" id="violencePresets">
+                  <label class="preset-row">
+                    <div class="preset-meta">
+                      <span class="preset-name">Graphic violence</span>
+                      <span class="preset-note">Blood, gore, and harm.</span>
+                    </div>
+                    <input type="checkbox" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Custom words</h4>
+                  <p>Cover specific triggers you want muted.</p>
+                </div>
+                <div class="custom-input-row">
+                  <input class="control" id="violenceCustomInput" placeholder="Add words, comma separated" />
+                  <button class="btn secondary btn-sm" data-category="violence" type="button">Add</button>
+                </div>
+                <ul class="custom-list" id="violenceCustomList"></ul>
+              </div>
+            </div>
           </div>
-          <button type="submit">Save</button>
-        </div>
-      </form>
-    </section>
 
-    <section class="card">
-      <h2>Notifications</h2>
-      <form id="notificationsForm" class="profile-form">
-        <div class="item-row">
-          <div class="stack">
-            <strong>Session Reports</strong>
-            <p>How would you like to receive viewing summaries?</p>
-            <label><input type="checkbox" id="notify-email"> Email me a weekly summary</label>
-            <label><input type="checkbox" id="notify-inapp"> Show in-app notifications after each session</label>
-            <label><input type="checkbox" id="notify-none"> Don’t send any notifications</label>
+          <div class="category-panel" id="panel-sexual" hidden style="display: none;">
+            <div class="panel-head">
+              <h3>Sexual content</h3>
+              <p class="panel-sub">Control explicit or intimate terms.</p>
+            </div>
+            <div class="controls-grid">
+              <div class="field">
+                <label for="sexualAction">Action</label>
+                <select class="control" id="sexualAction">
+                  <option value="skip">Skip</option>
+                  <option value="fast_forward">Fast-forward</option>
+                  <option value="mute">Mute</option>
+                  <option value="log_only">Log only</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="sexualDuration">Duration (seconds)</label>
+                <input class="control" type="number" id="sexualDuration" min="0" step="0.5" value="30" />
+              </div>
+              <div class="field">
+                <label for="sexualCaptionOffset">Caption offset (ms)</label>
+                <input class="control" type="number" id="sexualCaptionOffset" min="-1000" max="2000" step="50" value="300" />
+              </div>
+            </div>
+
+            <div class="split">
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Preset packs</h4>
+                  <p>Explicit or intimate language packs.</p>
+                </div>
+                <div class="preset-list" id="sexualPresets">
+                  <label class="preset-row">
+                    <div class="preset-meta">
+                      <span class="preset-name">Explicit terms</span>
+                      <span class="preset-note">Explicit anatomical terms.</span>
+                    </div>
+                    <input type="checkbox" />
+                  </label>
+                  <label class="preset-row">
+                    <div class="preset-meta">
+                      <span class="preset-name">Intimate acts</span>
+                      <span class="preset-note">Acts and scenarios.</span>
+                    </div>
+                    <input type="checkbox" />
+                  </label>
+                </div>
+              </div>
+
+              <div class="subcard">
+                <div class="subhead">
+                  <h4>Custom words</h4>
+                  <p>Anything else you want blocked.</p>
+                </div>
+                <div class="custom-input-row">
+                  <input class="control" id="sexualCustomInput" placeholder="Add words, comma separated" />
+                  <button class="btn secondary btn-sm" data-category="sexual" type="button">Add</button>
+                </div>
+                <ul class="custom-list" id="sexualCustomList"></ul>
+              </div>
+            </div>
           </div>
-          <button type="submit">Save</button>
         </div>
-      </form>
-    </section>
+      </section>
 
-    <section class="card">
-      <h2>Parental Controls</h2>
-      <form id="parentalForm" class="profile-form">
-        <div class="item-row">
-          <div class="stack">
-            <strong>Parental PIN</strong>
-            <p>Lock settings so kids can’t change filters without a PIN.</p>
-            <label class="stack mini-gap">
-              <span>Create / Update PIN</span>
-              <input class="profile-input" type="password" id="parent-pin" minlength="4" maxlength="6" placeholder="Enter 4–6 digit PIN">
-            </label>
-            <label><input type="checkbox" id="require-pin"> Require PIN to change filters or plans</label>
-          </div>
-          <button type="submit">Save</button>
-        </div>
-      </form>
-    </section>
+      <p class="footer-note">Your preferences are stored locally and synced when available.</p>
+    </div>
+  </div>
 
-    <footer class="settings-footer">
-      <p id="saveStatus" aria-live="polite">Changes save automatically.</p>
-    </footer>
-  </main>
-
-  <script src="popup.js" defer></script>
+  <script type="module" src="options.js" defer></script>
 </body>
-          </div>
+</html>
