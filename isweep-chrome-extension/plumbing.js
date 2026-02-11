@@ -1,6 +1,6 @@
 // plumbing.js - lightweight prefs->mute pipeline
 (() => {
-    const DEBUG = false;
+    const DEBUG = true;
     const PREFS_KEY = 'isweepPrefs';
     const MSG_APPLY = 'APPLY_PREFS';
     const PACK_URL = chrome.runtime.getURL('filters/profanity_packs.js');
