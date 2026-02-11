@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveStatus: document.getElementById('saveStatus'),
         openFullSettings: document.getElementById('openFullSettings'),
         openSidebar: document.getElementById('openSidebar'),
-        testMute: document.getElementById('testMute')
+        testMute: document.getElementById('testMute'),
         testTimedMute: document.getElementById('testTimedMute')
     };
 
