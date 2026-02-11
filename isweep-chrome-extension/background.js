@@ -282,6 +282,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else if (request.type === 'TEST_MUTE') {
         sendPrefsToActive();
         sendResponse?.({ ok: true });
+    } else if (request.type === 'TEST_TIMED_MUTE') {
+        const durationMs = Number(request.durationMs) || 5000;
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length > 0 && tabs[0].id) {
+                chrome.tabs.sendMessage(tabs[0].id, { type: 'MUTE_FOR', durationMs }).catch(() => {});
+            }
+        });
+        sendResponse?.({ ok: true });
     }
 });
 

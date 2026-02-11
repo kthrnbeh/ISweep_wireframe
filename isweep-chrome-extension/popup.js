@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         openFullSettings: document.getElementById('openFullSettings'),
         openSidebar: document.getElementById('openSidebar'),
         testMute: document.getElementById('testMute')
+        testTimedMute: document.getElementById('testTimedMute')
     };
 
     const normalizeAction = (raw) => {
@@ -242,6 +243,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (els.testMute) {
             els.testMute.addEventListener('click', () => {
                 chrome.runtime.sendMessage({ type: 'TEST_MUTE' }).catch(() => {});
+            });
+        }
+
+        if (els.testTimedMute) {
+            els.testTimedMute.addEventListener('click', () => {
+                chrome.runtime.sendMessage({ type: 'TEST_TIMED_MUTE', durationMs: 5000 }).catch(() => {});
             });
         }
     };
